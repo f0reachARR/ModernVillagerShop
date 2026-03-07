@@ -5,6 +5,7 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.inventory.base.BaseInventoryUI;
 import me.f0reach.vshop.ui.inventory.item.NavigationItems;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -32,7 +33,8 @@ public final class ShopStorageUI extends BaseInventoryUI {
     private int currentPage;
 
     public ShopStorageUI(Player viewer, Shop shop, MessageManager messages, UIManager uiManager) {
-        super(viewer, SIZE, messages.get("shop.storage_title", "shop_id", String.valueOf(shop.shopId())));
+        super(viewer, SIZE, messages.get("shop.storage_title",
+                Placeholder.unparsed("shop_id", String.valueOf(shop.shopId()))));
         this.shop = shop;
         this.messages = messages;
         this.uiManager = uiManager;

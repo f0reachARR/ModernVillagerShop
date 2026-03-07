@@ -6,6 +6,7 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.inventory.base.PaginatedInventoryUI;
 import me.f0reach.vshop.ui.inventory.item.InventoryItemBuilder;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 
@@ -20,7 +21,8 @@ public final class ShopListingUI extends PaginatedInventoryUI {
     private final UIManager uiManager;
 
     public ShopListingUI(Player viewer, Shop shop, MessageManager messages, UIManager uiManager) {
-        super(viewer, messages.get("shop.inventory_title", "shop_id", String.valueOf(shop.shopId())), messages);
+        super(viewer, messages.get("shop.inventory_title",
+                Placeholder.unparsed("shop_id", String.valueOf(shop.shopId()))), messages);
         this.shop = shop;
         this.uiManager = uiManager;
     }

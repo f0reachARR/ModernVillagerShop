@@ -12,6 +12,7 @@ import me.f0reach.vshop.model.ShopType;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.SpawnEggManager;
 import me.f0reach.vshop.ui.UIManager;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -135,7 +136,8 @@ public final class VShopCommands {
                     villager.getLocation().getY(),
                     villager.getLocation().getZ()
             );
-            player.sendMessage(messages.get("shop.created_admin", "shop_id", String.valueOf(shopId)));
+            player.sendMessage(messages.get("shop.created_admin",
+                    Placeholder.unparsed("shop_id", String.valueOf(shopId))));
         } catch (SQLException e) {
             source.getSender().getServer().getLogger().log(Level.SEVERE, "Failed to create admin shop", e);
             player.sendMessage(messages.get("error.storage"));

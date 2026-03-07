@@ -8,6 +8,7 @@ import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.inventory.base.PaginatedInventoryUI;
 import me.f0reach.vshop.ui.inventory.item.InventoryItemBuilder;
 import me.f0reach.vshop.ui.inventory.item.NavigationItems;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -24,7 +25,8 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
     private static final int SLOT_STORAGE = 50;
 
     public OwnerListingUI(Player viewer, Shop shop, MessageManager messages, UIManager uiManager) {
-        super(viewer, messages.get("shop.inventory_title", "shop_id", String.valueOf(shop.shopId())), messages);
+        super(viewer, messages.get("shop.inventory_title",
+                Placeholder.unparsed("shop_id", String.valueOf(shop.shopId()))), messages);
         this.shop = shop;
         this.uiManager = uiManager;
     }

@@ -7,6 +7,8 @@ import io.papermc.paper.registry.data.dialog.body.DialogBody;
 import me.f0reach.vshop.locale.MessageManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
+import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
@@ -17,7 +19,7 @@ public final class DialogFactory {
         this.messages = messages;
     }
 
-    public Component text(String key, String... placeholders) {
+    public Component text(String key, TagResolver.@NotNull Single... placeholders) {
         return messages.get(key, placeholders);
     }
 
@@ -48,7 +50,7 @@ public final class DialogFactory {
         return DialogBase.builder(messages.get(titleKey));
     }
 
-    public DialogBody textBody(String key, String... placeholders) {
+    public DialogBody textBody(String key, TagResolver.@NotNull Single... placeholders) {
         return DialogBody.plainMessage(messages.get(key, placeholders));
     }
 

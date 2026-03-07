@@ -7,6 +7,7 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopType;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.ui.dialog.*;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import me.f0reach.vshop.ui.inventory.ItemSelectUI;
 import me.f0reach.vshop.ui.inventory.OwnerListingUI;
 import me.f0reach.vshop.ui.inventory.ShopStorageUI;
@@ -165,10 +166,10 @@ public final class UIManager {
             int actualStock = listing.stock();
             shopService.getListingRepo().updatePriceStockAndQuantity(listing.listingId(), price, tradeQuantity, actualStock, targetStock);
             player.sendMessage(messages.get("shop.offer_updated",
-                    "shop_id", String.valueOf(listing.shopId()),
-                    "mode", listing.mode().name(),
-                    "item", getItemName(listing),
-                    "price", String.format("%.2f", (double) price)));
+                    Placeholder.unparsed("shop_id", String.valueOf(listing.shopId())),
+                    Placeholder.unparsed("mode", listing.mode().name()),
+                    Placeholder.unparsed("item", getItemName(listing)),
+                    Placeholder.unparsed("price", String.format("%.2f", (double) price))));
             shopService.getShopById(listing.shopId()).ifPresent(s -> openShopInventory(player, s));
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to update listing", e);
@@ -235,9 +236,15 @@ public final class UIManager {
                     String price = String.format("%.2f", current.unitPrice());
                     String qty = String.valueOf(current.tradeQuantity());
                     if (current.mode() == ListingMode.SELL) {
-                        player.sendMessage(messages.get("trade.purchase_success", "item", itemName, "qty", qty, "price", price));
+                        player.sendMessage(messages.get("trade.purchase_success",
+                                Placeholder.unparsed("item", itemName),
+                                Placeholder.unparsed("qty", qty),
+                                Placeholder.unparsed("price", price)));
                     } else {
-                        player.sendMessage(messages.get("trade.procurement_success", "item", itemName, "qty", qty, "price", price));
+                        player.sendMessage(messages.get("trade.procurement_success",
+                                Placeholder.unparsed("item", itemName),
+                                Placeholder.unparsed("qty", qty),
+                                Placeholder.unparsed("price", price)));
                     }
                 }
                 case OUT_OF_STOCK -> player.sendMessage(messages.get("trade.out_of_stock"));

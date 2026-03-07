@@ -19,8 +19,8 @@ public final class NavigationItems {
 
     public static ItemStack pageInfo(MessageManager messages, int page, int maxPage) {
         return createButton(Material.PAPER, messages.get("ui.page_info",
-                "page", String.valueOf(page),
-                "max_page", String.valueOf(maxPage)));
+                Placeholder.unparsed("page", String.valueOf(page)),
+                Placeholder.unparsed("max_page", String.valueOf(maxPage))));
     }
 
     public static ItemStack sortButton(MessageManager messages, SortFilterState.SortOrder order) {
@@ -30,7 +30,8 @@ public final class NavigationItems {
             case PRICE_ASC -> messages.getRaw("ui.sort_price_asc");
             case PRICE_DESC -> messages.getRaw("ui.sort_price_desc");
         };
-        return createButton(Material.HOPPER, messages.get("ui.sort_button", "sort", sortKey));
+        return createButton(Material.HOPPER, messages.get("ui.sort_button",
+                Placeholder.unparsed("sort", sortKey)));
     }
 
     public static ItemStack filterButton(MessageManager messages, SortFilterState.FilterMode mode) {
@@ -39,7 +40,8 @@ public final class NavigationItems {
             case SELL_ONLY -> messages.getRaw("ui.filter_sell");
             case BUY_ONLY -> messages.getRaw("ui.filter_buy");
         };
-        return createButton(Material.COMPASS, messages.get("ui.filter_button", "filter", filterKey));
+        return createButton(Material.COMPASS, messages.get("ui.filter_button",
+                Placeholder.unparsed("filter", filterKey)));
     }
 
     public static ItemStack openStorage(MessageManager messages) {

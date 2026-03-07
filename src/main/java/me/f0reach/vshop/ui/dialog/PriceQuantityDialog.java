@@ -11,6 +11,7 @@ import me.f0reach.vshop.model.Listing;
 import me.f0reach.vshop.model.ListingMode;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.ui.UIManager;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -94,7 +95,7 @@ public final class PriceQuantityDialog {
                                                 Integer tradeQuantity = parseTradeQuantity(view.getText("quantity"), maxTradeQuantity);
                                                 if (tradeQuantity == null) {
                                                     player.sendMessage(factory.text("error.invalid_quantity_input",
-                                                            "max", String.valueOf(maxTradeQuantity)));
+                                                            Placeholder.unparsed("max", String.valueOf(maxTradeQuantity))));
                                                     return;
                                                 }
 

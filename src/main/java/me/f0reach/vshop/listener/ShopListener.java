@@ -5,6 +5,7 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.SpawnEggManager;
 import me.f0reach.vshop.ui.UIManager;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -120,7 +121,8 @@ public final class ShopListener implements Listener {
                     villager.getLocation().getY(),
                     villager.getLocation().getZ()
             );
-            spawner.sendMessage(messages.get("shop.created_player", "shop_id", String.valueOf(shopId)));
+            spawner.sendMessage(messages.get("shop.created_player",
+                    Placeholder.unparsed("shop_id", String.valueOf(shopId))));
             uiManager.openShopInitDialog(spawner, shopId);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to create player shop", e);

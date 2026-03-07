@@ -10,6 +10,7 @@ import me.f0reach.vshop.model.Listing;
 import me.f0reach.vshop.model.ListingMode;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.ui.UIManager;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
@@ -33,7 +34,9 @@ public final class TradeConfirmDialog {
                 .base(DialogBase.builder(factory.text("dialog.trade_confirm_title"))
                         .body(List.of(
                                 DialogBody.plainMessage(factory.text(bodyKey,
-                                        "item", itemName, "qty", String.valueOf(quantity), "price", price)),
+                                        Placeholder.unparsed("item", itemName),
+                                        Placeholder.unparsed("qty", String.valueOf(quantity)),
+                                        Placeholder.unparsed("price", price))),
                                 DialogBody.item(item).build()
                         ))
                         .build())

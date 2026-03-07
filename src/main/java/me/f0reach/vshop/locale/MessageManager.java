@@ -3,8 +3,8 @@ package me.f0reach.vshop.locale;
 import me.f0reach.vshop.config.PluginConfig;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import net.kyori.adventure.text.minimessage.tag.resolver.TagResolver;
+import org.jetbrains.annotations.NotNull;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -69,12 +69,8 @@ public final class MessageManager {
         return miniMessage.deserialize(getRaw(key));
     }
 
-    public Component get(String key, String... placeholders) {
-        TagResolver.Builder builder = TagResolver.builder();
-        for (int i = 0; i + 1 < placeholders.length; i += 2) {
-            builder.resolver(Placeholder.unparsed(placeholders[i], placeholders[i + 1]));
-        }
-        return miniMessage.deserialize(getRaw(key), builder.build());
+    public Component get(String key, TagResolver.@NotNull Single... placeholders) {
+        return miniMessage.deserialize(getRaw(key), TagResolver.resolver(placeholders));
     }
 
     public Component get(String key, TagResolver resolver) {
