@@ -1,6 +1,26 @@
 name: ModernVillagerShop
-version: '1.0.0'
+version: '${version}'
 main: me.f0reach.vshop.Plugin
 api-version: '1.21'
 authors: [ f0reachARR ]
 description: VillagerShop for 1.21.8+ Minecraft
+
+dependencies:
+  server:
+    Vault:
+      load: BEFORE
+      required: true
+
+permissions:
+  modernvillagershop.use:
+    description: Basic shop usage
+    default: true
+  modernvillagershop.create:
+    description: Create player shops
+    default: true
+  modernvillagershop.admin:
+    description: Admin shop management
+    default: op
+  modernvillagershop.reload:
+    description: Reload configuration
+    default: op

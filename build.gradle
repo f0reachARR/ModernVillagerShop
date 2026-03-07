@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id("xyz.jpenilla.run-paper") version "2.3.1"
+    id("com.gradleup.shadow") version "9.0.0-beta13"
 }
 
 group = 'me.f0reach.vshop'
@@ -12,15 +13,30 @@ repositories {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
     }
+    maven {
+        name = "jitpack"
+        url = "https://jitpack.io"
+    }
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21.8-R0.1-SNAPSHOT")
+    compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
+    implementation("com.zaxxer:HikariCP:5.1.0")
 }
 
 tasks {
     runServer {
         minecraftVersion("1.21")
+    }
+
+    shadowJar {
+        archiveClassifier.set("")
+        relocate("com.zaxxer.hikari", "me.f0reach.vshop.lib.hikari")
+    }
+
+    build {
+        dependsOn(shadowJar)
     }
 }
 

@@ -1,0 +1,17 @@
+locale: ja_JP
+fallbackLocale: en_US
+
+storage:
+  type: sqlite
+  mysql:
+    host: 127.0.0.1
+    port: 3306
+    database: modernvillagershop
+    user: root
+    password: ""
+
+trade:
+  feeRate: 0.03
+
+shop:
+  maxTradeItemTypesPerShop: 16
