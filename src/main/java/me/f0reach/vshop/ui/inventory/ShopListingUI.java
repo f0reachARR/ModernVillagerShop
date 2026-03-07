@@ -3,6 +3,7 @@ package me.f0reach.vshop.ui.inventory;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Listing;
 import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.inventory.base.PaginatedInventoryUI;
 import me.f0reach.vshop.ui.inventory.item.InventoryItemBuilder;
@@ -40,11 +41,18 @@ public final class ShopListingUI extends PaginatedInventoryUI {
     @Override
     protected void renderContentSlots(Map<Integer, Listing> pageListings) {
         for (Map.Entry<Integer, Listing> entry : pageListings.entrySet()) {
+            ShopService.TradeAccess tradeAccess = null;
+            try {
+                tradeAccess = uiManager.getShopService().getTradeAccess(viewer, entry.getValue());
+            } catch (SQLException e) {
+                viewer.getServer().getLogger().log(Level.WARNING, "Failed to load trade access state", e);
+            }
             inventory.setItem(entry.getKey(), InventoryItemBuilder.buildListingItem(
                     entry.getValue(),
                     messages,
                     uiManager.getShopService().getEconomy(),
-                    false
+                    false,
+                    tradeAccess
             ));
         }
     }

@@ -190,14 +190,94 @@ public final class ShopService {
         COOLDOWN_ACTIVE, LIFETIME_LIMIT_REACHED
     }
 
+    public record TradeAccess(
+            TradeResult blockedReason,
+            int remainingCooldownSeconds,
+            int remainingLifetimeTrades) {
+        public boolean canTrade() {
+            return blockedReason == null;
+        }
+    }
+
+    public TradeAccess getTradeAccess(Player player, Listing listing) throws SQLException {
+        if (listing.cooldownSeconds() <= 0 && listing.lifetimeLimitPerPlayer() <= 0) {
+            return new TradeAccess(null, 0, Integer.MAX_VALUE);
+        }
+        Instant since = Instant.now().minusSeconds(listing.cooldownSeconds());
+        int count = listing.cooldownSeconds() > 0
+                ? txRepo.countTradesForPlayerSince(listing.listingId(), player.getUniqueId(), since)
+                : txRepo.countTradesForPlayer(listing.listingId(), player.getUniqueId());
+
+        int limit = (int) Math.max(1, listing.lifetimeLimitPerPlayer());
+
+        if (listing.cooldownSeconds() > 0 && count >= limit) {
+            Instant oldest = txRepo.findOldestTradeTimeForPlayer(
+                    listing.listingId(), player.getUniqueId(), since)
+                    .orElse(Instant.now());
+            int remainingCooldown = (int) (oldest.plusSeconds(listing.cooldownSeconds()).getEpochSecond()
+                    - Instant.now().getEpochSecond());
+            return new TradeAccess(TradeResult.COOLDOWN_ACTIVE, remainingCooldown, limit - count);
+        }
+
+        if (listing.cooldownSeconds() == 0 && count >= limit) {
+            return new TradeAccess(TradeResult.LIFETIME_LIMIT_REACHED, 0, 0);
+        }
+
+        return new TradeAccess(null, 0, limit - count);
+    }
+
+    public TradeResult previewTrade(Player player, Listing listing, Shop shop) throws SQLException {
+        TradeAccess access = getTradeAccess(player, listing);
+        if (!access.canTrade()) {
+            return access.blockedReason();
+        }
+
+        int tradeQuantity = listing.tradeQuantity();
+        double gross = listing.unitPrice();
+
+        if (listing.mode() == ListingMode.SELL) {
+            if (!economy.has(player.getUniqueId(), gross)) {
+                return TradeResult.BALANCE_SHORTAGE;
+            }
+            if (shop.type() == ShopType.PLAYER) {
+                int realStock = countMatchingItems(getShopInventoryContents(shop.shopId()), listing.itemSerialized());
+                if (realStock < tradeQuantity) {
+                    return TradeResult.OUT_OF_STOCK;
+                }
+            }
+            return TradeResult.SUCCESS;
+        }
+
+        ItemStack template = ItemStack.deserializeBytes(listing.itemSerialized());
+        template.setAmount(1);
+        if (!player.getInventory().containsAtLeast(template, tradeQuantity)) {
+            return TradeResult.NO_ITEM;
+        }
+
+        if (shop.type() == ShopType.PLAYER && shop.ownerUuid() != null && !economy.has(shop.ownerUuid(), gross)) {
+            return TradeResult.OWNER_INSUFFICIENT;
+        }
+
+        if (shop.type() != ShopType.ADMIN && listing.stock() + tradeQuantity > listing.targetStock()) {
+            return TradeResult.BUY_ORDER_FULL;
+        }
+
+        return TradeResult.SUCCESS;
+    }
+
     /**
      * Execute a SELL trade: customer buys from shop.
      * Customer pays gross, fee deducted, net goes to owner (for player shops).
      */
     public TradeResult executeSellTrade(Player customer, Listing listing, Shop shop) {
-        TradeResult restrictionResult = checkTradeRestrictions(customer, listing);
-        if (restrictionResult != null) {
-            return restrictionResult;
+        try {
+            TradeAccess access = getTradeAccess(customer, listing);
+            if (!access.canTrade()) {
+                return access.blockedReason();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to check trade restrictions", e);
+            return TradeResult.TRADE_FAILED;
         }
 
         int tradeQuantity = listing.tradeQuantity();
@@ -262,9 +342,14 @@ public final class ShopService {
      * Shop owner pays gross, fee deducted, net goes to customer.
      */
     public TradeResult executeBuyTrade(Player customer, Listing listing, Shop shop) {
-        TradeResult restrictionResult = checkTradeRestrictions(customer, listing);
-        if (restrictionResult != null) {
-            return restrictionResult;
+        try {
+            TradeAccess access = getTradeAccess(customer, listing);
+            if (!access.canTrade()) {
+                return access.blockedReason();
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to check trade restrictions", e);
+            return TradeResult.TRADE_FAILED;
         }
 
         int tradeQuantity = listing.tradeQuantity();
@@ -362,33 +447,6 @@ public final class ShopService {
 
     private void rollbackBuyTradeCustomerItem(Player customer, ItemStack template) {
         customer.getInventory().addItem(template);
-    }
-
-    private TradeResult checkTradeRestrictions(Player player, Listing listing) {
-        try {
-            if (listing.cooldownSeconds() <= 0 && listing.lifetimeLimitPerPlayer() <= 0) {
-                return null; // no restrictions
-            }
-
-            Instant since = Instant.now().minusSeconds(listing.cooldownSeconds());
-            int windowCount = listing.cooldownSeconds() <= 0
-                    ? txRepo.countTradesForPlayer(listing.listingId(), player.getUniqueId())
-                    : txRepo.countTradesForPlayerSince(listing.listingId(), player.getUniqueId(), since);
-
-            if (listing.lifetimeLimitPerPlayer() > 0) {
-                if (windowCount >= listing.lifetimeLimitPerPlayer()) {
-                    return TradeResult.LIFETIME_LIMIT_REACHED;
-                }
-            } else if (listing.cooldownSeconds() > 0) {
-                if (windowCount > 0) {
-                    return TradeResult.COOLDOWN_ACTIVE;
-                }
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to check trade restrictions", e);
-            return TradeResult.TRADE_FAILED;
-        }
-        return null;
     }
 
     private Optional<ItemStack> removeMatchingFromShopInventory(int shopId, byte[] serializedTemplate, int amount)

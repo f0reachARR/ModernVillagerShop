@@ -36,17 +36,19 @@ public final class TransactionRepository {
         }
     }
 
-    public Optional<Instant> findLastTradeTimeForPlayer(int listingId, UUID playerUuid) throws SQLException {
-        String sql = "SELECT MAX(created_at) AS last_trade_at FROM transactions WHERE listing_id = ? AND buyer_uuid = ?";
+    public Optional<Instant> findOldestTradeTimeForPlayer(int listingId, UUID playerUuid, Instant since)
+            throws SQLException {
+        String sql = "SELECT MAX(created_at) AS trade_at FROM transactions WHERE listing_id = ? AND buyer_uuid = ? AND created_at >= ?";
         try (Connection conn = db.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, listingId);
             ps.setString(2, playerUuid.toString());
+            ps.setTimestamp(3, Timestamp.from(since));
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     return Optional.empty();
                 }
-                Timestamp timestamp = rs.getTimestamp("last_trade_at");
+                Timestamp timestamp = rs.getTimestamp("trade_at");
                 return timestamp == null ? Optional.empty() : Optional.of(timestamp.toInstant());
             }
         }

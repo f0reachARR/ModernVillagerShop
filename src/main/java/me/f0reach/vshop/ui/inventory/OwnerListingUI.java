@@ -48,7 +48,8 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
                     entry.getValue(),
                     messages,
                     uiManager.getShopService().getEconomy(),
-                    true
+                    true,
+                    null
             ));
         }
     }

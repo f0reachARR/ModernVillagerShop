@@ -123,7 +123,18 @@ public final class UIManager {
 
     public void openTradeConfirmDialog(Player viewer, Shop shop, Listing listing) {
         try {
-            viewer.showDialog(TradeConfirmDialog.create(dialogFactory, shop, listing, this));
+            var freshListing = shopService.getListingRepo().findById(listing.listingId());
+            if (freshListing.isEmpty()) {
+                viewer.sendMessage(messages.get("error.listing_not_found"));
+                return;
+            }
+            Listing current = freshListing.get();
+            ShopService.TradeResult preview = shopService.previewTrade(viewer, current, shop);
+            if (preview != ShopService.TradeResult.SUCCESS) {
+                sendTradeResultMessage(viewer, current, preview);
+                return;
+            }
+            viewer.showDialog(TradeConfirmDialog.create(dialogFactory, shop, current, this));
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Failed to show trade dialog", e);
             viewer.sendMessage(messages.get("dialog.fallback_notice"));
@@ -266,15 +277,7 @@ public final class UIManager {
                             Placeholder.unparsed("price", price)));
 
                 }
-                case OUT_OF_STOCK -> player.sendMessage(messages.get("trade.out_of_stock"));
-                case BALANCE_SHORTAGE -> player.sendMessage(messages.get("trade.balance_shortage"));
-                case NO_ITEM -> player.sendMessage(messages.get("trade.no_item_to_sell"));
-                case BUY_ORDER_FULL -> player.sendMessage(messages.get("trade.buy_order_full"));
-                case OWNER_INSUFFICIENT -> player.sendMessage(messages.get("trade.shop_owner_insufficient"));
-                case COOLDOWN_ACTIVE -> player.sendMessage(messages.get("trade.cooldown_active"));
-                case LIFETIME_LIMIT_REACHED -> player.sendMessage(messages.get("trade.lifetime_limit_reached"));
-                case TRADE_FAILED -> player.sendMessage(messages.get("error.trade_failed"));
-                case LISTING_NOT_FOUND -> player.sendMessage(messages.get("error.listing_not_found"));
+                default -> sendTradeResultMessage(player, current, result);
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Trade execution failed", e);
@@ -305,6 +308,48 @@ public final class UIManager {
 
     public MessageManager getMessages() {
         return messages;
+    }
+
+    private void sendTradeResultMessage(Player player, Listing listing, ShopService.TradeResult result) {
+        switch (result) {
+            case OUT_OF_STOCK -> player.sendMessage(messages.get("trade.out_of_stock"));
+            case BALANCE_SHORTAGE -> player.sendMessage(messages.get("trade.balance_shortage"));
+            case NO_ITEM -> player.sendMessage(messages.get("trade.no_item_to_sell"));
+            case BUY_ORDER_FULL -> player.sendMessage(messages.get("trade.buy_order_full"));
+            case OWNER_INSUFFICIENT -> player.sendMessage(messages.get("trade.shop_owner_insufficient"));
+            case COOLDOWN_ACTIVE -> sendCooldownMessage(player, listing);
+            case LIFETIME_LIMIT_REACHED -> sendLifetimeLimitMessage(player, listing);
+            case TRADE_FAILED -> player.sendMessage(messages.get("error.trade_failed"));
+            case LISTING_NOT_FOUND -> player.sendMessage(messages.get("error.listing_not_found"));
+            default -> {
+            }
+        }
+    }
+
+    private void sendCooldownMessage(Player player, Listing listing) {
+        try {
+            ShopService.TradeAccess access = shopService.getTradeAccess(player, listing);
+            player.sendMessage(messages.get("trade.cooldown_active",
+                    Placeholder.unparsed("seconds", String.valueOf(access.remainingCooldownSeconds()))));
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to resolve cooldown state", e);
+            player.sendMessage(messages.get("trade.cooldown_active",
+                    Placeholder.unparsed("seconds", String.valueOf(listing.cooldownSeconds()))));
+        }
+    }
+
+    private void sendLifetimeLimitMessage(Player player, Listing listing) {
+        try {
+            ShopService.TradeAccess access = shopService.getTradeAccess(player, listing);
+            player.sendMessage(messages.get("trade.lifetime_limit_reached",
+                    Placeholder.unparsed("remaining", String.valueOf(access.remainingLifetimeTrades())),
+                    Placeholder.unparsed("limit", String.valueOf(listing.lifetimeLimitPerPlayer()))));
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.WARNING, "Failed to resolve lifetime limit state", e);
+            player.sendMessage(messages.get("trade.lifetime_limit_reached",
+                    Placeholder.unparsed("remaining", "0"),
+                    Placeholder.unparsed("limit", String.valueOf(listing.lifetimeLimitPerPlayer()))));
+        }
     }
 
     private int findFirstEmptySlot(Shop shop) {

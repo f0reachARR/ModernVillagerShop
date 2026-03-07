@@ -3,6 +3,8 @@ package me.f0reach.vshop.ui.inventory.item;
 import me.f0reach.vshop.economy.VaultEconomyAdapter;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Listing;
+import me.f0reach.vshop.shop.ShopService;
+import me.f0reach.vshop.shop.ShopService.TradeResult;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.inventory.ItemStack;
@@ -16,7 +18,7 @@ public final class InventoryItemBuilder {
     }
 
     public static ItemStack buildListingItem(Listing listing, MessageManager messages,
-            VaultEconomyAdapter economy, boolean showDisabled) {
+            VaultEconomyAdapter economy, boolean showDisabled, ShopService.TradeAccess tradeAccess) {
         ItemStack item = ItemStack.deserializeBytes(listing.itemSerialized());
         int quantity = listing.tradeQuantity();
         item.setAmount(Math.min(quantity, Math.max(1, item.getMaxStackSize())));
@@ -31,6 +33,14 @@ public final class InventoryItemBuilder {
         lore.add(messages.get("shop.listing_lore_stock",
                 Placeholder.unparsed("stock", String.valueOf(listing.stock())),
                 Placeholder.unparsed("max_stock", String.valueOf(listing.targetStock()))));
+        if (tradeAccess.blockedReason() == TradeResult.COOLDOWN_ACTIVE) {
+            lore.add(messages.get("shop.listing_lore_cooldown_remaining",
+                    Placeholder.unparsed("seconds", String.valueOf(tradeAccess.remainingCooldownSeconds()))));
+        } else if (tradeAccess.blockedReason() == TradeResult.LIFETIME_LIMIT_REACHED) {
+            lore.add(messages.get("shop.listing_lore_lifetime_remaining",
+                    Placeholder.unparsed("remaining", String.valueOf(tradeAccess.remainingLifetimeTrades())),
+                    Placeholder.unparsed("limit", String.valueOf(listing.lifetimeLimitPerPlayer()))));
+        }
         lore.add(messages.get("shop.listing_lore_click"));
 
         if (showDisabled && !listing.enabled()) {
