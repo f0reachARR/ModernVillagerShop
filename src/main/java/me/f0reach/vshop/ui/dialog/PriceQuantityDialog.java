@@ -25,6 +25,8 @@ public final class PriceQuantityDialog {
     private static final int MIN_TRADE_QUANTITY = 1;
     private static final int MIN_STOCK = 0;
     private static final int MAX_STOCK = 100_000;
+    private static final int MIN_LIMIT_VALUE = 0;
+    private static final int MAX_LIMIT_VALUE = 100_000_000;
 
     private PriceQuantityDialog() {
     }
@@ -39,6 +41,10 @@ public final class PriceQuantityDialog {
         float initialPrice = existingListing != null ? (float) existingListing.unitPrice() : 1.0f;
         int initialQuantity = existingListing != null ? existingListing.tradeQuantity() : 1;
         int initialTarget = existingListing != null ? existingListing.targetStock() : 64;
+        int initialCooldownSeconds = existingListing != null ? existingListing.cooldownSeconds() : 0;
+        int initialLifetimeLimit = existingListing != null ? existingListing.lifetimeLimitPerPlayer() : 0;
+        int initialWindowLimit = existingListing != null ? existingListing.windowLimitPerPlayer() : 0;
+        int initialWindowSeconds = existingListing != null ? existingListing.windowSeconds() : 0;
         ItemStack templateItem = resolveTemplateItem(existingListing, selectedItem);
         int maxTradeQuantity = Math.max(MIN_TRADE_QUANTITY, templateItem.getMaxStackSize());
 
@@ -56,6 +62,26 @@ public final class PriceQuantityDialog {
                 DialogInput.text("stock", factory.text("dialog.stock_label"))
                         .initial(String.valueOf(initialTarget))
                         .maxLength(8)
+                        .width(300)
+                        .build(),
+                DialogInput.text("cooldownSeconds", factory.text("dialog.cooldown_seconds_label"))
+                        .initial(String.valueOf(initialCooldownSeconds))
+                        .maxLength(10)
+                        .width(300)
+                        .build(),
+                DialogInput.text("lifetimeLimitPerPlayer", factory.text("dialog.lifetime_limit_label"))
+                        .initial(String.valueOf(initialLifetimeLimit))
+                        .maxLength(10)
+                        .width(300)
+                        .build(),
+                DialogInput.text("windowLimitPerPlayer", factory.text("dialog.window_limit_label"))
+                        .initial(String.valueOf(initialWindowLimit))
+                        .maxLength(10)
+                        .width(300)
+                        .build(),
+                DialogInput.text("windowSeconds", factory.text("dialog.window_seconds_label"))
+                        .initial(String.valueOf(initialWindowSeconds))
+                        .maxLength(10)
                         .width(300)
                         .build());
 
@@ -95,12 +121,35 @@ public final class PriceQuantityDialog {
                                                     stock = parsedStock;
                                                 }
 
+                                                Integer cooldownSeconds = parseNonNegativeInt(
+                                                        view.getText("cooldownSeconds"));
+                                                Integer lifetimeLimitPerPlayer = parseNonNegativeInt(
+                                                        view.getText("lifetimeLimitPerPlayer"));
+                                                Integer windowLimitPerPlayer = parseNonNegativeInt(
+                                                        view.getText("windowLimitPerPlayer"));
+                                                Integer windowSeconds = parseNonNegativeInt(
+                                                        view.getText("windowSeconds"));
+                                                if (cooldownSeconds == null || lifetimeLimitPerPlayer == null
+                                                        || windowLimitPerPlayer == null || windowSeconds == null) {
+                                                    player.sendMessage(factory.text("error.invalid_trade_limit_input"));
+                                                    return;
+                                                }
+                                                if ((windowLimitPerPlayer > 0 && windowSeconds == 0)
+                                                        || (windowSeconds > 0 && windowLimitPerPlayer == 0)) {
+                                                    player.sendMessage(factory.text("error.invalid_window_limit_input"));
+                                                    return;
+                                                }
+
                                                 if (existingListing != null) {
                                                     uiManager.handleListingPriceUpdate(player, existingListing, price,
-                                                            tradeQuantity, stock, mode);
+                                                            tradeQuantity, stock, mode, cooldownSeconds,
+                                                            lifetimeLimitPerPlayer, windowLimitPerPlayer,
+                                                            windowSeconds);
                                                 } else {
                                                     uiManager.handleListingCreate(player, shop, mode, selectedItem,
-                                                            price, tradeQuantity, stock, uiSlot);
+                                                            price, tradeQuantity, stock, uiSlot, cooldownSeconds,
+                                                            lifetimeLimitPerPlayer, windowLimitPerPlayer,
+                                                            windowSeconds);
                                                 }
                                             }
                                         },
@@ -144,27 +193,24 @@ public final class PriceQuantityDialog {
     }
 
     private static @Nullable Integer parseTradeQuantity(@Nullable String text, int maxTradeQuantity) {
-        if (text == null) {
-            return null;
-        }
-        try {
-            int value = Integer.parseInt(text.trim());
-            if (value < MIN_TRADE_QUANTITY || value > maxTradeQuantity) {
-                return null;
-            }
-            return value;
-        } catch (NumberFormatException ignored) {
-            return null;
-        }
+        return parseIntInRange(text, MIN_TRADE_QUANTITY, maxTradeQuantity);
     }
 
     private static @Nullable Integer parseStock(@Nullable String text) {
+        return parseIntInRange(text, MIN_STOCK, MAX_STOCK);
+    }
+
+    private static @Nullable Integer parseNonNegativeInt(@Nullable String text) {
+        return parseIntInRange(text, MIN_LIMIT_VALUE, MAX_LIMIT_VALUE);
+    }
+
+    private static @Nullable Integer parseIntInRange(@Nullable String text, int min, int max) {
         if (text == null) {
             return null;
         }
         try {
             int value = Integer.parseInt(text.trim());
-            if (value < MIN_STOCK || value > MAX_STOCK) {
+            if (value < min || value > max) {
                 return null;
             }
             return value;

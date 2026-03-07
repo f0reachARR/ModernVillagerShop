@@ -79,6 +79,10 @@ public final class DatabaseManager {
                 + "trade_qty " + intType + " NOT NULL DEFAULT 1, "
                 + "stock " + intType + " NOT NULL DEFAULT 0, "
                 + "target_stock " + intType + " NOT NULL DEFAULT 0, "
+                + "cooldown_seconds " + intType + " NOT NULL DEFAULT 0, "
+                + "lifetime_limit_per_player " + intType + " NOT NULL DEFAULT 0, "
+                + "window_limit_per_player " + intType + " NOT NULL DEFAULT 0, "
+                + "window_seconds " + intType + " NOT NULL DEFAULT 0, "
                 + "enabled BOOLEAN NOT NULL DEFAULT 1, "
                 + "updated_at TIMESTAMP NOT NULL DEFAULT " + timestampDefault + ", "
                 + "UNIQUE (shop_id, ui_slot), "
@@ -117,19 +121,32 @@ public final class DatabaseManager {
             stmt.execute(listingsTable);
             stmt.execute(transactionsTable);
             stmt.execute(shopInventoryTable);
-            ensureListingsTradeQuantityColumn(conn, intType);
+            ensureListingColumns(conn, intType);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to create database tables", e);
         }
     }
 
-    private void ensureListingsTradeQuantityColumn(Connection conn, String intType) throws SQLException {
-        if (hasColumn(conn, "listings", "trade_qty")) {
+    private void ensureListingColumns(Connection conn, String intType) throws SQLException {
+        ensureColumn(conn, "listings", "trade_qty",
+                "ALTER TABLE listings ADD COLUMN trade_qty " + intType + " NOT NULL DEFAULT 1");
+        ensureColumn(conn, "listings", "cooldown_seconds",
+                "ALTER TABLE listings ADD COLUMN cooldown_seconds " + intType + " NOT NULL DEFAULT 0");
+        ensureColumn(conn, "listings", "lifetime_limit_per_player",
+                "ALTER TABLE listings ADD COLUMN lifetime_limit_per_player " + intType + " NOT NULL DEFAULT 0");
+        ensureColumn(conn, "listings", "window_limit_per_player",
+                "ALTER TABLE listings ADD COLUMN window_limit_per_player " + intType + " NOT NULL DEFAULT 0");
+        ensureColumn(conn, "listings", "window_seconds",
+                "ALTER TABLE listings ADD COLUMN window_seconds " + intType + " NOT NULL DEFAULT 0");
+    }
+
+    private void ensureColumn(Connection conn, String tableName, String columnName, String alterSql) throws SQLException {
+        if (hasColumn(conn, tableName, columnName)) {
             return;
         }
 
         try (Statement stmt = conn.createStatement()) {
-            stmt.execute("ALTER TABLE listings ADD COLUMN trade_qty " + intType + " NOT NULL DEFAULT 1");
+            stmt.execute(alterSql);
         }
     }
 

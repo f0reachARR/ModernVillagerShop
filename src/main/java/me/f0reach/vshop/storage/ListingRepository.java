@@ -17,9 +17,12 @@ public final class ListingRepository {
     }
 
     public int create(int shopId, int uiSlot, ListingMode mode, byte[] itemSerialized,
-                      double unitPrice, int tradeQuantity, int stock, int targetStock) throws SQLException {
-        String sql = "INSERT INTO listings (shop_id, ui_slot, mode, item_serialized, unit_price, trade_qty, stock, target_stock) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+                      double unitPrice, int tradeQuantity, int stock, int targetStock,
+                      int cooldownSeconds, int lifetimeLimitPerPlayer,
+                      int windowLimitPerPlayer, int windowSeconds) throws SQLException {
+        String sql = "INSERT INTO listings (shop_id, ui_slot, mode, item_serialized, unit_price, trade_qty, stock, target_stock, "
+                + "cooldown_seconds, lifetime_limit_per_player, window_limit_per_player, window_seconds) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, shopId);
@@ -30,6 +33,10 @@ public final class ListingRepository {
             ps.setInt(6, tradeQuantity);
             ps.setInt(7, stock);
             ps.setInt(8, targetStock);
+            ps.setInt(9, cooldownSeconds);
+            ps.setInt(10, lifetimeLimitPerPlayer);
+            ps.setInt(11, windowLimitPerPlayer);
+            ps.setInt(12, windowSeconds);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) return rs.getInt(1);
@@ -87,16 +94,23 @@ public final class ListingRepository {
         }
     }
 
-    public void updatePriceStockAndQuantity(int listingId, double unitPrice, int tradeQuantity, int stock, int targetStock) throws SQLException {
-        String sql = "UPDATE listings SET unit_price = ?, trade_qty = ?, stock = ?, target_stock = ?, updated_at = ? WHERE listing_id = ?";
+    public void updateListingDetails(int listingId, double unitPrice, int tradeQuantity, int stock, int targetStock,
+                                     int cooldownSeconds, int lifetimeLimitPerPlayer,
+                                     int windowLimitPerPlayer, int windowSeconds) throws SQLException {
+        String sql = "UPDATE listings SET unit_price = ?, trade_qty = ?, stock = ?, target_stock = ?, cooldown_seconds = ?, "
+                + "lifetime_limit_per_player = ?, window_limit_per_player = ?, window_seconds = ?, updated_at = ? WHERE listing_id = ?";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, unitPrice);
             ps.setInt(2, tradeQuantity);
             ps.setInt(3, stock);
             ps.setInt(4, targetStock);
-            ps.setTimestamp(5, Timestamp.from(Instant.now()));
-            ps.setInt(6, listingId);
+            ps.setInt(5, cooldownSeconds);
+            ps.setInt(6, lifetimeLimitPerPlayer);
+            ps.setInt(7, windowLimitPerPlayer);
+            ps.setInt(8, windowSeconds);
+            ps.setTimestamp(9, Timestamp.from(Instant.now()));
+            ps.setInt(10, listingId);
             ps.executeUpdate();
         }
     }
@@ -162,6 +176,10 @@ public final class ListingRepository {
                 rs.getInt("trade_qty"),
                 rs.getInt("stock"),
                 rs.getInt("target_stock"),
+                rs.getInt("cooldown_seconds"),
+                rs.getInt("lifetime_limit_per_player"),
+                rs.getInt("window_limit_per_player"),
+                rs.getInt("window_seconds"),
                 rs.getBoolean("enabled"),
                 rs.getTimestamp("updated_at").toInstant()
         );

@@ -142,7 +142,8 @@ public final class UIManager {
     // --- Handlers called by dialog callbacks ---
 
     public void handleListingCreate(Player player, Shop shop, ListingMode mode, ItemStack selectedItem,
-            double price, int tradeQuantity, int stock, int uiSlot) {
+            double price, int tradeQuantity, int stock, int uiSlot,
+            int cooldownSeconds, int lifetimeLimitPerPlayer, int windowLimitPerPlayer, int windowSeconds) {
         if (selectedItem == null || selectedItem.getType().isAir()) {
             player.sendMessage(messages.get("error.invalid_material"));
             return;
@@ -166,7 +167,8 @@ public final class UIManager {
             int targetStock = mode == ListingMode.BUY ? stock : 0;
             int actualStock = 0;
             int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, roundedPrice, tradeQuantity,
-                    actualStock, targetStock);
+                    actualStock, targetStock, cooldownSeconds, lifetimeLimitPerPlayer, windowLimitPerPlayer,
+                    windowSeconds);
             if (result == -1) {
                 player.sendMessage(messages.get("error.type_limit_exceeded"));
             } else {
@@ -181,13 +183,15 @@ public final class UIManager {
     }
 
     public void handleListingPriceUpdate(Player player, Listing listing, double price, int tradeQuantity, int stock,
-            ListingMode mode) {
+            ListingMode mode, int cooldownSeconds, int lifetimeLimitPerPlayer,
+            int windowLimitPerPlayer, int windowSeconds) {
         try {
             int targetStock = mode == ListingMode.BUY ? stock : listing.targetStock();
             int actualStock = listing.stock();
             double roundedPrice = getShopService().getEconomy().roundToFractionalDigits(price);
-            shopService.getListingRepo().updatePriceStockAndQuantity(listing.listingId(), roundedPrice, tradeQuantity,
-                    actualStock, targetStock);
+            shopService.getListingRepo().updateListingDetails(listing.listingId(), roundedPrice, tradeQuantity,
+                    actualStock, targetStock, cooldownSeconds, lifetimeLimitPerPlayer, windowLimitPerPlayer,
+                    windowSeconds);
             player.sendMessage(messages.get("shop.offer_updated",
                     Placeholder.unparsed("shop_id", String.valueOf(listing.shopId())),
                     Placeholder.unparsed("mode", listing.mode().name()),
@@ -270,6 +274,9 @@ public final class UIManager {
                 case NO_ITEM -> player.sendMessage(messages.get("trade.no_item_to_sell"));
                 case BUY_ORDER_FULL -> player.sendMessage(messages.get("trade.buy_order_full"));
                 case OWNER_INSUFFICIENT -> player.sendMessage(messages.get("trade.shop_owner_insufficient"));
+                case COOLDOWN_ACTIVE -> player.sendMessage(messages.get("trade.cooldown_active"));
+                case LIFETIME_LIMIT_REACHED -> player.sendMessage(messages.get("trade.lifetime_limit_reached"));
+                case WINDOW_LIMIT_REACHED -> player.sendMessage(messages.get("trade.window_limit_reached"));
                 case TRADE_FAILED -> player.sendMessage(messages.get("error.trade_failed"));
                 case LISTING_NOT_FOUND -> player.sendMessage(messages.get("error.listing_not_found"));
             }

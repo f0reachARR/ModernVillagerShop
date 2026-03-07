@@ -2,7 +2,11 @@ package me.f0reach.vshop.storage;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
 
 public final class TransactionRepository {
@@ -30,5 +34,52 @@ public final class TransactionRepository {
             ps.setDouble(9, net);
             ps.executeUpdate();
         }
+    }
+
+    public Optional<Instant> findLastTradeTimeForPlayer(int listingId, UUID playerUuid) throws SQLException {
+        String sql = "SELECT MAX(created_at) AS last_trade_at FROM transactions WHERE listing_id = ? AND buyer_uuid = ?";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, listingId);
+            ps.setString(2, playerUuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) {
+                    return Optional.empty();
+                }
+                Timestamp timestamp = rs.getTimestamp("last_trade_at");
+                return timestamp == null ? Optional.empty() : Optional.of(timestamp.toInstant());
+            }
+        }
+    }
+
+    public int countTradesForPlayer(int listingId, UUID playerUuid) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM transactions WHERE listing_id = ? AND buyer_uuid = ?";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, listingId);
+            ps.setString(2, playerUuid.toString());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return 0;
+    }
+
+    public int countTradesForPlayerSince(int listingId, UUID playerUuid, Instant since) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM transactions WHERE listing_id = ? AND buyer_uuid = ? AND created_at >= ?";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, listingId);
+            ps.setString(2, playerUuid.toString());
+            ps.setTimestamp(3, Timestamp.from(since));
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt(1);
+                }
+            }
+        }
+        return 0;
     }
 }

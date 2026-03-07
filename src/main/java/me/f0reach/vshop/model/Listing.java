@@ -12,6 +12,10 @@ public record Listing(
         int tradeQuantity,
         int stock,
         int targetStock,
+        int cooldownSeconds,
+        int lifetimeLimitPerPlayer,
+        int windowLimitPerPlayer,
+        int windowSeconds,
         boolean enabled,
         Instant updatedAt
 ) {}

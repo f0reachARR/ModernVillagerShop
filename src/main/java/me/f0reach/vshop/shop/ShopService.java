@@ -16,6 +16,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -66,12 +67,15 @@ public final class ShopService {
     }
 
     public int addListing(int shopId, int uiSlot, ListingMode mode, byte[] itemSerialized,
-                          double unitPrice, int tradeQuantity, int stock, int targetStock) throws SQLException {
+                          double unitPrice, int tradeQuantity, int stock, int targetStock,
+                          int cooldownSeconds, int lifetimeLimitPerPlayer,
+                          int windowLimitPerPlayer, int windowSeconds) throws SQLException {
         int count = listingRepo.countByShopId(shopId);
         if (count >= config.getMaxTradeItemTypes()) {
             return -1; // limit exceeded
         }
-        return listingRepo.create(shopId, uiSlot, mode, itemSerialized, unitPrice, tradeQuantity, stock, targetStock);
+        return listingRepo.create(shopId, uiSlot, mode, itemSerialized, unitPrice, tradeQuantity, stock, targetStock,
+                cooldownSeconds, lifetimeLimitPerPlayer, windowLimitPerPlayer, windowSeconds);
     }
 
     public List<Listing> getListingsForDisplay(Shop shop, boolean includeDisabled) throws SQLException {
@@ -99,6 +103,10 @@ public final class ShopService {
                         listing.tradeQuantity(),
                         realStock,
                         listing.targetStock(),
+                        listing.cooldownSeconds(),
+                        listing.lifetimeLimitPerPlayer(),
+                        listing.windowLimitPerPlayer(),
+                        listing.windowSeconds(),
                         listing.enabled(),
                         listing.updatedAt()
                 ));
@@ -181,7 +189,8 @@ public final class ShopService {
 
     public enum TradeResult {
         SUCCESS, OUT_OF_STOCK, BALANCE_SHORTAGE, NO_ITEM, BUY_ORDER_FULL,
-        OWNER_INSUFFICIENT, TRADE_FAILED, LISTING_NOT_FOUND
+        OWNER_INSUFFICIENT, TRADE_FAILED, LISTING_NOT_FOUND,
+        COOLDOWN_ACTIVE, LIFETIME_LIMIT_REACHED, WINDOW_LIMIT_REACHED
     }
 
     /**
@@ -189,6 +198,11 @@ public final class ShopService {
      * Customer pays gross, fee deducted, net goes to owner (for player shops).
      */
     public TradeResult executeSellTrade(Player customer, Listing listing, Shop shop) {
+        TradeResult restrictionResult = checkTradeRestrictions(customer, listing);
+        if (restrictionResult != null) {
+            return restrictionResult;
+        }
+
         int tradeQuantity = listing.tradeQuantity();
         double gross = listing.unitPrice();
         double fee = gross * config.getFeeRate();
@@ -250,6 +264,11 @@ public final class ShopService {
      * Shop owner pays gross, fee deducted, net goes to customer.
      */
     public TradeResult executeBuyTrade(Player customer, Listing listing, Shop shop) {
+        TradeResult restrictionResult = checkTradeRestrictions(customer, listing);
+        if (restrictionResult != null) {
+            return restrictionResult;
+        }
+
         int tradeQuantity = listing.tradeQuantity();
         double gross = listing.unitPrice();
         double fee = gross * config.getFeeRate();
@@ -345,6 +364,37 @@ public final class ShopService {
 
     private void rollbackBuyTradeCustomerItem(Player customer, ItemStack template) {
         customer.getInventory().addItem(template);
+    }
+
+    private TradeResult checkTradeRestrictions(Player player, Listing listing) {
+        try {
+            Optional<Instant> lastTrade = txRepo.findLastTradeTimeForPlayer(listing.listingId(), player.getUniqueId());
+            if (listing.cooldownSeconds() > 0 && lastTrade.isPresent()) {
+                Instant cooldownBoundary = Instant.now().minusSeconds(listing.cooldownSeconds());
+                if (lastTrade.get().isAfter(cooldownBoundary)) {
+                    return TradeResult.COOLDOWN_ACTIVE;
+                }
+            }
+
+            if (listing.lifetimeLimitPerPlayer() > 0) {
+                int lifetimeCount = txRepo.countTradesForPlayer(listing.listingId(), player.getUniqueId());
+                if (lifetimeCount >= listing.lifetimeLimitPerPlayer()) {
+                    return TradeResult.LIFETIME_LIMIT_REACHED;
+                }
+            }
+
+            if (listing.windowLimitPerPlayer() > 0 && listing.windowSeconds() > 0) {
+                Instant since = Instant.now().minusSeconds(listing.windowSeconds());
+                int windowCount = txRepo.countTradesForPlayerSince(listing.listingId(), player.getUniqueId(), since);
+                if (windowCount >= listing.windowLimitPerPlayer()) {
+                    return TradeResult.WINDOW_LIMIT_REACHED;
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to check trade restrictions", e);
+            return TradeResult.TRADE_FAILED;
+        }
+        return null;
     }
 
     private Optional<ItemStack> removeMatchingFromShopInventory(int shopId, byte[] serializedTemplate, int amount) throws SQLException {
