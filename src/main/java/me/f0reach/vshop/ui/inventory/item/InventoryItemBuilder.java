@@ -1,5 +1,6 @@
 package me.f0reach.vshop.ui.inventory.item;
 
+import me.f0reach.vshop.economy.VaultEconomyAdapter;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Listing;
 import net.kyori.adventure.text.Component;
@@ -11,24 +12,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class InventoryItemBuilder {
-    private InventoryItemBuilder() {}
+    private InventoryItemBuilder() {
+    }
 
-    public static ItemStack buildListingItem(Listing listing, MessageManager messages, boolean showDisabled) {
+    public static ItemStack buildListingItem(Listing listing, MessageManager messages,
+            VaultEconomyAdapter economy, boolean showDisabled) {
         ItemStack item = ItemStack.deserializeBytes(listing.itemSerialized());
         int quantity = listing.tradeQuantity();
         item.setAmount(Math.min(quantity, Math.max(1, item.getMaxStackSize())));
         ItemMeta meta = item.getItemMeta();
-
-        String itemName = item.getType().name();
-        meta.displayName(messages.get("shop.listing_name",
-                Placeholder.unparsed("item", itemName)));
 
         List<Component> lore = new ArrayList<>();
         lore.add(messages.get("shop.listing_lore_mode",
                 Placeholder.unparsed("mode", listing.mode().name())));
         lore.add(messages.get("shop.listing_lore_price",
                 Placeholder.unparsed("qty", String.valueOf(quantity)),
-                Placeholder.unparsed("price", String.format("%.2f", listing.unitPrice()))));
+                Placeholder.unparsed("price", economy.format(listing.unitPrice()))));
         lore.add(messages.get("shop.listing_lore_stock",
                 Placeholder.unparsed("stock", String.valueOf(listing.stock())),
                 Placeholder.unparsed("max_stock", String.valueOf(listing.targetStock()))));

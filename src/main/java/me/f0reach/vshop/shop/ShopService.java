@@ -400,4 +400,5 @@ public final class ShopService {
     public ShopRepository getShopRepo() { return shopRepo; }
     public ListingRepository getListingRepo() { return listingRepo; }
     public TransactionRepository getTxRepo() { return txRepo; }
+    public VaultEconomyAdapter getEconomy() { return economy; }
 }

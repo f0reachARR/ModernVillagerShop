@@ -40,7 +40,12 @@ public final class ShopListingUI extends PaginatedInventoryUI {
     @Override
     protected void renderContentSlots(Map<Integer, Listing> pageListings) {
         for (Map.Entry<Integer, Listing> entry : pageListings.entrySet()) {
-            inventory.setItem(entry.getKey(), InventoryItemBuilder.buildListingItem(entry.getValue(), messages, false));
+            inventory.setItem(entry.getKey(), InventoryItemBuilder.buildListingItem(
+                    entry.getValue(),
+                    messages,
+                    uiManager.getShopService().getEconomy(),
+                    false
+            ));
         }
     }
 
