@@ -26,14 +26,16 @@ public final class PriceQuantityDialog {
     private static final int MIN_STOCK = 0;
     private static final int MAX_STOCK = 100_000;
 
-    private PriceQuantityDialog() {}
+    private PriceQuantityDialog() {
+    }
 
     /**
      * Create dialog for new listing or editing existing listing.
+     * 
      * @param existingListing null for new listing, non-null for editing
      */
     public static Dialog create(DialogFactory factory, Shop shop, ListingMode mode,
-                                @Nullable Listing existingListing, @Nullable ItemStack selectedItem, int uiSlot, UIManager uiManager) {
+            @Nullable Listing existingListing, @Nullable ItemStack selectedItem, int uiSlot, UIManager uiManager) {
         float initialPrice = existingListing != null ? (float) existingListing.unitPrice() : 1.0f;
         int initialQuantity = existingListing != null ? existingListing.tradeQuantity() : 1;
         int initialTarget = existingListing != null ? existingListing.targetStock() : 64;
@@ -44,7 +46,7 @@ public final class PriceQuantityDialog {
         if (mode == ListingMode.SELL) {
             inputs = List.of(
                     DialogInput.text("price", factory.text("dialog.price_label"))
-                            .initial(String.format("%.2f", (double) initialPrice))
+                            .initial(uiManager.formatPrice(initialPrice))
                             .maxLength(16)
                             .width(300)
                             .build(),
@@ -52,12 +54,11 @@ public final class PriceQuantityDialog {
                             .initial(String.valueOf(initialQuantity))
                             .maxLength(4)
                             .width(300)
-                            .build()
-            );
+                            .build());
         } else {
             inputs = List.of(
                     DialogInput.text("price", factory.text("dialog.price_label"))
-                            .initial(String.format("%.2f", (double) initialPrice))
+                            .initial(uiManager.formatPrice(initialPrice))
                             .maxLength(16)
                             .width(300)
                             .build(),
@@ -70,15 +71,13 @@ public final class PriceQuantityDialog {
                             .initial(String.valueOf(initialTarget))
                             .maxLength(8)
                             .width(300)
-                            .build()
-            );
+                            .build());
         }
 
         return Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(factory.text("dialog.price_title"))
                         .body(List.of(
-                                DialogBody.plainMessage(factory.text("dialog.price_body"))
-                        ))
+                                DialogBody.plainMessage(factory.text("dialog.price_body"))))
                         .inputs(inputs)
                         .build())
                 .type(DialogType.confirmation(
@@ -92,10 +91,12 @@ public final class PriceQuantityDialog {
                                                     return;
                                                 }
 
-                                                Integer tradeQuantity = parseTradeQuantity(view.getText("quantity"), maxTradeQuantity);
+                                                Integer tradeQuantity = parseTradeQuantity(view.getText("quantity"),
+                                                        maxTradeQuantity);
                                                 if (tradeQuantity == null) {
                                                     player.sendMessage(factory.text("error.invalid_quantity_input",
-                                                            Placeholder.unparsed("max", String.valueOf(maxTradeQuantity))));
+                                                            Placeholder.unparsed("max",
+                                                                    String.valueOf(maxTradeQuantity))));
                                                     return;
                                                 }
 
@@ -110,20 +111,19 @@ public final class PriceQuantityDialog {
                                                 }
 
                                                 if (existingListing != null) {
-                                                    uiManager.handleListingPriceUpdate(player, existingListing, price, tradeQuantity, stock, mode);
+                                                    uiManager.handleListingPriceUpdate(player, existingListing, price,
+                                                            tradeQuantity, stock, mode);
                                                 } else {
-                                                    uiManager.handleListingCreate(player, shop, mode, selectedItem, price, tradeQuantity, stock, uiSlot);
+                                                    uiManager.handleListingCreate(player, shop, mode, selectedItem,
+                                                            price, tradeQuantity, stock, uiSlot);
                                                 }
                                             }
                                         },
-                                        factory.singleUseOptions()
-                                ))
+                                        factory.singleUseOptions()))
                                 .build(),
                         ActionButton.builder(factory.text("dialog.price_cancel"))
                                 .action(null)
-                                .build()
-                ))
-        );
+                                .build())));
     }
 
     private static @Nullable Float parsePrice(@Nullable String text) {

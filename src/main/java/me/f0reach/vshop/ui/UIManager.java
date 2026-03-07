@@ -188,7 +188,7 @@ public final class UIManager {
                     Placeholder.unparsed("shop_id", String.valueOf(listing.shopId())),
                     Placeholder.unparsed("mode", listing.mode().name()),
                     Placeholder.unparsed("item", getItemName(listing)),
-                    Placeholder.unparsed("price", String.format("%.2f", (double) price))));
+                    Placeholder.unparsed("price", formatPrice((double) price))));
             shopService.getShopById(listing.shopId()).ifPresent(s -> openShopManagementInventory(player, s));
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to update listing", e);
@@ -252,7 +252,7 @@ public final class UIManager {
             switch (result) {
                 case SUCCESS -> {
                     String itemName = getItemName(current);
-                    String price = String.format("%.2f", current.unitPrice());
+                    String price = formatPrice(current.unitPrice());
                     String qty = String.valueOf(current.tradeQuantity());
                     if (current.mode() == ListingMode.SELL) {
                         player.sendMessage(messages.get("trade.purchase_success",
@@ -287,6 +287,10 @@ public final class UIManager {
         } catch (Exception e) {
             return "UNKNOWN";
         }
+    }
+
+    public String formatPrice(double price) {
+        return shopService.getEconomy().format(price);
     }
 
     public ShopService getShopService() {
