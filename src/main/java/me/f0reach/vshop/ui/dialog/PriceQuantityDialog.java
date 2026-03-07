@@ -42,37 +42,22 @@ public final class PriceQuantityDialog {
         ItemStack templateItem = resolveTemplateItem(existingListing, selectedItem);
         int maxTradeQuantity = Math.max(MIN_TRADE_QUANTITY, templateItem.getMaxStackSize());
 
-        List<DialogInput> inputs;
-        if (mode == ListingMode.SELL) {
-            inputs = List.of(
-                    DialogInput.text("price", factory.text("dialog.price_label"))
-                            .initial(uiManager.formatPrice(initialPrice))
-                            .maxLength(16)
-                            .width(300)
-                            .build(),
-                    DialogInput.text("quantity", factory.text("dialog.quantity_label"))
-                            .initial(String.valueOf(initialQuantity))
-                            .maxLength(4)
-                            .width(300)
-                            .build());
-        } else {
-            inputs = List.of(
-                    DialogInput.text("price", factory.text("dialog.price_label"))
-                            .initial(uiManager.formatPrice(initialPrice))
-                            .maxLength(16)
-                            .width(300)
-                            .build(),
-                    DialogInput.text("quantity", factory.text("dialog.quantity_label"))
-                            .initial(String.valueOf(initialQuantity))
-                            .maxLength(4)
-                            .width(300)
-                            .build(),
-                    DialogInput.text("stock", factory.text("dialog.stock_label"))
-                            .initial(String.valueOf(initialTarget))
-                            .maxLength(8)
-                            .width(300)
-                            .build());
-        }
+        List<DialogInput> inputs = List.of(
+                DialogInput.text("price", factory.text("dialog.price_label"))
+                        .initial(uiManager.formatPriceAsNumber(initialPrice))
+                        .maxLength(16)
+                        .width(300)
+                        .build(),
+                DialogInput.text("quantity", factory.text("dialog.quantity_label"))
+                        .initial(String.valueOf(initialQuantity))
+                        .maxLength(4)
+                        .width(300)
+                        .build(),
+                DialogInput.text("stock", factory.text("dialog.stock_label"))
+                        .initial(String.valueOf(initialTarget))
+                        .maxLength(8)
+                        .width(300)
+                        .build());
 
         return Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(factory.text("dialog.price_title"))
@@ -85,7 +70,7 @@ public final class PriceQuantityDialog {
                                 .action(DialogAction.customClick(
                                         (view, audience) -> {
                                             if (audience instanceof Player player) {
-                                                Float price = parsePrice(view.getText("price"));
+                                                Double price = parsePrice(view.getText("price"));
                                                 if (price == null) {
                                                     player.sendMessage(factory.text("error.invalid_price_input"));
                                                     return;
@@ -126,12 +111,12 @@ public final class PriceQuantityDialog {
                                 .build())));
     }
 
-    private static @Nullable Float parsePrice(@Nullable String text) {
+    private static @Nullable Double parsePrice(@Nullable String text) {
         if (text == null) {
             return null;
         }
         try {
-            float value = Float.parseFloat(text.trim());
+            double value = Double.parseDouble(text.trim());
             if (value < MIN_PRICE || value > MAX_PRICE) {
                 return null;
             }

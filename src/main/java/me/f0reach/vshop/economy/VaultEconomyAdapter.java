@@ -6,14 +6,14 @@ import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.plugin.RegisteredServiceProvider;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public final class VaultEconomyAdapter {
     private Economy economy;
 
     public void init() {
-        RegisteredServiceProvider<Economy> rsp =
-            Bukkit.getServicesManager().getRegistration(Economy.class);
+        RegisteredServiceProvider<Economy> rsp = Bukkit.getServicesManager().getRegistration(Economy.class);
         if (rsp == null) {
             throw new IllegalStateException("Vault economy provider not found");
         }
@@ -40,5 +40,26 @@ public final class VaultEconomyAdapter {
 
     public String format(double amount) {
         return economy.format(amount);
+    }
+
+    public String formatAsNumber(double amount) {
+        int fractionalDigits = economy.fractionalDigits();
+        if (fractionalDigits < 0) {
+            // No round-off, just return the raw number as string
+            return Double.toString(amount);
+        } else if (fractionalDigits == 0) {
+            // No decimal places, round to nearest whole number
+            return String.valueOf(Math.round(amount));
+        }
+
+        return String.format("%." + fractionalDigits + "f", amount);
+    }
+
+    public double roundToFractionalDigits(double amount) {
+        return new BigDecimal(amount).setScale(getFractionalDigits()).doubleValue();
+    }
+
+    public int getFractionalDigits() {
+        return economy.fractionalDigits();
     }
 }
