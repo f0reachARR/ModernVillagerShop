@@ -28,8 +28,7 @@ public final class ShopListingUI extends PaginatedInventoryUI {
     @Override
     protected List<Listing> getListings() {
         try {
-            return uiManager.getShopService().getListingRepo().findByShopId(shop.shopId())
-                    .stream().filter(Listing::enabled).toList();
+            return uiManager.getShopService().getListingsForDisplay(shop, false);
         } catch (SQLException e) {
             viewer.getServer().getLogger().log(Level.SEVERE, "Failed to load listings", e);
             return Collections.emptyList();

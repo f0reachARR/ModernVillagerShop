@@ -42,6 +42,14 @@ public final class NavigationItems {
         return createButton(Material.COMPASS, messages.get("ui.filter_button", "filter", filterKey));
     }
 
+    public static ItemStack openStorage(MessageManager messages) {
+        return createButton(Material.CHEST, messages.get("shop.open_storage_button"));
+    }
+
+    public static ItemStack backToListings(MessageManager messages) {
+        return createButton(Material.BOOK, messages.get("shop.back_to_listings_button"));
+    }
+
     public static ItemStack filler() {
         ItemStack item = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
         ItemMeta meta = item.getItemMeta();

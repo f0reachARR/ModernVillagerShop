@@ -77,6 +77,9 @@ shop:
   listing_toggled_on: "<green>出品を有効にしました。</green>"
   listing_toggled_off: "<yellow>出品を無効にしました。</yellow>"
   owner_add_button: "<green><bold>+ 新規出品</bold></green>"
+  open_storage_button: "<aqua><bold>在庫チェストを開く</bold></aqua>"
+  back_to_listings_button: "<yellow>出品一覧に戻る</yellow>"
+  storage_title: "<gold>ショップ #<shop_id> 在庫チェスト</gold>"
 
 trade:
   out_of_stock: "<yellow>在庫がありません。</yellow>"

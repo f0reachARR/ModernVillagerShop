@@ -3,9 +3,11 @@ package me.f0reach.vshop.ui.inventory;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Listing;
 import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.model.ShopType;
 import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.inventory.base.PaginatedInventoryUI;
 import me.f0reach.vshop.ui.inventory.item.InventoryItemBuilder;
+import me.f0reach.vshop.ui.inventory.item.NavigationItems;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
@@ -19,6 +21,7 @@ import java.util.logging.Level;
 public final class OwnerListingUI extends PaginatedInventoryUI {
     private final Shop shop;
     private final UIManager uiManager;
+    private static final int SLOT_STORAGE = 50;
 
     public OwnerListingUI(Player viewer, Shop shop, MessageManager messages, UIManager uiManager) {
         super(viewer, messages.get("shop.inventory_title", "shop_id", String.valueOf(shop.shopId())), messages);
@@ -29,7 +32,7 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
     @Override
     protected List<Listing> getListings() {
         try {
-            return uiManager.getShopService().getListingRepo().findByShopId(shop.shopId());
+            return uiManager.getShopService().getListingsForDisplay(shop, true);
         } catch (SQLException e) {
             viewer.getServer().getLogger().log(Level.SEVERE, "Failed to load listings", e);
             return Collections.emptyList();
@@ -62,6 +65,22 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
 
     @Override
     protected boolean hasTrailingCreatePage() { return true; }
+
+    @Override
+    protected void renderNavExtras() {
+        if (shop.type() == ShopType.PLAYER) {
+            inventory.setItem(SLOT_STORAGE, NavigationItems.openStorage(messages));
+        }
+    }
+
+    @Override
+    protected boolean handleCustomNavClick(InventoryClickEvent event, int slot) {
+        if (slot == SLOT_STORAGE && shop.type() == ShopType.PLAYER) {
+            uiManager.openShopStorageInventory(viewer, shop);
+            return true;
+        }
+        return false;
+    }
 
     public Shop getShop() { return shop; }
 }

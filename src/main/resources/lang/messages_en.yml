@@ -77,6 +77,9 @@ shop:
   listing_toggled_on: "<green>Listing enabled.</green>"
   listing_toggled_off: "<yellow>Listing disabled.</yellow>"
   owner_add_button: "<green><bold>+ Add Listing</bold></green>"
+  open_storage_button: "<aqua><bold>Open Storage Chest</bold></aqua>"
+  back_to_listings_button: "<yellow>Back to Listings</yellow>"
+  storage_title: "<gold>Shop #<shop_id> Storage Chest</gold>"
 
 trade:
   out_of_stock: "<yellow>Out of stock.</yellow>"

@@ -9,6 +9,7 @@ import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.ui.dialog.*;
 import me.f0reach.vshop.ui.inventory.ItemSelectUI;
 import me.f0reach.vshop.ui.inventory.OwnerListingUI;
+import me.f0reach.vshop.ui.inventory.ShopStorageUI;
 import me.f0reach.vshop.ui.inventory.ShopListingUI;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -56,6 +57,10 @@ public final class UIManager {
 
     public void openItemSelectUI(Player viewer, Shop shop) {
         new ItemSelectUI(viewer, shop, messages, this).open();
+    }
+
+    public void openShopStorageInventory(Player viewer, Shop shop) {
+        new ShopStorageUI(viewer, shop, messages, this).open();
     }
 
     public void openListingCreateDialog(Player viewer, Shop shop, ItemStack selectedItem) {
@@ -140,6 +145,9 @@ public final class UIManager {
             }
             int targetStock = mode == ListingMode.BUY ? stock : 0;
             int actualStock = mode == ListingMode.SELL ? stock : 0;
+            if (shop.type() == ShopType.PLAYER && mode == ListingMode.SELL) {
+                actualStock = 0;
+            }
             int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, price, actualStock, targetStock);
             if (result == -1) {
                 player.sendMessage(messages.get("error.type_limit_exceeded"));
@@ -158,6 +166,10 @@ public final class UIManager {
         try {
             int targetStock = mode == ListingMode.BUY ? stock : listing.targetStock();
             int actualStock = mode == ListingMode.SELL ? stock : listing.stock();
+            Shop shop = shopService.getShopById(listing.shopId()).orElse(null);
+            if (shop != null && shop.type() == ShopType.PLAYER && mode == ListingMode.SELL) {
+                actualStock = listing.stock();
+            }
             shopService.getListingRepo().updatePriceAndStock(listing.listingId(), price, actualStock, targetStock);
             player.sendMessage(messages.get("shop.offer_updated",
                     "shop_id", String.valueOf(listing.shopId()),

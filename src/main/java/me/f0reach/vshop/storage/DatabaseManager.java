@@ -55,7 +55,7 @@ public final class DatabaseManager {
         String timestampDefault = mysql ? "CURRENT_TIMESTAMP" : "CURRENT_TIMESTAMP";
 
         String shopsTable = "CREATE TABLE IF NOT EXISTS shops ("
-                + "shop_id " + intType + " PRIMARY KEY " + (mysql ? "AUTO_INCREMENT" : "AUTOINCREMENT") + ", "
+                + "shop_id " + intType + " PRIMARY KEY " + autoIncrement + ", "
                 + "type VARCHAR(16) NOT NULL, "
                 + "villager_uuid VARCHAR(36) NOT NULL UNIQUE, "
                 + "owner_uuid VARCHAR(36), "
@@ -69,7 +69,7 @@ public final class DatabaseManager {
                 + ")";
 
         String listingsTable = "CREATE TABLE IF NOT EXISTS listings ("
-                + "listing_id " + intType + " PRIMARY KEY " + (mysql ? "AUTO_INCREMENT" : "AUTOINCREMENT") + ", "
+                + "listing_id " + intType + " PRIMARY KEY " + autoIncrement + ", "
                 + "shop_id " + intType + " NOT NULL, "
                 + "ui_slot " + intType + " NOT NULL, "
                 + "mode VARCHAR(8) NOT NULL, "
@@ -84,7 +84,7 @@ public final class DatabaseManager {
                 + ")";
 
         String transactionsTable = "CREATE TABLE IF NOT EXISTS transactions ("
-                + "tx_id " + intType + " PRIMARY KEY " + (mysql ? "AUTO_INCREMENT" : "AUTOINCREMENT") + ", "
+                + "tx_id " + intType + " PRIMARY KEY " + autoIncrement + ", "
                 + "shop_id " + intType + " NOT NULL, "
                 + "listing_id " + intType + " NOT NULL, "
                 + "direction VARCHAR(16) NOT NULL, "
@@ -99,6 +99,14 @@ public final class DatabaseManager {
                 + "FOREIGN KEY (listing_id) REFERENCES listings(listing_id)"
                 + ")";
 
+        String shopInventoryTable = "CREATE TABLE IF NOT EXISTS shop_inventory_slots ("
+                + "shop_id " + intType + " NOT NULL, "
+                + "slot_index " + intType + " NOT NULL, "
+                + "item_serialized " + blobType + " NOT NULL, "
+                + "PRIMARY KEY (shop_id, slot_index), "
+                + "FOREIGN KEY (shop_id) REFERENCES shops(shop_id) ON DELETE CASCADE"
+                + ")";
+
         try (Connection conn = getConnection(); Statement stmt = conn.createStatement()) {
             if (!mysql) {
                 stmt.execute("PRAGMA foreign_keys = ON");
@@ -106,6 +114,7 @@ public final class DatabaseManager {
             stmt.execute(shopsTable);
             stmt.execute(listingsTable);
             stmt.execute(transactionsTable);
+            stmt.execute(shopInventoryTable);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to create database tables", e);
         }

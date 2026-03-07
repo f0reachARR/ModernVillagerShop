@@ -66,6 +66,7 @@ public abstract class PaginatedInventoryUI extends BaseInventoryUI {
 
         renderContentSlots(listingBySlot);
         renderNavBar(maxPage);
+        renderNavExtras();
     }
 
     private void renderNavBar(int maxPage) {
@@ -80,6 +81,9 @@ public abstract class PaginatedInventoryUI extends BaseInventoryUI {
             inventory.setItem(SLOT_NEXT, NavigationItems.nextPage(messages));
         }
     }
+
+    protected void renderNavExtras() {}
+    protected boolean handleCustomNavClick(InventoryClickEvent event, int slot) { return false; }
 
     @Override
     public void handleClick(InventoryClickEvent event) {
@@ -108,6 +112,7 @@ public abstract class PaginatedInventoryUI extends BaseInventoryUI {
                 currentPage++;
                 render();
             }
+            default -> handleCustomNavClick(event, slot);
         }
     }
 

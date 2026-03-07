@@ -11,6 +11,7 @@ import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.SpawnEggManager;
 import me.f0reach.vshop.storage.DatabaseManager;
 import me.f0reach.vshop.storage.ListingRepository;
+import me.f0reach.vshop.storage.ShopInventoryRepository;
 import me.f0reach.vshop.storage.ShopRepository;
 import me.f0reach.vshop.storage.TransactionRepository;
 import me.f0reach.vshop.ui.UIManager;
@@ -45,12 +46,13 @@ public final class Plugin extends JavaPlugin {
             // Phase 5: Repositories
             ShopRepository shopRepo = new ShopRepository(databaseManager);
             ListingRepository listingRepo = new ListingRepository(databaseManager);
+            ShopInventoryRepository shopInventoryRepo = new ShopInventoryRepository(databaseManager);
             TransactionRepository txRepo = new TransactionRepository(databaseManager);
 
             // Phase 6: Services
             SpawnEggManager eggManager = new SpawnEggManager(this, messageManager);
             ShopService shopService = new ShopService(this, pluginConfig, messageManager,
-                    shopRepo, listingRepo, txRepo, economy);
+                    shopRepo, listingRepo, shopInventoryRepo, txRepo, economy);
 
             // Phase 7: UI
             UIManager uiManager = new UIManager(this, messageManager, shopService);
