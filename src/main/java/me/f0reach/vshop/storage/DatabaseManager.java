@@ -6,6 +6,7 @@ import me.f0reach.vshop.config.PluginConfig;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
+import java.sql.DatabaseMetaData;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -75,6 +76,7 @@ public final class DatabaseManager {
                 + "mode VARCHAR(8) NOT NULL, "
                 + "item_serialized " + blobType + " NOT NULL, "
                 + "unit_price DOUBLE NOT NULL, "
+                + "trade_qty " + intType + " NOT NULL DEFAULT 1, "
                 + "stock " + intType + " NOT NULL DEFAULT 0, "
                 + "target_stock " + intType + " NOT NULL DEFAULT 0, "
                 + "enabled BOOLEAN NOT NULL DEFAULT 1, "
@@ -115,8 +117,29 @@ public final class DatabaseManager {
             stmt.execute(listingsTable);
             stmt.execute(transactionsTable);
             stmt.execute(shopInventoryTable);
+            ensureListingsTradeQuantityColumn(conn, intType);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to create database tables", e);
+        }
+    }
+
+    private void ensureListingsTradeQuantityColumn(Connection conn, String intType) throws SQLException {
+        if (hasColumn(conn, "listings", "trade_qty")) {
+            return;
+        }
+
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute("ALTER TABLE listings ADD COLUMN trade_qty " + intType + " NOT NULL DEFAULT 1");
+        }
+    }
+
+    private boolean hasColumn(Connection conn, String tableName, String columnName) throws SQLException {
+        DatabaseMetaData metaData = conn.getMetaData();
+        String catalog = mysql ? conn.getCatalog() : null;
+        String schema = mysql ? null : conn.getSchema();
+
+        try (var columns = metaData.getColumns(catalog, schema, tableName, columnName)) {
+            return columns.next();
         }
     }
 

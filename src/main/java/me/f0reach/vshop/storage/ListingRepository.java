@@ -17,9 +17,9 @@ public final class ListingRepository {
     }
 
     public int create(int shopId, int uiSlot, ListingMode mode, byte[] itemSerialized,
-                      double unitPrice, int stock, int targetStock) throws SQLException {
-        String sql = "INSERT INTO listings (shop_id, ui_slot, mode, item_serialized, unit_price, stock, target_stock) "
-                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
+                      double unitPrice, int tradeQuantity, int stock, int targetStock) throws SQLException {
+        String sql = "INSERT INTO listings (shop_id, ui_slot, mode, item_serialized, unit_price, trade_qty, stock, target_stock) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, shopId);
@@ -27,8 +27,9 @@ public final class ListingRepository {
             ps.setString(3, mode.name());
             ps.setBytes(4, itemSerialized);
             ps.setDouble(5, unitPrice);
-            ps.setInt(6, stock);
-            ps.setInt(7, targetStock);
+            ps.setInt(6, tradeQuantity);
+            ps.setInt(7, stock);
+            ps.setInt(8, targetStock);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) return rs.getInt(1);
@@ -86,15 +87,16 @@ public final class ListingRepository {
         }
     }
 
-    public void updatePriceAndStock(int listingId, double unitPrice, int stock, int targetStock) throws SQLException {
-        String sql = "UPDATE listings SET unit_price = ?, stock = ?, target_stock = ?, updated_at = ? WHERE listing_id = ?";
+    public void updatePriceStockAndQuantity(int listingId, double unitPrice, int tradeQuantity, int stock, int targetStock) throws SQLException {
+        String sql = "UPDATE listings SET unit_price = ?, trade_qty = ?, stock = ?, target_stock = ?, updated_at = ? WHERE listing_id = ?";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setDouble(1, unitPrice);
-            ps.setInt(2, stock);
-            ps.setInt(3, targetStock);
-            ps.setTimestamp(4, Timestamp.from(Instant.now()));
-            ps.setInt(5, listingId);
+            ps.setInt(2, tradeQuantity);
+            ps.setInt(3, stock);
+            ps.setInt(4, targetStock);
+            ps.setTimestamp(5, Timestamp.from(Instant.now()));
+            ps.setInt(6, listingId);
             ps.executeUpdate();
         }
     }
@@ -122,12 +124,14 @@ public final class ListingRepository {
     /**
      * Atomically decrement stock. Returns true if stock was available.
      */
-    public boolean decrementStock(int listingId) throws SQLException {
-        String sql = "UPDATE listings SET stock = stock - 1, updated_at = ? WHERE listing_id = ? AND stock > 0";
+    public boolean decrementStock(int listingId, int amount) throws SQLException {
+        String sql = "UPDATE listings SET stock = stock - ?, updated_at = ? WHERE listing_id = ? AND stock >= ?";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setTimestamp(1, Timestamp.from(Instant.now()));
-            ps.setInt(2, listingId);
+            ps.setInt(1, amount);
+            ps.setTimestamp(2, Timestamp.from(Instant.now()));
+            ps.setInt(3, listingId);
+            ps.setInt(4, amount);
             return ps.executeUpdate() > 0;
         }
     }
@@ -135,12 +139,14 @@ public final class ListingRepository {
     /**
      * Atomically increment stock for BUY orders. Returns true if target not yet reached.
      */
-    public boolean incrementStock(int listingId) throws SQLException {
-        String sql = "UPDATE listings SET stock = stock + 1, updated_at = ? WHERE listing_id = ? AND stock < target_stock";
+    public boolean incrementStock(int listingId, int amount) throws SQLException {
+        String sql = "UPDATE listings SET stock = stock + ?, updated_at = ? WHERE listing_id = ? AND stock + ? <= target_stock";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setTimestamp(1, Timestamp.from(Instant.now()));
-            ps.setInt(2, listingId);
+            ps.setInt(1, amount);
+            ps.setTimestamp(2, Timestamp.from(Instant.now()));
+            ps.setInt(3, listingId);
+            ps.setInt(4, amount);
             return ps.executeUpdate() > 0;
         }
     }
@@ -153,6 +159,7 @@ public final class ListingRepository {
                 ListingMode.valueOf(rs.getString("mode")),
                 rs.getBytes("item_serialized"),
                 rs.getDouble("unit_price"),
+                rs.getInt("trade_qty"),
                 rs.getInt("stock"),
                 rs.getInt("target_stock"),
                 rs.getBoolean("enabled"),

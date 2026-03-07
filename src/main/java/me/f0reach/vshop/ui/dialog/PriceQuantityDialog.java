@@ -11,6 +11,7 @@ import me.f0reach.vshop.model.Listing;
 import me.f0reach.vshop.model.ListingMode;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.ui.UIManager;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.jetbrains.annotations.Nullable;
@@ -20,6 +21,7 @@ import java.util.List;
 public final class PriceQuantityDialog {
     private static final float MIN_PRICE = 0.01f;
     private static final float MAX_PRICE = 1_000_000f;
+    private static final int MIN_TRADE_QUANTITY = 1;
     private static final int MIN_STOCK = 0;
     private static final int MAX_STOCK = 100_000;
 
@@ -32,7 +34,10 @@ public final class PriceQuantityDialog {
     public static Dialog create(DialogFactory factory, Shop shop, ListingMode mode,
                                 @Nullable Listing existingListing, @Nullable ItemStack selectedItem, int uiSlot, UIManager uiManager) {
         float initialPrice = existingListing != null ? (float) existingListing.unitPrice() : 1.0f;
+        int initialQuantity = existingListing != null ? existingListing.tradeQuantity() : 1;
         int initialTarget = existingListing != null ? existingListing.targetStock() : 64;
+        ItemStack templateItem = resolveTemplateItem(existingListing, selectedItem);
+        int maxTradeQuantity = Math.max(MIN_TRADE_QUANTITY, templateItem.getMaxStackSize());
 
         List<DialogInput> inputs;
         if (mode == ListingMode.SELL) {
@@ -41,6 +46,11 @@ public final class PriceQuantityDialog {
                             .initial(String.format("%.2f", (double) initialPrice))
                             .maxLength(16)
                             .width(300)
+                            .build(),
+                    DialogInput.text("quantity", factory.text("dialog.quantity_label"))
+                            .initial(String.valueOf(initialQuantity))
+                            .maxLength(4)
+                            .width(300)
                             .build()
             );
         } else {
@@ -48,6 +58,11 @@ public final class PriceQuantityDialog {
                     DialogInput.text("price", factory.text("dialog.price_label"))
                             .initial(String.format("%.2f", (double) initialPrice))
                             .maxLength(16)
+                            .width(300)
+                            .build(),
+                    DialogInput.text("quantity", factory.text("dialog.quantity_label"))
+                            .initial(String.valueOf(initialQuantity))
+                            .maxLength(4)
                             .width(300)
                             .build(),
                     DialogInput.text("stock", factory.text("dialog.stock_label"))
@@ -76,6 +91,13 @@ public final class PriceQuantityDialog {
                                                     return;
                                                 }
 
+                                                Integer tradeQuantity = parseTradeQuantity(view.getText("quantity"), maxTradeQuantity);
+                                                if (tradeQuantity == null) {
+                                                    player.sendMessage(factory.text("error.invalid_quantity_input",
+                                                            "max", String.valueOf(maxTradeQuantity)));
+                                                    return;
+                                                }
+
                                                 int stock = 0;
                                                 if (mode == ListingMode.BUY) {
                                                     Integer parsedStock = parseStock(view.getText("stock"));
@@ -87,9 +109,9 @@ public final class PriceQuantityDialog {
                                                 }
 
                                                 if (existingListing != null) {
-                                                    uiManager.handleListingPriceUpdate(player, existingListing, price, stock, mode);
+                                                    uiManager.handleListingPriceUpdate(player, existingListing, price, tradeQuantity, stock, mode);
                                                 } else {
-                                                    uiManager.handleListingCreate(player, shop, mode, selectedItem, price, stock, uiSlot);
+                                                    uiManager.handleListingCreate(player, shop, mode, selectedItem, price, tradeQuantity, stock, uiSlot);
                                                 }
                                             }
                                         },
@@ -110,6 +132,38 @@ public final class PriceQuantityDialog {
         try {
             float value = Float.parseFloat(text.trim());
             if (value < MIN_PRICE || value > MAX_PRICE) {
+                return null;
+            }
+            return value;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static ItemStack resolveTemplateItem(@Nullable Listing existingListing, @Nullable ItemStack selectedItem) {
+        if (existingListing != null) {
+            try {
+                ItemStack item = ItemStack.deserializeBytes(existingListing.itemSerialized());
+                if (item != null && !item.getType().isAir()) {
+                    return item;
+                }
+            } catch (Exception ignored) {
+                // Fallback below.
+            }
+        }
+        if (selectedItem != null && !selectedItem.getType().isAir()) {
+            return selectedItem;
+        }
+        return new ItemStack(Material.STONE);
+    }
+
+    private static @Nullable Integer parseTradeQuantity(@Nullable String text, int maxTradeQuantity) {
+        if (text == null) {
+            return null;
+        }
+        try {
+            int value = Integer.parseInt(text.trim());
+            if (value < MIN_TRADE_QUANTITY || value > maxTradeQuantity) {
                 return null;
             }
             return value;

@@ -14,7 +14,8 @@ public final class InventoryItemBuilder {
 
     public static ItemStack buildListingItem(Listing listing, MessageManager messages, boolean showDisabled) {
         ItemStack item = ItemStack.deserializeBytes(listing.itemSerialized());
-        item.setAmount(1);
+        int quantity = listing.tradeQuantity();
+        item.setAmount(Math.min(quantity, Math.max(1, item.getMaxStackSize())));
         ItemMeta meta = item.getItemMeta();
 
         String itemName = item.getType().name();
@@ -22,7 +23,9 @@ public final class InventoryItemBuilder {
 
         List<Component> lore = new ArrayList<>();
         lore.add(messages.get("shop.listing_lore_mode", "mode", listing.mode().name()));
-        lore.add(messages.get("shop.listing_lore_price", "price", String.format("%.2f", listing.unitPrice())));
+        lore.add(messages.get("shop.listing_lore_price",
+                "qty", String.valueOf(quantity),
+                "price", String.format("%.2f", listing.unitPrice())));
         lore.add(messages.get("shop.listing_lore_stock",
                 "stock", String.valueOf(listing.stock()),
                 "max_stock", String.valueOf(listing.targetStock())));

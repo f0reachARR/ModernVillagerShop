@@ -66,12 +66,12 @@ public final class ShopService {
     }
 
     public int addListing(int shopId, int uiSlot, ListingMode mode, byte[] itemSerialized,
-                          double unitPrice, int stock, int targetStock) throws SQLException {
+                          double unitPrice, int tradeQuantity, int stock, int targetStock) throws SQLException {
         int count = listingRepo.countByShopId(shopId);
         if (count >= config.getMaxTradeItemTypes()) {
             return -1; // limit exceeded
         }
-        return listingRepo.create(shopId, uiSlot, mode, itemSerialized, unitPrice, stock, targetStock);
+        return listingRepo.create(shopId, uiSlot, mode, itemSerialized, unitPrice, tradeQuantity, stock, targetStock);
     }
 
     public List<Listing> getListingsForDisplay(Shop shop, boolean includeDisabled) throws SQLException {
@@ -96,6 +96,7 @@ public final class ShopService {
                         listing.mode(),
                         listing.itemSerialized(),
                         listing.unitPrice(),
+                        listing.tradeQuantity(),
                         realStock,
                         listing.targetStock(),
                         listing.enabled(),
@@ -188,6 +189,7 @@ public final class ShopService {
      * Customer pays gross, fee deducted, net goes to owner (for player shops).
      */
     public TradeResult executeSellTrade(Player customer, Listing listing, Shop shop) {
+        int tradeQuantity = listing.tradeQuantity();
         double gross = listing.unitPrice();
         double fee = gross * config.getFeeRate();
         double net = gross - fee;
@@ -200,17 +202,17 @@ public final class ShopService {
         try {
             ItemStack tradeItem;
             if (shop.type() == ShopType.PLAYER) {
-                Optional<ItemStack> removed = removeOneMatchingFromShopInventory(shop.shopId(), listing.itemSerialized());
+                Optional<ItemStack> removed = removeMatchingFromShopInventory(shop.shopId(), listing.itemSerialized(), tradeQuantity);
                 if (removed.isEmpty()) {
                     return TradeResult.OUT_OF_STOCK;
                 }
                 tradeItem = removed.get();
             } else {
-                if (shop.type() != ShopType.ADMIN && !listingRepo.decrementStock(listing.listingId())) {
+                if (shop.type() != ShopType.ADMIN && !listingRepo.decrementStock(listing.listingId(), tradeQuantity)) {
                     return TradeResult.OUT_OF_STOCK;
                 }
                 tradeItem = ItemStack.deserializeBytes(listing.itemSerialized());
-                tradeItem.setAmount(1);
+                tradeItem.setAmount(tradeQuantity);
             }
 
             // Withdraw from customer
@@ -234,7 +236,7 @@ public final class ShopService {
 
             // Record transaction
             txRepo.record(shop.shopId(), listing.listingId(), "PURCHASE",
-                    customer.getUniqueId(), shop.ownerUuid(), 1, gross, fee, net);
+                    customer.getUniqueId(), shop.ownerUuid(), tradeQuantity, gross, fee, net);
 
             return TradeResult.SUCCESS;
         } catch (SQLException e) {
@@ -248,6 +250,7 @@ public final class ShopService {
      * Shop owner pays gross, fee deducted, net goes to customer.
      */
     public TradeResult executeBuyTrade(Player customer, Listing listing, Shop shop) {
+        int tradeQuantity = listing.tradeQuantity();
         double gross = listing.unitPrice();
         double fee = gross * config.getFeeRate();
         double net = gross - fee;
@@ -255,7 +258,7 @@ public final class ShopService {
         // Check customer has the item
         ItemStack template = ItemStack.deserializeBytes(listing.itemSerialized());
         template.setAmount(1);
-        if (!customer.getInventory().containsAtLeast(template, 1)) {
+        if (!customer.getInventory().containsAtLeast(template, tradeQuantity)) {
             return TradeResult.NO_ITEM;
         }
 
@@ -268,25 +271,27 @@ public final class ShopService {
 
         try {
             // Admin shops have unlimited capacity
-            if (shop.type() != ShopType.ADMIN && !listingRepo.incrementStock(listing.listingId())) {
+            if (shop.type() != ShopType.ADMIN && !listingRepo.incrementStock(listing.listingId(), tradeQuantity)) {
                 return TradeResult.BUY_ORDER_FULL;
             }
 
             // Remove item from customer
-            customer.getInventory().removeItem(template);
+            ItemStack tradedItem = template.clone();
+            tradedItem.setAmount(tradeQuantity);
+            customer.getInventory().removeItem(tradedItem);
 
             // Player shops store bought item in dedicated inventory
             if (shop.type() == ShopType.PLAYER) {
-                addItemToShopInventory(shop.shopId(), template);
+                addItemToShopInventory(shop.shopId(), tradedItem);
             }
 
             // Withdraw from owner (player shops only)
             if (shop.type() == ShopType.PLAYER && shop.ownerUuid() != null) {
                 if (!economy.withdraw(shop.ownerUuid(), gross)) {
-                    rollbackBuyTradeCustomerItem(customer, template);
-                    rollbackBuyStock(shop, listing);
+                    rollbackBuyTradeCustomerItem(customer, tradedItem);
+                    rollbackBuyStock(shop, listing, tradeQuantity);
                     if (shop.type() == ShopType.PLAYER) {
-                        removeOneMatchingFromShopInventory(shop.shopId(), listing.itemSerialized());
+                        removeMatchingFromShopInventory(shop.shopId(), listing.itemSerialized(), tradeQuantity);
                     }
                     return TradeResult.TRADE_FAILED;
                 }
@@ -297,17 +302,17 @@ public final class ShopService {
                 if (shop.type() == ShopType.PLAYER && shop.ownerUuid() != null) {
                     economy.deposit(shop.ownerUuid(), gross);
                 }
-                rollbackBuyTradeCustomerItem(customer, template);
-                rollbackBuyStock(shop, listing);
+                rollbackBuyTradeCustomerItem(customer, tradedItem);
+                rollbackBuyStock(shop, listing, tradeQuantity);
                 if (shop.type() == ShopType.PLAYER) {
-                    removeOneMatchingFromShopInventory(shop.shopId(), listing.itemSerialized());
+                    removeMatchingFromShopInventory(shop.shopId(), listing.itemSerialized(), tradeQuantity);
                 }
                 return TradeResult.TRADE_FAILED;
             }
 
             // Record transaction
             txRepo.record(shop.shopId(), listing.listingId(), "PROCUREMENT",
-                    customer.getUniqueId(), shop.ownerUuid(), 1, gross, fee, net);
+                    customer.getUniqueId(), shop.ownerUuid(), tradeQuantity, gross, fee, net);
 
             return TradeResult.SUCCESS;
         } catch (SQLException e) {
@@ -321,17 +326,17 @@ public final class ShopService {
             if (shop.type() == ShopType.PLAYER) {
                 addItemToShopInventory(shop.shopId(), tradeItem);
             } else if (shop.type() != ShopType.ADMIN) {
-                listingRepo.incrementStock(listing.listingId());
+                listingRepo.incrementStock(listing.listingId(), listing.tradeQuantity());
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to rollback sell stock", e);
         }
     }
 
-    private void rollbackBuyStock(Shop shop, Listing listing) {
+    private void rollbackBuyStock(Shop shop, Listing listing, int amount) {
         try {
             if (shop.type() != ShopType.ADMIN) {
-                listingRepo.decrementStock(listing.listingId());
+                listingRepo.decrementStock(listing.listingId(), amount);
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to rollback buy stock", e);
@@ -342,33 +347,43 @@ public final class ShopService {
         customer.getInventory().addItem(template);
     }
 
-    private Optional<ItemStack> removeOneMatchingFromShopInventory(int shopId, byte[] serializedTemplate) throws SQLException {
+    private Optional<ItemStack> removeMatchingFromShopInventory(int shopId, byte[] serializedTemplate, int amount) throws SQLException {
         Map<Integer, ItemStack> storage = getShopInventoryContents(shopId);
         ItemStack template = ItemStack.deserializeBytes(serializedTemplate);
-
-        return storage.entrySet().stream()
+        List<Map.Entry<Integer, ItemStack>> matchingSlots = storage.entrySet().stream()
                 .sorted(Comparator.comparingInt(Map.Entry::getKey))
                 .filter(entry -> entry.getValue().isSimilar(template))
-                .findFirst()
-                .map(entry -> {
-                    int slot = entry.getKey();
-                    ItemStack current = entry.getValue();
-                    ItemStack removed = current.clone();
-                    removed.setAmount(1);
+                .toList();
 
-                    try {
-                        if (current.getAmount() <= 1) {
-                            setShopInventorySlot(shopId, slot, null);
-                        } else {
-                            current.setAmount(current.getAmount() - 1);
-                            setShopInventorySlot(shopId, slot, current);
-                        }
-                    } catch (SQLException e) {
-                        plugin.getLogger().log(Level.SEVERE, "Failed to update shop inventory slot", e);
-                        return null;
-                    }
-                    return removed;
-                });
+        int available = matchingSlots.stream().mapToInt(entry -> entry.getValue().getAmount()).sum();
+        if (available < amount) {
+            return Optional.empty();
+        }
+
+        int remaining = amount;
+        for (Map.Entry<Integer, ItemStack> entry : matchingSlots) {
+            if (remaining <= 0) {
+                break;
+            }
+
+            int slot = entry.getKey();
+            ItemStack current = entry.getValue();
+            int remove = Math.min(remaining, current.getAmount());
+            int updatedAmount = current.getAmount() - remove;
+
+            if (updatedAmount <= 0) {
+                setShopInventorySlot(shopId, slot, null);
+            } else {
+                ItemStack updated = current.clone();
+                updated.setAmount(updatedAmount);
+                setShopInventorySlot(shopId, slot, updated);
+            }
+            remaining -= remove;
+        }
+
+        ItemStack removed = template.clone();
+        removed.setAmount(amount);
+        return Optional.of(removed);
     }
 
     private int countMatchingItems(Map<Integer, ItemStack> storage, byte[] serializedTemplate) {

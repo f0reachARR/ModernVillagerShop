@@ -20,6 +20,8 @@ public final class TradeConfirmDialog {
 
     public static Dialog create(DialogFactory factory, Shop shop, Listing listing, UIManager uiManager) {
         ItemStack item = ItemStack.deserializeBytes(listing.itemSerialized());
+        int quantity = listing.tradeQuantity();
+        item.setAmount(Math.min(quantity, Math.max(1, item.getMaxStackSize())));
         String itemName = item.getType().name();
         String price = String.format("%.2f", listing.unitPrice());
 
@@ -31,7 +33,7 @@ public final class TradeConfirmDialog {
                 .base(DialogBase.builder(factory.text("dialog.trade_confirm_title"))
                         .body(List.of(
                                 DialogBody.plainMessage(factory.text(bodyKey,
-                                        "item", itemName, "qty", "1", "price", price)),
+                                        "item", itemName, "qty", String.valueOf(quantity), "price", price)),
                                 DialogBody.item(item).build()
                         ))
                         .build())

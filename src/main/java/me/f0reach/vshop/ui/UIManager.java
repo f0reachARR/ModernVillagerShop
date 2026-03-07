@@ -123,7 +123,7 @@ public final class UIManager {
 
     // --- Handlers called by dialog callbacks ---
 
-    public void handleListingCreate(Player player, Shop shop, ListingMode mode, ItemStack selectedItem, float price, int stock, int uiSlot) {
+    public void handleListingCreate(Player player, Shop shop, ListingMode mode, ItemStack selectedItem, float price, int tradeQuantity, int stock, int uiSlot) {
         if (selectedItem == null || selectedItem.getType().isAir()) {
             player.sendMessage(messages.get("error.invalid_material"));
             return;
@@ -145,7 +145,7 @@ public final class UIManager {
             }
             int targetStock = mode == ListingMode.BUY ? stock : 0;
             int actualStock = 0;
-            int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, price, actualStock, targetStock);
+            int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, price, tradeQuantity, actualStock, targetStock);
             if (result == -1) {
                 player.sendMessage(messages.get("error.type_limit_exceeded"));
             } else {
@@ -159,11 +159,11 @@ public final class UIManager {
         }
     }
 
-    public void handleListingPriceUpdate(Player player, Listing listing, float price, int stock, ListingMode mode) {
+    public void handleListingPriceUpdate(Player player, Listing listing, float price, int tradeQuantity, int stock, ListingMode mode) {
         try {
             int targetStock = mode == ListingMode.BUY ? stock : listing.targetStock();
             int actualStock = listing.stock();
-            shopService.getListingRepo().updatePriceAndStock(listing.listingId(), price, actualStock, targetStock);
+            shopService.getListingRepo().updatePriceStockAndQuantity(listing.listingId(), price, tradeQuantity, actualStock, targetStock);
             player.sendMessage(messages.get("shop.offer_updated",
                     "shop_id", String.valueOf(listing.shopId()),
                     "mode", listing.mode().name(),
@@ -233,10 +233,11 @@ public final class UIManager {
                 case SUCCESS -> {
                     String itemName = getItemName(current);
                     String price = String.format("%.2f", current.unitPrice());
+                    String qty = String.valueOf(current.tradeQuantity());
                     if (current.mode() == ListingMode.SELL) {
-                        player.sendMessage(messages.get("trade.purchase_success", "item", itemName, "price", price));
+                        player.sendMessage(messages.get("trade.purchase_success", "item", itemName, "qty", qty, "price", price));
                     } else {
-                        player.sendMessage(messages.get("trade.procurement_success", "item", itemName, "price", price));
+                        player.sendMessage(messages.get("trade.procurement_success", "item", itemName, "qty", qty, "price", price));
                     }
                 }
                 case OUT_OF_STOCK -> player.sendMessage(messages.get("trade.out_of_stock"));

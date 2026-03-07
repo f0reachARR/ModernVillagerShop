@@ -9,6 +9,7 @@ public record Listing(
         ListingMode mode,
         byte[] itemSerialized,
         double unitPrice,
+        int tradeQuantity,
         int stock,
         int targetStock,
         boolean enabled,
