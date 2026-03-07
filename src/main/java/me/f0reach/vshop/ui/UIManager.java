@@ -35,16 +35,28 @@ public final class UIManager {
     }
 
     public void openShopInventory(Player viewer, Shop shop) {
-        boolean isOwner = shop.type() == ShopType.PLAYER
-                && shop.ownerUuid() != null
-                && shop.ownerUuid().equals(viewer.getUniqueId());
-        boolean isAdmin = viewer.hasPermission("modernvillagershop.admin");
-
-        if (isOwner || (isAdmin && shop.type() == ShopType.ADMIN)) {
-            new OwnerListingUI(viewer, shop, messages, this).open();
-        } else {
-            new ShopListingUI(viewer, shop, messages, this).open();
+        if (canOpenManagementInventory(viewer, shop)) {
+            openShopManagementInventory(viewer, shop);
+            return;
         }
+        openShopTradingInventory(viewer, shop);
+    }
+
+    public void openShopManagementInventory(Player viewer, Shop shop) {
+        new OwnerListingUI(viewer, shop, messages, this).open();
+    }
+
+    public void openShopTradingInventory(Player viewer, Shop shop) {
+        new ShopListingUI(viewer, shop, messages, this).open();
+    }
+
+    private boolean canOpenManagementInventory(Player viewer, Shop shop) {
+        if (shop.type() == ShopType.PLAYER) {
+            return shop.ownerUuid() != null && shop.ownerUuid().equals(viewer.getUniqueId()) && viewer.isSneaking();
+        }
+        return shop.type() == ShopType.ADMIN
+                && viewer.hasPermission("modernvillagershop.admin")
+                && viewer.isSneaking();
     }
 
     public void openShopInitDialog(Player viewer, int shopId) {
@@ -82,13 +94,16 @@ public final class UIManager {
         }
     }
 
-    public void openPriceQuantityDialog(Player viewer, Shop shop, ListingMode mode, Listing existingListing, ItemStack selectedItem) {
+    public void openPriceQuantityDialog(Player viewer, Shop shop, ListingMode mode, Listing existingListing,
+            ItemStack selectedItem) {
         openPriceQuantityDialog(viewer, shop, mode, existingListing, selectedItem, -1);
     }
 
-    public void openPriceQuantityDialog(Player viewer, Shop shop, ListingMode mode, Listing existingListing, ItemStack selectedItem, int uiSlot) {
+    public void openPriceQuantityDialog(Player viewer, Shop shop, ListingMode mode, Listing existingListing,
+            ItemStack selectedItem, int uiSlot) {
         try {
-            viewer.showDialog(PriceQuantityDialog.create(dialogFactory, shop, mode, existingListing, selectedItem, uiSlot, this));
+            viewer.showDialog(
+                    PriceQuantityDialog.create(dialogFactory, shop, mode, existingListing, selectedItem, uiSlot, this));
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Failed to show price dialog", e);
             viewer.sendMessage(messages.get("dialog.fallback_notice"));
@@ -124,7 +139,8 @@ public final class UIManager {
 
     // --- Handlers called by dialog callbacks ---
 
-    public void handleListingCreate(Player player, Shop shop, ListingMode mode, ItemStack selectedItem, float price, int tradeQuantity, int stock, int uiSlot) {
+    public void handleListingCreate(Player player, Shop shop, ListingMode mode, ItemStack selectedItem, float price,
+            int tradeQuantity, int stock, int uiSlot) {
         if (selectedItem == null || selectedItem.getType().isAir()) {
             player.sendMessage(messages.get("error.invalid_material"));
             return;
@@ -141,18 +157,19 @@ public final class UIManager {
         try {
             if (shopService.getListingRepo().existsByShopIdAndSlot(shop.shopId(), uiSlot)) {
                 player.sendMessage(messages.get("error.slot_occupied"));
-                shopService.getShopById(shop.shopId()).ifPresent(s -> openShopInventory(player, s));
+                shopService.getShopById(shop.shopId()).ifPresent(s -> openShopManagementInventory(player, s));
                 return;
             }
             int targetStock = mode == ListingMode.BUY ? stock : 0;
             int actualStock = 0;
-            int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, price, tradeQuantity, actualStock, targetStock);
+            int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, price, tradeQuantity,
+                    actualStock, targetStock);
             if (result == -1) {
                 player.sendMessage(messages.get("error.type_limit_exceeded"));
             } else {
                 player.sendMessage(messages.get("shop.listing_added"));
                 // Reopen owner UI
-                shopService.getShopById(shop.shopId()).ifPresent(s -> openShopInventory(player, s));
+                shopService.getShopById(shop.shopId()).ifPresent(s -> openShopManagementInventory(player, s));
             }
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to create listing", e);
@@ -160,17 +177,19 @@ public final class UIManager {
         }
     }
 
-    public void handleListingPriceUpdate(Player player, Listing listing, float price, int tradeQuantity, int stock, ListingMode mode) {
+    public void handleListingPriceUpdate(Player player, Listing listing, float price, int tradeQuantity, int stock,
+            ListingMode mode) {
         try {
             int targetStock = mode == ListingMode.BUY ? stock : listing.targetStock();
             int actualStock = listing.stock();
-            shopService.getListingRepo().updatePriceStockAndQuantity(listing.listingId(), price, tradeQuantity, actualStock, targetStock);
+            shopService.getListingRepo().updatePriceStockAndQuantity(listing.listingId(), price, tradeQuantity,
+                    actualStock, targetStock);
             player.sendMessage(messages.get("shop.offer_updated",
                     Placeholder.unparsed("shop_id", String.valueOf(listing.shopId())),
                     Placeholder.unparsed("mode", listing.mode().name()),
                     Placeholder.unparsed("item", getItemName(listing)),
                     Placeholder.unparsed("price", String.format("%.2f", (double) price))));
-            shopService.getShopById(listing.shopId()).ifPresent(s -> openShopInventory(player, s));
+            shopService.getShopById(listing.shopId()).ifPresent(s -> openShopManagementInventory(player, s));
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to update listing", e);
             player.sendMessage(messages.get("error.storage"));
@@ -186,7 +205,7 @@ public final class UIManager {
             } else {
                 player.sendMessage(messages.get("shop.listing_toggled_off"));
             }
-            shopService.getShopById(listing.shopId()).ifPresent(s -> openShopInventory(player, s));
+            shopService.getShopById(listing.shopId()).ifPresent(s -> openShopManagementInventory(player, s));
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to toggle listing", e);
             player.sendMessage(messages.get("error.storage"));
@@ -197,7 +216,7 @@ public final class UIManager {
         try {
             shopService.getListingRepo().delete(listing.listingId());
             player.sendMessage(messages.get("shop.listing_deleted"));
-            openShopInventory(player, shop);
+            openShopManagementInventory(player, shop);
         } catch (SQLException e) {
             plugin.getLogger().log(Level.SEVERE, "Failed to delete listing", e);
             player.sendMessage(messages.get("error.storage"));
@@ -270,8 +289,13 @@ public final class UIManager {
         }
     }
 
-    public ShopService getShopService() { return shopService; }
-    public MessageManager getMessages() { return messages; }
+    public ShopService getShopService() {
+        return shopService;
+    }
+
+    public MessageManager getMessages() {
+        return messages;
+    }
 
     private int findFirstEmptySlot(Shop shop) {
         try {
@@ -281,7 +305,7 @@ public final class UIManager {
                     occupied.add(listing.uiSlot());
                 }
             }
-            for (int slot = 0; ; slot++) {
+            for (int slot = 0;; slot++) {
                 if (!occupied.contains(slot)) {
                     return slot;
                 }

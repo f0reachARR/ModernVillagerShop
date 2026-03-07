@@ -60,7 +60,7 @@ public final class ItemSelectUI extends BaseInventoryUI {
                 return;
             }
             if (rawSlot == SLOT_CANCEL) {
-                uiManager.openShopInventory(viewer, shop);
+                uiManager.openShopManagementInventory(viewer, shop);
                 return;
             }
             if (rawSlot == SLOT_ITEM) {

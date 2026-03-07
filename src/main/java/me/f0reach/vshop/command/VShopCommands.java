@@ -173,7 +173,7 @@ public final class VShopCommands {
                 player.sendMessage(messages.get("error.shop_not_found"));
                 return Command.SINGLE_SUCCESS;
             }
-            uiManager.openShopInventory(player, shopOpt.get());
+            uiManager.openShopManagementInventory(player, shopOpt.get());
         } catch (SQLException e) {
             source.getSender().getServer().getLogger().log(Level.SEVERE, "Failed to edit shop", e);
             player.sendMessage(messages.get("error.storage"));

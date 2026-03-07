@@ -118,7 +118,7 @@ public final class ShopStorageUI extends BaseInventoryUI {
                 currentPage++;
                 render();
             }
-            case SLOT_BACK -> uiManager.openShopInventory(viewer, shop);
+            case SLOT_BACK -> uiManager.openShopManagementInventory(viewer, shop);
         }
     }
 

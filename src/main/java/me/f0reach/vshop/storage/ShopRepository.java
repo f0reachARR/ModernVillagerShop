@@ -20,11 +20,12 @@ public final class ShopRepository {
     public int create(ShopType type, UUID villagerUuid, UUID ownerUuid,
                       String world, double x, double y, double z) throws SQLException {
         String sql = "INSERT INTO shops (type, villager_uuid, owner_uuid, world, x, y, z) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        UUID persistedOwnerUuid = type == ShopType.ADMIN ? null : ownerUuid;
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setString(1, type.name());
             ps.setString(2, villagerUuid.toString());
-            ps.setString(3, ownerUuid != null ? ownerUuid.toString() : null);
+            ps.setString(3, persistedOwnerUuid != null ? persistedOwnerUuid.toString() : null);
             ps.setString(4, world);
             ps.setDouble(5, x);
             ps.setDouble(6, y);
@@ -83,12 +84,16 @@ public final class ShopRepository {
     }
 
     private Shop mapRow(ResultSet rs) throws SQLException {
+        ShopType shopType = ShopType.valueOf(rs.getString("type"));
         String ownerStr = rs.getString("owner_uuid");
+        UUID ownerUuid = shopType == ShopType.ADMIN
+                ? null
+                : (ownerStr != null ? UUID.fromString(ownerStr) : null);
         return new Shop(
                 rs.getInt("shop_id"),
-                ShopType.valueOf(rs.getString("type")),
+                shopType,
                 UUID.fromString(rs.getString("villager_uuid")),
-                ownerStr != null ? UUID.fromString(ownerStr) : null,
+                ownerUuid,
                 rs.getString("world"),
                 rs.getDouble("x"),
                 rs.getDouble("y"),
