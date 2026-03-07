@@ -4,8 +4,6 @@ import io.papermc.paper.registry.data.dialog.ActionButton;
 import io.papermc.paper.registry.data.dialog.DialogBase;
 import io.papermc.paper.registry.data.dialog.action.DialogAction;
 import io.papermc.paper.registry.data.dialog.body.DialogBody;
-import io.papermc.paper.registry.data.dialog.input.DialogInput;
-import io.papermc.paper.registry.data.dialog.input.NumberRangeDialogInput;
 import me.f0reach.vshop.locale.MessageManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.ClickCallback;
@@ -52,18 +50,6 @@ public final class DialogFactory {
 
     public DialogBody textBody(String key, String... placeholders) {
         return DialogBody.plainMessage(messages.get(key, placeholders));
-    }
-
-    public NumberRangeDialogInput.Builder priceInput(float min, float max) {
-        return DialogInput.numberRange("price", messages.get("dialog.price_label"), min, max)
-                .step(0.01f)
-                .initial(1.0f);
-    }
-
-    public NumberRangeDialogInput.Builder stockInput(float min, float max) {
-        return DialogInput.numberRange("stock", messages.get("dialog.stock_label"), min, max)
-                .step(1f)
-                .initial(1f);
     }
 
     public ClickCallback.Options singleUseOptions() {

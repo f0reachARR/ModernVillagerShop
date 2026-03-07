@@ -144,10 +144,7 @@ public final class UIManager {
                 return;
             }
             int targetStock = mode == ListingMode.BUY ? stock : 0;
-            int actualStock = mode == ListingMode.SELL ? stock : 0;
-            if (shop.type() == ShopType.PLAYER && mode == ListingMode.SELL) {
-                actualStock = 0;
-            }
+            int actualStock = 0;
             int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, price, actualStock, targetStock);
             if (result == -1) {
                 player.sendMessage(messages.get("error.type_limit_exceeded"));
@@ -165,11 +162,7 @@ public final class UIManager {
     public void handleListingPriceUpdate(Player player, Listing listing, float price, int stock, ListingMode mode) {
         try {
             int targetStock = mode == ListingMode.BUY ? stock : listing.targetStock();
-            int actualStock = mode == ListingMode.SELL ? stock : listing.stock();
-            Shop shop = shopService.getShopById(listing.shopId()).orElse(null);
-            if (shop != null && shop.type() == ShopType.PLAYER && mode == ListingMode.SELL) {
-                actualStock = listing.stock();
-            }
+            int actualStock = listing.stock();
             shopService.getListingRepo().updatePriceAndStock(listing.listingId(), price, actualStock, targetStock);
             player.sendMessage(messages.get("shop.offer_updated",
                     "shop_id", String.valueOf(listing.shopId()),

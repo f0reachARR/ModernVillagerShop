@@ -18,6 +18,11 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 public final class PriceQuantityDialog {
+    private static final float MIN_PRICE = 0.01f;
+    private static final float MAX_PRICE = 1_000_000f;
+    private static final int MIN_STOCK = 0;
+    private static final int MAX_STOCK = 100_000;
+
     private PriceQuantityDialog() {}
 
     /**
@@ -27,23 +32,29 @@ public final class PriceQuantityDialog {
     public static Dialog create(DialogFactory factory, Shop shop, ListingMode mode,
                                 @Nullable Listing existingListing, @Nullable ItemStack selectedItem, int uiSlot, UIManager uiManager) {
         float initialPrice = existingListing != null ? (float) existingListing.unitPrice() : 1.0f;
-        float initialStock = existingListing != null ? existingListing.stock() : 1f;
-        float initialTarget = existingListing != null ? existingListing.targetStock() : 64f;
+        int initialTarget = existingListing != null ? existingListing.targetStock() : 64;
 
         List<DialogInput> inputs;
         if (mode == ListingMode.SELL) {
             inputs = List.of(
-                    DialogInput.numberRange("price", factory.text("dialog.price_label"), 0.01f, 1000000f)
-                            .step(0.01f).initial(initialPrice).width(300).build(),
-                    DialogInput.numberRange("stock", factory.text("dialog.stock_label"), 0f, 100000f)
-                            .step(1f).initial(initialStock).width(300).build()
+                    DialogInput.text("price", factory.text("dialog.price_label"))
+                            .initial(String.format("%.2f", (double) initialPrice))
+                            .maxLength(16)
+                            .width(300)
+                            .build()
             );
         } else {
             inputs = List.of(
-                    DialogInput.numberRange("price", factory.text("dialog.price_label"), 0.01f, 1000000f)
-                            .step(0.01f).initial(initialPrice).width(300).build(),
-                    DialogInput.numberRange("stock", factory.text("dialog.stock_label"), 0f, 100000f)
-                            .step(1f).initial(initialTarget).width(300).build()
+                    DialogInput.text("price", factory.text("dialog.price_label"))
+                            .initial(String.format("%.2f", (double) initialPrice))
+                            .maxLength(16)
+                            .width(300)
+                            .build(),
+                    DialogInput.text("stock", factory.text("dialog.stock_label"))
+                            .initial(String.valueOf(initialTarget))
+                            .maxLength(8)
+                            .width(300)
+                            .build()
             );
         }
 
@@ -59,8 +70,22 @@ public final class PriceQuantityDialog {
                                 .action(DialogAction.customClick(
                                         (view, audience) -> {
                                             if (audience instanceof Player player) {
-                                                float price = view.getFloat("price");
-                                                int stock = view.getFloat("stock").intValue();
+                                                Float price = parsePrice(view.getText("price"));
+                                                if (price == null) {
+                                                    player.sendMessage(factory.text("error.invalid_price_input"));
+                                                    return;
+                                                }
+
+                                                int stock = 0;
+                                                if (mode == ListingMode.BUY) {
+                                                    Integer parsedStock = parseStock(view.getText("stock"));
+                                                    if (parsedStock == null) {
+                                                        player.sendMessage(factory.text("error.invalid_stock_input"));
+                                                        return;
+                                                    }
+                                                    stock = parsedStock;
+                                                }
+
                                                 if (existingListing != null) {
                                                     uiManager.handleListingPriceUpdate(player, existingListing, price, stock, mode);
                                                 } else {
@@ -76,5 +101,35 @@ public final class PriceQuantityDialog {
                                 .build()
                 ))
         );
+    }
+
+    private static @Nullable Float parsePrice(@Nullable String text) {
+        if (text == null) {
+            return null;
+        }
+        try {
+            float value = Float.parseFloat(text.trim());
+            if (value < MIN_PRICE || value > MAX_PRICE) {
+                return null;
+            }
+            return value;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
+    }
+
+    private static @Nullable Integer parseStock(@Nullable String text) {
+        if (text == null) {
+            return null;
+        }
+        try {
+            int value = Integer.parseInt(text.trim());
+            if (value < MIN_STOCK || value > MAX_STOCK) {
+                return null;
+            }
+            return value;
+        } catch (NumberFormatException ignored) {
+            return null;
+        }
     }
 }

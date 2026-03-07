@@ -15,6 +15,8 @@ error:
   storage: "<red>データ保存処理に失敗しました。</red>"
   trade_failed: "<red>取引に失敗しました。時間をおいて再試行してください。</red>"
   no_permission: "<red>権限がありません。</red>"
+  invalid_price_input: "<red>単価は 0.01 以上 1000000 以下の数値で入力してください。</red>"
+  invalid_stock_input: "<red>在庫/目標数は 0 以上 100000 以下の整数で入力してください。</red>"
 
 dialog:
   shop_title: "<gold>Shop #<shop_id></gold>"

@@ -15,6 +15,8 @@ error:
   storage: "<red>Storage operation failed.</red>"
   trade_failed: "<red>Trade failed. Please try again later.</red>"
   no_permission: "<red>You do not have permission.</red>"
+  invalid_price_input: "<red>Enter a numeric unit price between 0.01 and 1000000.</red>"
+  invalid_stock_input: "<red>Enter an integer stock/target between 0 and 100000.</red>"
 
 dialog:
   shop_title: "<gold>Shop #<shop_id></gold>"
