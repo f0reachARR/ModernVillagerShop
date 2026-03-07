@@ -16,18 +16,19 @@ public final class ListingRepository {
         this.db = db;
     }
 
-    public int create(int shopId, ListingMode mode, byte[] itemSerialized,
+    public int create(int shopId, int uiSlot, ListingMode mode, byte[] itemSerialized,
                       double unitPrice, int stock, int targetStock) throws SQLException {
-        String sql = "INSERT INTO listings (shop_id, mode, item_serialized, unit_price, stock, target_stock) "
-                + "VALUES (?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO listings (shop_id, ui_slot, mode, item_serialized, unit_price, stock, target_stock) "
+                + "VALUES (?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, shopId);
-            ps.setString(2, mode.name());
-            ps.setBytes(3, itemSerialized);
-            ps.setDouble(4, unitPrice);
-            ps.setInt(5, stock);
-            ps.setInt(6, targetStock);
+            ps.setInt(2, uiSlot);
+            ps.setString(3, mode.name());
+            ps.setBytes(4, itemSerialized);
+            ps.setDouble(5, unitPrice);
+            ps.setInt(6, stock);
+            ps.setInt(7, targetStock);
             ps.executeUpdate();
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) return rs.getInt(1);
@@ -37,7 +38,7 @@ public final class ListingRepository {
     }
 
     public List<Listing> findByShopId(int shopId) throws SQLException {
-        String sql = "SELECT * FROM listings WHERE shop_id = ?";
+        String sql = "SELECT * FROM listings WHERE shop_id = ? ORDER BY ui_slot ASC";
         List<Listing> list = new ArrayList<>();
         try (Connection conn = db.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -71,6 +72,18 @@ public final class ListingRepository {
             }
         }
         return 0;
+    }
+
+    public boolean existsByShopIdAndSlot(int shopId, int uiSlot) throws SQLException {
+        String sql = "SELECT 1 FROM listings WHERE shop_id = ? AND ui_slot = ? LIMIT 1";
+        try (Connection conn = db.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, shopId);
+            ps.setInt(2, uiSlot);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        }
     }
 
     public void updatePriceAndStock(int listingId, double unitPrice, int stock, int targetStock) throws SQLException {
@@ -136,6 +149,7 @@ public final class ListingRepository {
         return new Listing(
                 rs.getInt("listing_id"),
                 rs.getInt("shop_id"),
+                rs.getInt("ui_slot"),
                 ListingMode.valueOf(rs.getString("mode")),
                 rs.getBytes("item_serialized"),
                 rs.getDouble("unit_price"),

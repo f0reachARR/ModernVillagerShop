@@ -56,13 +56,13 @@ public final class ShopService {
         return shopRepo.findById(shopId);
     }
 
-    public int addListing(int shopId, ListingMode mode, byte[] itemSerialized,
+    public int addListing(int shopId, int uiSlot, ListingMode mode, byte[] itemSerialized,
                           double unitPrice, int stock, int targetStock) throws SQLException {
         int count = listingRepo.countByShopId(shopId);
         if (count >= config.getMaxTradeItemTypes()) {
             return -1; // limit exceeded
         }
-        return listingRepo.create(shopId, mode, itemSerialized, unitPrice, stock, targetStock);
+        return listingRepo.create(shopId, uiSlot, mode, itemSerialized, unitPrice, stock, targetStock);
     }
 
     public enum TradeResult {

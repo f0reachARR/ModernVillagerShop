@@ -17,7 +17,7 @@ import java.util.List;
 public final class ListingCreateDialog {
     private ListingCreateDialog() {}
 
-    public static Dialog create(DialogFactory factory, Shop shop, ItemStack selectedItem, UIManager uiManager) {
+    public static Dialog create(DialogFactory factory, Shop shop, ItemStack selectedItem, int uiSlot, UIManager uiManager) {
         return Dialog.create(builder -> builder.empty()
                 .base(DialogBase.builder(factory.text("dialog.listing_create_title"))
                         .body(List.of(
@@ -30,7 +30,7 @@ public final class ListingCreateDialog {
                                 .action(DialogAction.customClick(
                                         (view, audience) -> {
                                             if (audience instanceof Player player) {
-                                                uiManager.openPriceQuantityDialog(player, shop, ListingMode.SELL, null, selectedItem);
+                                                uiManager.openPriceQuantityDialog(player, shop, ListingMode.SELL, null, selectedItem, uiSlot);
                                             }
                                         },
                                         factory.singleUseOptions()
@@ -41,7 +41,7 @@ public final class ListingCreateDialog {
                                 .action(DialogAction.customClick(
                                         (view, audience) -> {
                                             if (audience instanceof Player player) {
-                                                uiManager.openPriceQuantityDialog(player, shop, ListingMode.BUY, null, selectedItem);
+                                                uiManager.openPriceQuantityDialog(player, shop, ListingMode.BUY, null, selectedItem, uiSlot);
                                             }
                                         },
                                         factory.singleUseOptions()

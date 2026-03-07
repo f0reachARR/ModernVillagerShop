@@ -71,6 +71,7 @@ public final class DatabaseManager {
         String listingsTable = "CREATE TABLE IF NOT EXISTS listings ("
                 + "listing_id " + intType + " PRIMARY KEY " + (mysql ? "AUTO_INCREMENT" : "AUTOINCREMENT") + ", "
                 + "shop_id " + intType + " NOT NULL, "
+                + "ui_slot " + intType + " NOT NULL, "
                 + "mode VARCHAR(8) NOT NULL, "
                 + "item_serialized " + blobType + " NOT NULL, "
                 + "unit_price DOUBLE NOT NULL, "
@@ -78,6 +79,7 @@ public final class DatabaseManager {
                 + "target_stock " + intType + " NOT NULL DEFAULT 0, "
                 + "enabled BOOLEAN NOT NULL DEFAULT 1, "
                 + "updated_at TIMESTAMP NOT NULL DEFAULT " + timestampDefault + ", "
+                + "UNIQUE (shop_id, ui_slot), "
                 + "FOREIGN KEY (shop_id) REFERENCES shops(shop_id) ON DELETE CASCADE"
                 + ")";
 

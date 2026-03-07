@@ -15,6 +15,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.logging.Level;
 
 public final class UIManager {
@@ -57,8 +59,17 @@ public final class UIManager {
     }
 
     public void openListingCreateDialog(Player viewer, Shop shop, ItemStack selectedItem) {
+        int emptySlot = findFirstEmptySlot(shop);
+        if (emptySlot < 0) {
+            viewer.sendMessage(messages.get("error.no_empty_slot"));
+            return;
+        }
+        openListingCreateDialog(viewer, shop, selectedItem, emptySlot);
+    }
+
+    public void openListingCreateDialog(Player viewer, Shop shop, ItemStack selectedItem, int uiSlot) {
         try {
-            viewer.showDialog(ListingCreateDialog.create(dialogFactory, shop, selectedItem, this));
+            viewer.showDialog(ListingCreateDialog.create(dialogFactory, shop, selectedItem, uiSlot, this));
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Failed to show create dialog", e);
             viewer.sendMessage(messages.get("dialog.fallback_notice"));
@@ -66,8 +77,12 @@ public final class UIManager {
     }
 
     public void openPriceQuantityDialog(Player viewer, Shop shop, ListingMode mode, Listing existingListing, ItemStack selectedItem) {
+        openPriceQuantityDialog(viewer, shop, mode, existingListing, selectedItem, -1);
+    }
+
+    public void openPriceQuantityDialog(Player viewer, Shop shop, ListingMode mode, Listing existingListing, ItemStack selectedItem, int uiSlot) {
         try {
-            viewer.showDialog(PriceQuantityDialog.create(dialogFactory, shop, mode, existingListing, selectedItem, this));
+            viewer.showDialog(PriceQuantityDialog.create(dialogFactory, shop, mode, existingListing, selectedItem, uiSlot, this));
         } catch (Exception e) {
             plugin.getLogger().log(Level.WARNING, "Failed to show price dialog", e);
             viewer.sendMessage(messages.get("dialog.fallback_notice"));
@@ -103,9 +118,13 @@ public final class UIManager {
 
     // --- Handlers called by dialog callbacks ---
 
-    public void handleListingCreate(Player player, Shop shop, ListingMode mode, ItemStack selectedItem, float price, int stock) {
+    public void handleListingCreate(Player player, Shop shop, ListingMode mode, ItemStack selectedItem, float price, int stock, int uiSlot) {
         if (selectedItem == null || selectedItem.getType().isAir()) {
             player.sendMessage(messages.get("error.invalid_material"));
+            return;
+        }
+        if (uiSlot < 0) {
+            player.sendMessage(messages.get("error.invalid_slot"));
             return;
         }
 
@@ -114,9 +133,14 @@ public final class UIManager {
         byte[] serialized = template.serializeAsBytes();
 
         try {
+            if (shopService.getListingRepo().existsByShopIdAndSlot(shop.shopId(), uiSlot)) {
+                player.sendMessage(messages.get("error.slot_occupied"));
+                shopService.getShopById(shop.shopId()).ifPresent(s -> openShopInventory(player, s));
+                return;
+            }
             int targetStock = mode == ListingMode.BUY ? stock : 0;
             int actualStock = mode == ListingMode.SELL ? stock : 0;
-            int result = shopService.addListing(shop.shopId(), mode, serialized, price, actualStock, targetStock);
+            int result = shopService.addListing(shop.shopId(), uiSlot, mode, serialized, price, actualStock, targetStock);
             if (result == -1) {
                 player.sendMessage(messages.get("error.type_limit_exceeded"));
             } else {
@@ -235,4 +259,23 @@ public final class UIManager {
 
     public ShopService getShopService() { return shopService; }
     public MessageManager getMessages() { return messages; }
+
+    private int findFirstEmptySlot(Shop shop) {
+        try {
+            Set<Integer> occupied = new HashSet<>();
+            for (Listing listing : shopService.getListingRepo().findByShopId(shop.shopId())) {
+                if (listing.uiSlot() >= 0) {
+                    occupied.add(listing.uiSlot());
+                }
+            }
+            for (int slot = 0; ; slot++) {
+                if (!occupied.contains(slot)) {
+                    return slot;
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Failed to find empty slot", e);
+        }
+        return -1;
+    }
 }

@@ -12,6 +12,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 public final class ShopListingUI extends PaginatedInventoryUI {
@@ -36,9 +37,9 @@ public final class ShopListingUI extends PaginatedInventoryUI {
     }
 
     @Override
-    protected void renderContentSlots(List<Listing> pageListings, int offset) {
-        for (int i = 0; i < pageListings.size(); i++) {
-            inventory.setItem(i, InventoryItemBuilder.buildListingItem(pageListings.get(i), messages, false));
+    protected void renderContentSlots(Map<Integer, Listing> pageListings) {
+        for (Map.Entry<Integer, Listing> entry : pageListings.entrySet()) {
+            inventory.setItem(entry.getKey(), InventoryItemBuilder.buildListingItem(entry.getValue(), messages, false));
         }
     }
 

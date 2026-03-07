@@ -25,7 +25,7 @@ public final class PriceQuantityDialog {
      * @param existingListing null for new listing, non-null for editing
      */
     public static Dialog create(DialogFactory factory, Shop shop, ListingMode mode,
-                                @Nullable Listing existingListing, @Nullable ItemStack selectedItem, UIManager uiManager) {
+                                @Nullable Listing existingListing, @Nullable ItemStack selectedItem, int uiSlot, UIManager uiManager) {
         float initialPrice = existingListing != null ? (float) existingListing.unitPrice() : 1.0f;
         float initialStock = existingListing != null ? existingListing.stock() : 1f;
         float initialTarget = existingListing != null ? existingListing.targetStock() : 64f;
@@ -64,7 +64,7 @@ public final class PriceQuantityDialog {
                                                 if (existingListing != null) {
                                                     uiManager.handleListingPriceUpdate(player, existingListing, price, stock, mode);
                                                 } else {
-                                                    uiManager.handleListingCreate(player, shop, mode, selectedItem, price, stock);
+                                                    uiManager.handleListingCreate(player, shop, mode, selectedItem, price, stock, uiSlot);
                                                 }
                                             }
                                         },

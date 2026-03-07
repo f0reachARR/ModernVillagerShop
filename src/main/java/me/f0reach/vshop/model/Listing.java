@@ -5,6 +5,7 @@ import java.time.Instant;
 public record Listing(
         int listingId,
         int shopId,
+        int uiSlot,
         ListingMode mode,
         byte[] itemSerialized,
         double unitPrice,

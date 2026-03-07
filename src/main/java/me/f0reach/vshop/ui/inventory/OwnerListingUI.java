@@ -6,21 +6,17 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.inventory.base.PaginatedInventoryUI;
 import me.f0reach.vshop.ui.inventory.item.InventoryItemBuilder;
-import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
 
 import java.sql.SQLException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 
 public final class OwnerListingUI extends PaginatedInventoryUI {
-    private static final int ADD_BUTTON_SLOT = 44;
-
     private final Shop shop;
     private final UIManager uiManager;
 
@@ -41,42 +37,31 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
     }
 
     @Override
-    protected void renderContentSlots(List<Listing> pageListings, int offset) {
-        for (int i = 0; i < pageListings.size(); i++) {
-            inventory.setItem(i, InventoryItemBuilder.buildListingItem(pageListings.get(i), messages, true));
+    protected void renderContentSlots(Map<Integer, Listing> pageListings) {
+        for (Map.Entry<Integer, Listing> entry : pageListings.entrySet()) {
+            inventory.setItem(entry.getKey(), InventoryItemBuilder.buildListingItem(entry.getValue(), messages, true));
         }
-        // Add button in last content slot
-        inventory.setItem(ADD_BUTTON_SLOT, createAddButton());
     }
 
     @Override
     protected void handleContentClick(InventoryClickEvent event, int slot, Listing listing) {
-        if (slot == ADD_BUTTON_SLOT) {
-            uiManager.openItemSelectUI(viewer, shop);
-            return;
-        }
         uiManager.openListingEditDialog(viewer, shop, listing);
     }
 
     @Override
-    public void handleClick(InventoryClickEvent event) {
-        event.setCancelled(true);
-        int slot = event.getRawSlot();
-        // Handle add button even if no listing at that slot
-        if (slot == ADD_BUTTON_SLOT) {
-            uiManager.openItemSelectUI(viewer, shop);
+    protected void handleEmptyContentClick(InventoryClickEvent event, int slot) {
+        if (!event.getView().getTopInventory().equals(event.getClickedInventory())) {
             return;
         }
-        super.handleClick(event);
+        ItemStack cursor = event.getCursor();
+        if (cursor == null || cursor.getType().isAir()) {
+            return;
+        }
+        uiManager.openListingCreateDialog(viewer, shop, cursor.clone(), toAbsoluteSlot(slot));
     }
 
-    private ItemStack createAddButton() {
-        ItemStack item = new ItemStack(Material.LIME_STAINED_GLASS_PANE);
-        ItemMeta meta = item.getItemMeta();
-        meta.displayName(messages.get("shop.owner_add_button"));
-        item.setItemMeta(meta);
-        return item;
-    }
+    @Override
+    protected boolean hasTrailingCreatePage() { return true; }
 
     public Shop getShop() { return shop; }
 }
