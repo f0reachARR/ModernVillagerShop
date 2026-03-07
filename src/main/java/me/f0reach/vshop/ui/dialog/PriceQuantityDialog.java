@@ -43,8 +43,6 @@ public final class PriceQuantityDialog {
         int initialTarget = existingListing != null ? existingListing.targetStock() : 64;
         int initialCooldownSeconds = existingListing != null ? existingListing.cooldownSeconds() : 0;
         int initialLifetimeLimit = existingListing != null ? existingListing.lifetimeLimitPerPlayer() : 0;
-        int initialWindowLimit = existingListing != null ? existingListing.windowLimitPerPlayer() : 0;
-        int initialWindowSeconds = existingListing != null ? existingListing.windowSeconds() : 0;
         ItemStack templateItem = resolveTemplateItem(existingListing, selectedItem);
         int maxTradeQuantity = Math.max(MIN_TRADE_QUANTITY, templateItem.getMaxStackSize());
 
@@ -71,16 +69,6 @@ public final class PriceQuantityDialog {
                         .build(),
                 DialogInput.text("lifetimeLimitPerPlayer", factory.text("dialog.lifetime_limit_label"))
                         .initial(String.valueOf(initialLifetimeLimit))
-                        .maxLength(10)
-                        .width(300)
-                        .build(),
-                DialogInput.text("windowLimitPerPlayer", factory.text("dialog.window_limit_label"))
-                        .initial(String.valueOf(initialWindowLimit))
-                        .maxLength(10)
-                        .width(300)
-                        .build(),
-                DialogInput.text("windowSeconds", factory.text("dialog.window_seconds_label"))
-                        .initial(String.valueOf(initialWindowSeconds))
                         .maxLength(10)
                         .width(300)
                         .build());
@@ -125,31 +113,19 @@ public final class PriceQuantityDialog {
                                                         view.getText("cooldownSeconds"));
                                                 Integer lifetimeLimitPerPlayer = parseNonNegativeInt(
                                                         view.getText("lifetimeLimitPerPlayer"));
-                                                Integer windowLimitPerPlayer = parseNonNegativeInt(
-                                                        view.getText("windowLimitPerPlayer"));
-                                                Integer windowSeconds = parseNonNegativeInt(
-                                                        view.getText("windowSeconds"));
-                                                if (cooldownSeconds == null || lifetimeLimitPerPlayer == null
-                                                        || windowLimitPerPlayer == null || windowSeconds == null) {
+                                                if (cooldownSeconds == null || lifetimeLimitPerPlayer == null) {
                                                     player.sendMessage(factory.text("error.invalid_trade_limit_input"));
-                                                    return;
-                                                }
-                                                if ((windowLimitPerPlayer > 0 && windowSeconds == 0)
-                                                        || (windowSeconds > 0 && windowLimitPerPlayer == 0)) {
-                                                    player.sendMessage(factory.text("error.invalid_window_limit_input"));
                                                     return;
                                                 }
 
                                                 if (existingListing != null) {
                                                     uiManager.handleListingPriceUpdate(player, existingListing, price,
                                                             tradeQuantity, stock, mode, cooldownSeconds,
-                                                            lifetimeLimitPerPlayer, windowLimitPerPlayer,
-                                                            windowSeconds);
+                                                            lifetimeLimitPerPlayer);
                                                 } else {
                                                     uiManager.handleListingCreate(player, shop, mode, selectedItem,
                                                             price, tradeQuantity, stock, uiSlot, cooldownSeconds,
-                                                            lifetimeLimitPerPlayer, windowLimitPerPlayer,
-                                                            windowSeconds);
+                                                            lifetimeLimitPerPlayer);
                                                 }
                                             }
                                         },

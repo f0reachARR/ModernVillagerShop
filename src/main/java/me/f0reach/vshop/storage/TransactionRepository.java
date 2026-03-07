@@ -17,12 +17,12 @@ public final class TransactionRepository {
     }
 
     public void record(int shopId, int listingId, String direction,
-                       UUID buyerUuid, UUID sellerUuid,
-                       int qty, double gross, double fee, double net) throws SQLException {
+            UUID buyerUuid, UUID sellerUuid,
+            int qty, double gross, double fee, double net) throws SQLException {
         String sql = "INSERT INTO transactions (shop_id, listing_id, direction, buyer_uuid, seller_uuid, qty, gross, fee, net) "
                 + "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, shopId);
             ps.setInt(2, listingId);
             ps.setString(3, direction);
@@ -39,7 +39,7 @@ public final class TransactionRepository {
     public Optional<Instant> findLastTradeTimeForPlayer(int listingId, UUID playerUuid) throws SQLException {
         String sql = "SELECT MAX(created_at) AS last_trade_at FROM transactions WHERE listing_id = ? AND buyer_uuid = ?";
         try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, listingId);
             ps.setString(2, playerUuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
@@ -55,7 +55,7 @@ public final class TransactionRepository {
     public int countTradesForPlayer(int listingId, UUID playerUuid) throws SQLException {
         String sql = "SELECT COUNT(*) FROM transactions WHERE listing_id = ? AND buyer_uuid = ?";
         try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, listingId);
             ps.setString(2, playerUuid.toString());
             try (ResultSet rs = ps.executeQuery()) {
@@ -70,7 +70,7 @@ public final class TransactionRepository {
     public int countTradesForPlayerSince(int listingId, UUID playerUuid, Instant since) throws SQLException {
         String sql = "SELECT COUNT(*) FROM transactions WHERE listing_id = ? AND buyer_uuid = ? AND created_at >= ?";
         try (Connection conn = db.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+                PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, listingId);
             ps.setString(2, playerUuid.toString());
             ps.setTimestamp(3, Timestamp.from(since));

@@ -19,7 +19,6 @@ error:
   invalid_quantity_input: "<red>Enter an integer trade quantity between 1 and <max>.</red>"
   invalid_stock_input: "<red>Enter an integer stock/target between 0 and 100000.</red>"
   invalid_trade_limit_input: "<red>Enter non-negative integers for cooldown and per-player limits.</red>"
-  invalid_window_limit_input: "<red>Set both window limit and window seconds together, or leave both at 0.</red>"
 
 dialog:
   shop_title: "<gold>Shop #<shop_id></gold>"
@@ -46,8 +45,6 @@ dialog:
   stock_label: "<green>Stock / Target</green>"
   cooldown_seconds_label: "<green>Cooldown Seconds</green>"
   lifetime_limit_label: "<green>Lifetime Limit Per Player</green>"
-  window_limit_label: "<green>Window Limit Per Player</green>"
-  window_seconds_label: "<green>Window Seconds</green>"
   price_confirm: "<green>Confirm</green>"
   price_cancel: "<red>Cancel</red>"
   edit_title: "<gold>Edit Listing</gold>"
@@ -103,7 +100,6 @@ trade:
   shop_owner_insufficient: "<yellow>Shop owner has insufficient funds.</yellow>"
   cooldown_active: "<yellow>You must wait before trading this listing again.</yellow>"
   lifetime_limit_reached: "<yellow>You have reached this listing's purchase limit.</yellow>"
-  window_limit_reached: "<yellow>You have reached this listing's recent purchase limit.</yellow>"
   purchase_success: "<green>Purchased <item> x<qty>. Paid: <price></green>"
   procurement_success: "<green>Delivered <item> x<qty>. Received: <price></green>"
 

@@ -37,9 +37,9 @@ public final class ShopService {
     private final VaultEconomyAdapter economy;
 
     public ShopService(JavaPlugin plugin, PluginConfig config, MessageManager messages,
-                       ShopRepository shopRepo, ListingRepository listingRepo,
-                       ShopInventoryRepository shopInventoryRepo,
-                       TransactionRepository txRepo, VaultEconomyAdapter economy) {
+            ShopRepository shopRepo, ListingRepository listingRepo,
+            ShopInventoryRepository shopInventoryRepo,
+            TransactionRepository txRepo, VaultEconomyAdapter economy) {
         this.plugin = plugin;
         this.config = config;
         this.messages = messages;
@@ -50,7 +50,8 @@ public final class ShopService {
         this.economy = economy;
     }
 
-    public int createPlayerShop(UUID villagerUuid, UUID ownerUuid, String world, double x, double y, double z) throws SQLException {
+    public int createPlayerShop(UUID villagerUuid, UUID ownerUuid, String world, double x, double y, double z)
+            throws SQLException {
         return shopRepo.create(ShopType.PLAYER, villagerUuid, ownerUuid, world, x, y, z);
     }
 
@@ -67,15 +68,14 @@ public final class ShopService {
     }
 
     public int addListing(int shopId, int uiSlot, ListingMode mode, byte[] itemSerialized,
-                          double unitPrice, int tradeQuantity, int stock, int targetStock,
-                          int cooldownSeconds, int lifetimeLimitPerPlayer,
-                          int windowLimitPerPlayer, int windowSeconds) throws SQLException {
+            double unitPrice, int tradeQuantity, int stock, int targetStock,
+            int cooldownSeconds, int lifetimeLimitPerPlayer) throws SQLException {
         int count = listingRepo.countByShopId(shopId);
         if (count >= config.getMaxTradeItemTypes()) {
             return -1; // limit exceeded
         }
         return listingRepo.create(shopId, uiSlot, mode, itemSerialized, unitPrice, tradeQuantity, stock, targetStock,
-                cooldownSeconds, lifetimeLimitPerPlayer, windowLimitPerPlayer, windowSeconds);
+                cooldownSeconds, lifetimeLimitPerPlayer);
     }
 
     public List<Listing> getListingsForDisplay(Shop shop, boolean includeDisabled) throws SQLException {
@@ -105,11 +105,8 @@ public final class ShopService {
                         listing.targetStock(),
                         listing.cooldownSeconds(),
                         listing.lifetimeLimitPerPlayer(),
-                        listing.windowLimitPerPlayer(),
-                        listing.windowSeconds(),
                         listing.enabled(),
-                        listing.updatedAt()
-                ));
+                        listing.updatedAt()));
             } else {
                 adjusted.add(listing);
             }
@@ -190,7 +187,7 @@ public final class ShopService {
     public enum TradeResult {
         SUCCESS, OUT_OF_STOCK, BALANCE_SHORTAGE, NO_ITEM, BUY_ORDER_FULL,
         OWNER_INSUFFICIENT, TRADE_FAILED, LISTING_NOT_FOUND,
-        COOLDOWN_ACTIVE, LIFETIME_LIMIT_REACHED, WINDOW_LIMIT_REACHED
+        COOLDOWN_ACTIVE, LIFETIME_LIMIT_REACHED
     }
 
     /**
@@ -216,7 +213,8 @@ public final class ShopService {
         try {
             ItemStack tradeItem;
             if (shop.type() == ShopType.PLAYER) {
-                Optional<ItemStack> removed = removeMatchingFromShopInventory(shop.shopId(), listing.itemSerialized(), tradeQuantity);
+                Optional<ItemStack> removed = removeMatchingFromShopInventory(shop.shopId(), listing.itemSerialized(),
+                        tradeQuantity);
                 if (removed.isEmpty()) {
                     return TradeResult.OUT_OF_STOCK;
                 }
@@ -368,26 +366,22 @@ public final class ShopService {
 
     private TradeResult checkTradeRestrictions(Player player, Listing listing) {
         try {
-            Optional<Instant> lastTrade = txRepo.findLastTradeTimeForPlayer(listing.listingId(), player.getUniqueId());
-            if (listing.cooldownSeconds() > 0 && lastTrade.isPresent()) {
-                Instant cooldownBoundary = Instant.now().minusSeconds(listing.cooldownSeconds());
-                if (lastTrade.get().isAfter(cooldownBoundary)) {
-                    return TradeResult.COOLDOWN_ACTIVE;
-                }
+            if (listing.cooldownSeconds() <= 0 && listing.lifetimeLimitPerPlayer() <= 0) {
+                return null; // no restrictions
             }
+
+            Instant since = Instant.now().minusSeconds(listing.cooldownSeconds());
+            int windowCount = listing.cooldownSeconds() <= 0
+                    ? txRepo.countTradesForPlayer(listing.listingId(), player.getUniqueId())
+                    : txRepo.countTradesForPlayerSince(listing.listingId(), player.getUniqueId(), since);
 
             if (listing.lifetimeLimitPerPlayer() > 0) {
-                int lifetimeCount = txRepo.countTradesForPlayer(listing.listingId(), player.getUniqueId());
-                if (lifetimeCount >= listing.lifetimeLimitPerPlayer()) {
+                if (windowCount >= listing.lifetimeLimitPerPlayer()) {
                     return TradeResult.LIFETIME_LIMIT_REACHED;
                 }
-            }
-
-            if (listing.windowLimitPerPlayer() > 0 && listing.windowSeconds() > 0) {
-                Instant since = Instant.now().minusSeconds(listing.windowSeconds());
-                int windowCount = txRepo.countTradesForPlayerSince(listing.listingId(), player.getUniqueId(), since);
-                if (windowCount >= listing.windowLimitPerPlayer()) {
-                    return TradeResult.WINDOW_LIMIT_REACHED;
+            } else if (listing.cooldownSeconds() > 0) {
+                if (windowCount > 0) {
+                    return TradeResult.COOLDOWN_ACTIVE;
                 }
             }
         } catch (SQLException e) {
@@ -397,7 +391,8 @@ public final class ShopService {
         return null;
     }
 
-    private Optional<ItemStack> removeMatchingFromShopInventory(int shopId, byte[] serializedTemplate, int amount) throws SQLException {
+    private Optional<ItemStack> removeMatchingFromShopInventory(int shopId, byte[] serializedTemplate, int amount)
+            throws SQLException {
         Map<Integer, ItemStack> storage = getShopInventoryContents(shopId);
         ItemStack template = ItemStack.deserializeBytes(serializedTemplate);
         List<Map.Entry<Integer, ItemStack>> matchingSlots = storage.entrySet().stream()
@@ -447,8 +442,19 @@ public final class ShopService {
         return count;
     }
 
-    public ShopRepository getShopRepo() { return shopRepo; }
-    public ListingRepository getListingRepo() { return listingRepo; }
-    public TransactionRepository getTxRepo() { return txRepo; }
-    public VaultEconomyAdapter getEconomy() { return economy; }
+    public ShopRepository getShopRepo() {
+        return shopRepo;
+    }
+
+    public ListingRepository getListingRepo() {
+        return listingRepo;
+    }
+
+    public TransactionRepository getTxRepo() {
+        return txRepo;
+    }
+
+    public VaultEconomyAdapter getEconomy() {
+        return economy;
+    }
 }

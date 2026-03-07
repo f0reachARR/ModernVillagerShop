@@ -19,7 +19,6 @@ error:
   invalid_quantity_input: "<red>取引個数は 1 以上 <max> 以下の整数で入力してください。</red>"
   invalid_stock_input: "<red>在庫/目標数は 0 以上 100000 以下の整数で入力してください。</red>"
   invalid_trade_limit_input: "<red>クールダウン秒数とプレイヤー制限は 0 以上の整数で入力してください。</red>"
-  invalid_window_limit_input: "<red>時間窓上限と時間窓秒数は両方設定するか、両方 0 にしてください。</red>"
 
 dialog:
   shop_title: "<gold>Shop #<shop_id></gold>"
@@ -46,8 +45,6 @@ dialog:
   stock_label: "<green>在庫 / 目標数</green>"
   cooldown_seconds_label: "<green>クールダウン秒数</green>"
   lifetime_limit_label: "<green>プレイヤーごとの累計上限</green>"
-  window_limit_label: "<green>時間窓内上限</green>"
-  window_seconds_label: "<green>時間窓秒数</green>"
   price_confirm: "<green>確定</green>"
   price_cancel: "<red>キャンセル</red>"
   edit_title: "<gold>出品編集</gold>"
@@ -103,7 +100,6 @@ trade:
   shop_owner_insufficient: "<yellow>ショップ側の資金が不足しています。</yellow>"
   cooldown_active: "<yellow>この商品はまだ連続購入できません。</yellow>"
   lifetime_limit_reached: "<yellow>この商品の購入上限に達しています。</yellow>"
-  window_limit_reached: "<yellow>この商品の時間内購入上限に達しています。</yellow>"
   purchase_success: "<green><item> x<qty> を購入しました。支払: <price></green>"
   procurement_success: "<green><item> x<qty> を納品しました。受取: <price></green>"
 

@@ -81,8 +81,6 @@ public final class DatabaseManager {
                 + "target_stock " + intType + " NOT NULL DEFAULT 0, "
                 + "cooldown_seconds " + intType + " NOT NULL DEFAULT 0, "
                 + "lifetime_limit_per_player " + intType + " NOT NULL DEFAULT 0, "
-                + "window_limit_per_player " + intType + " NOT NULL DEFAULT 0, "
-                + "window_seconds " + intType + " NOT NULL DEFAULT 0, "
                 + "enabled BOOLEAN NOT NULL DEFAULT 1, "
                 + "updated_at TIMESTAMP NOT NULL DEFAULT " + timestampDefault + ", "
                 + "UNIQUE (shop_id, ui_slot), "
@@ -134,10 +132,6 @@ public final class DatabaseManager {
                 "ALTER TABLE listings ADD COLUMN cooldown_seconds " + intType + " NOT NULL DEFAULT 0");
         ensureColumn(conn, "listings", "lifetime_limit_per_player",
                 "ALTER TABLE listings ADD COLUMN lifetime_limit_per_player " + intType + " NOT NULL DEFAULT 0");
-        ensureColumn(conn, "listings", "window_limit_per_player",
-                "ALTER TABLE listings ADD COLUMN window_limit_per_player " + intType + " NOT NULL DEFAULT 0");
-        ensureColumn(conn, "listings", "window_seconds",
-                "ALTER TABLE listings ADD COLUMN window_seconds " + intType + " NOT NULL DEFAULT 0");
     }
 
     private void ensureColumn(Connection conn, String tableName, String columnName, String alterSql) throws SQLException {
