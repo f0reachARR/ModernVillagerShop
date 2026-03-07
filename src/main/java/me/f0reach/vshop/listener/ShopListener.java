@@ -2,6 +2,7 @@ package me.f0reach.vshop.listener;
 
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.model.ShopType;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.SpawnEggManager;
 import me.f0reach.vshop.ui.UIManager;
@@ -33,8 +34,8 @@ public final class ShopListener implements Listener {
     private final UIManager uiManager;
     private final MessageManager messages;
 
-    // Pending shop creation: maps player UUID to true when they use a shop egg
-    private final Map<UUID, Boolean> pendingShopCreation = new ConcurrentHashMap<>();
+    // Pending shop creation: maps player UUID to the shop type from the used egg
+    private final Map<UUID, ShopType> pendingShopCreation = new ConcurrentHashMap<>();
 
     public ShopListener(JavaPlugin plugin, ShopService shopService, SpawnEggManager eggManager,
                         UIManager uiManager, MessageManager messages) {
@@ -76,13 +77,18 @@ public final class ShopListener implements Listener {
         if (item == null || !eggManager.isShopEgg(item)) return;
 
         Player player = event.getPlayer();
-        if (!player.hasPermission("modernvillagershop.create")) {
+        ShopType shopType = eggManager.getShopType(item);
+        boolean hasPermission = switch (shopType) {
+            case ADMIN -> player.hasPermission("modernvillagershop.admin");
+            case PLAYER -> player.hasPermission("modernvillagershop.create");
+        };
+        if (!hasPermission) {
             player.sendMessage(messages.get("error.no_permission"));
             event.setCancelled(true);
             return;
         }
 
-        pendingShopCreation.put(player.getUniqueId(), true);
+        pendingShopCreation.put(player.getUniqueId(), shopType);
         // Let the event proceed so the villager spawns
     }
 
@@ -95,16 +101,19 @@ public final class ShopListener implements Listener {
         // Find which player spawned this - check pending
         // The spawn should happen right after the interact event
         Player spawner = null;
+        ShopType pendingType = null;
         for (Player p : villager.getWorld().getPlayers()) {
-            if (pendingShopCreation.remove(p.getUniqueId()) != null) {
+            ShopType type = pendingShopCreation.remove(p.getUniqueId());
+            if (type != null) {
                 if (p.getLocation().distanceSquared(villager.getLocation()) < 100) {
                     spawner = p;
+                    pendingType = type;
                     break;
                 }
             }
         }
 
-        if (spawner == null) return;
+        if (spawner == null || pendingType == null) return;
 
         // Disable AI
         villager.setAI(false);
@@ -113,19 +122,32 @@ public final class ShopListener implements Listener {
         villager.setCollidable(false);
 
         try {
-            int shopId = shopService.createPlayerShop(
-                    villager.getUniqueId(),
-                    spawner.getUniqueId(),
-                    villager.getWorld().getName(),
-                    villager.getLocation().getX(),
-                    villager.getLocation().getY(),
-                    villager.getLocation().getZ()
-            );
-            spawner.sendMessage(messages.get("shop.created_player",
-                    Placeholder.unparsed("shop_id", String.valueOf(shopId))));
-            uiManager.openShopInitDialog(spawner, shopId);
+            int shopId;
+            if (pendingType == ShopType.ADMIN) {
+                shopId = shopService.createAdminShop(
+                        villager.getUniqueId(),
+                        villager.getWorld().getName(),
+                        villager.getLocation().getX(),
+                        villager.getLocation().getY(),
+                        villager.getLocation().getZ()
+                );
+                spawner.sendMessage(messages.get("shop.created_admin",
+                        Placeholder.unparsed("shop_id", String.valueOf(shopId))));
+            } else {
+                shopId = shopService.createPlayerShop(
+                        villager.getUniqueId(),
+                        spawner.getUniqueId(),
+                        villager.getWorld().getName(),
+                        villager.getLocation().getX(),
+                        villager.getLocation().getY(),
+                        villager.getLocation().getZ()
+                );
+                spawner.sendMessage(messages.get("shop.created_player",
+                        Placeholder.unparsed("shop_id", String.valueOf(shopId))));
+                uiManager.openShopInitDialog(spawner, shopId);
+            }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Failed to create player shop", e);
+            plugin.getLogger().log(Level.SEVERE, "Failed to create shop from spawn egg", e);
             spawner.sendMessage(messages.get("error.storage"));
             villager.remove();
         }

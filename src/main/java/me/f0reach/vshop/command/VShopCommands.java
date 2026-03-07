@@ -55,6 +55,9 @@ public final class VShopCommands {
                         .then(Commands.literal("create")
                                 .executes(ctx -> executeAdminCreate(ctx.getSource()))
                         )
+                        .then(Commands.literal("egg")
+                                .executes(ctx -> executeAdminEgg(ctx.getSource()))
+                        )
                         .then(Commands.literal("edit")
                                 .then(Commands.argument("shopId", IntegerArgumentType.integer(1))
                                         .executes(ctx -> executeAdminEdit(ctx.getSource(),
@@ -142,6 +145,18 @@ public final class VShopCommands {
             source.getSender().getServer().getLogger().log(Level.SEVERE, "Failed to create admin shop", e);
             player.sendMessage(messages.get("error.storage"));
         }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int executeAdminEgg(CommandSourceStack source) {
+        Entity executor = source.getExecutor();
+        if (!(executor instanceof Player player)) {
+            source.getSender().sendMessage(messages.get("error.player_only"));
+            return Command.SINGLE_SUCCESS;
+        }
+
+        player.getInventory().addItem(eggManager.createAdminShopEgg());
+        player.sendMessage(messages.get("shop.admin_egg_given"));
         return Command.SINGLE_SUCCESS;
     }
 
