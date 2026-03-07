@@ -7,7 +7,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 public final class NavigationItems {
-    private NavigationItems() {}
+    private NavigationItems() {
+    }
 
     public static ItemStack prevPage(MessageManager messages) {
         return createButton(Material.ARROW, messages.get("ui.prev_page"));
@@ -21,27 +22,6 @@ public final class NavigationItems {
         return createButton(Material.PAPER, messages.get("ui.page_info",
                 Placeholder.unparsed("page", String.valueOf(page)),
                 Placeholder.unparsed("max_page", String.valueOf(maxPage))));
-    }
-
-    public static ItemStack sortButton(MessageManager messages, SortFilterState.SortOrder order) {
-        String sortKey = switch (order) {
-            case NAME_ASC -> messages.getRaw("ui.sort_name_asc");
-            case NAME_DESC -> messages.getRaw("ui.sort_name_desc");
-            case PRICE_ASC -> messages.getRaw("ui.sort_price_asc");
-            case PRICE_DESC -> messages.getRaw("ui.sort_price_desc");
-        };
-        return createButton(Material.HOPPER, messages.get("ui.sort_button",
-                Placeholder.unparsed("sort", sortKey)));
-    }
-
-    public static ItemStack filterButton(MessageManager messages, SortFilterState.FilterMode mode) {
-        String filterKey = switch (mode) {
-            case ALL -> messages.getRaw("ui.filter_all");
-            case SELL_ONLY -> messages.getRaw("ui.filter_sell");
-            case BUY_ONLY -> messages.getRaw("ui.filter_buy");
-        };
-        return createButton(Material.COMPASS, messages.get("ui.filter_button",
-                Placeholder.unparsed("filter", filterKey)));
     }
 
     public static ItemStack openStorage(MessageManager messages) {

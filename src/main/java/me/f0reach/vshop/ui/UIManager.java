@@ -7,6 +7,8 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopType;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.ui.dialog.*;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import me.f0reach.vshop.ui.inventory.ItemSelectUI;
 import me.f0reach.vshop.ui.inventory.OwnerListingUI;
@@ -189,7 +191,7 @@ public final class UIManager {
             player.sendMessage(messages.get("shop.offer_updated",
                     Placeholder.unparsed("shop_id", String.valueOf(listing.shopId())),
                     Placeholder.unparsed("mode", listing.mode().name()),
-                    Placeholder.unparsed("item", getItemName(listing)),
+                    Placeholder.component("item", getItemName(listing)),
                     Placeholder.unparsed("price", formatPrice(roundedPrice))));
             shopService.getShopById(listing.shopId()).ifPresent(s -> openShopManagementInventory(player, s));
         } catch (SQLException e) {
@@ -253,20 +255,15 @@ public final class UIManager {
 
             switch (result) {
                 case SUCCESS -> {
-                    String itemName = getItemName(current);
+                    var itemComponent = getItemName(current);
                     String price = formatPrice(current.unitPrice());
                     String qty = String.valueOf(current.tradeQuantity());
-                    if (current.mode() == ListingMode.SELL) {
-                        player.sendMessage(messages.get("trade.purchase_success",
-                                Placeholder.unparsed("item", itemName),
-                                Placeholder.unparsed("qty", qty),
-                                Placeholder.unparsed("price", price)));
-                    } else {
-                        player.sendMessage(messages.get("trade.procurement_success",
-                                Placeholder.unparsed("item", itemName),
-                                Placeholder.unparsed("qty", qty),
-                                Placeholder.unparsed("price", price)));
-                    }
+                    player.sendMessage(messages.get(
+                            current.mode() == ListingMode.SELL ? "trade.purchase_success" : "trade.procurement_success",
+                            Placeholder.component("item", itemComponent),
+                            Placeholder.unparsed("qty", qty),
+                            Placeholder.unparsed("price", price)));
+
                 }
                 case OUT_OF_STOCK -> player.sendMessage(messages.get("trade.out_of_stock"));
                 case BALANCE_SHORTAGE -> player.sendMessage(messages.get("trade.balance_shortage"));
@@ -282,12 +279,12 @@ public final class UIManager {
         }
     }
 
-    private String getItemName(Listing listing) {
+    public Component getItemName(Listing listing) {
         try {
             ItemStack item = ItemStack.deserializeBytes(listing.itemSerialized());
-            return item.getType().name();
+            return Component.translatable(item).hoverEvent(item.asHoverEvent());
         } catch (Exception e) {
-            return "UNKNOWN";
+            return Component.text("UNKNOWN");
         }
     }
 
