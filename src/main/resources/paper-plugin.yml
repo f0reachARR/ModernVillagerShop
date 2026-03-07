@@ -1,0 +1,6 @@
+name: ModernVillagerShop
+version: '1.0.0'
+main: me.f0reach.vshop.Plugin
+api-version: '1.21'
+authors: [ f0reachARR ]
+description: VillagerShop for 1.21.8+ Minecraft
