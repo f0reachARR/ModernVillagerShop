@@ -43,13 +43,18 @@ public final class InventoryItemBuilder {
                 Placeholder.unparsed("max_stock", String.valueOf(listing.targetStock()))));
         if (tradeAccess != null && tradeAccess.blockedReason() == TradeAccessBlockReason.COOLDOWN_ACTIVE) {
             lore.add(messages.get("shop.listing_lore_cooldown_remaining",
-                    Placeholder.unparsed("seconds", String.valueOf(tradeAccess.remainingCooldownSeconds()))));
-        } else if (tradeAccess != null && tradeAccess.blockedReason() == TradeAccessBlockReason.LIFETIME_LIMIT_REACHED) {
+                    Placeholder.unparsed("seconds",
+                            String.valueOf(tradeAccess.remainingCooldownSeconds()))));
+        } else if (tradeAccess != null
+                && tradeAccess.blockedReason() == TradeAccessBlockReason.LIFETIME_LIMIT_REACHED) {
             lore.add(messages.get("shop.listing_lore_lifetime_remaining",
-                    Placeholder.unparsed("remaining", String.valueOf(tradeAccess.remainingLifetimeTrades())),
-                    Placeholder.unparsed("limit", String.valueOf(listing.lifetimeLimitPerPlayer()))));
+                    Placeholder.unparsed("remaining",
+                            String.valueOf(tradeAccess.remainingLifetimeTrades())),
+                    Placeholder.unparsed("limit",
+                            String.valueOf(listing.lifetimeLimitPerPlayer()))));
+        } else {
+            lore.add(messages.get("shop.listing_lore_click"));
         }
-        lore.add(messages.get("shop.listing_lore_click"));
 
         if (showDisabled && !listing.enabled()) {
             lore.add(messages.get("shop.listing_lore_disabled"));
@@ -65,8 +70,7 @@ public final class InventoryItemBuilder {
             return new TradeAccessSnapshot(
                     TradeAccessBlockReason.NONE,
                     tradeAccess.remainingCooldownSeconds(),
-                    tradeAccess.remainingLifetimeTrades()
-            );
+                    tradeAccess.remainingLifetimeTrades());
         }
         return new TradeAccessSnapshot(
                 switch (tradeAccess.blockedReason()) {
@@ -75,7 +79,6 @@ public final class InventoryItemBuilder {
                     default -> TradeAccessBlockReason.NONE;
                 },
                 tradeAccess.remainingCooldownSeconds(),
-                tradeAccess.remainingLifetimeTrades()
-        );
+                tradeAccess.remainingLifetimeTrades());
     }
 }
