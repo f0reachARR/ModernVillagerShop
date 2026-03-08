@@ -9,10 +9,11 @@ import me.f0reach.vshop.listener.VillagerProtectListener;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.SpawnEggManager;
-import me.f0reach.vshop.storage.DatabaseManager;
+import me.f0reach.vshop.storage.JdbcStorageProvider;
 import me.f0reach.vshop.storage.ListingRepository;
 import me.f0reach.vshop.storage.ShopInventoryRepository;
 import me.f0reach.vshop.storage.ShopRepository;
+import me.f0reach.vshop.storage.StorageProvider;
 import me.f0reach.vshop.storage.TransactionRepository;
 import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.listener.UIEventListener;
@@ -22,7 +23,7 @@ import java.util.logging.Level;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class Plugin extends JavaPlugin {
-    private DatabaseManager databaseManager;
+    private StorageProvider storageProvider;
     private PluginConfig pluginConfig;
     private MessageManager messageManager;
 
@@ -36,18 +37,18 @@ public final class Plugin extends JavaPlugin {
             messageManager = new MessageManager(this, pluginConfig);
 
             // Phase 3: Database
-            databaseManager = new DatabaseManager(this, pluginConfig);
-            databaseManager.init();
+            storageProvider = new JdbcStorageProvider(this, pluginConfig);
+            storageProvider.init();
 
             // Phase 4: Economy
             VaultEconomyAdapter economy = new VaultEconomyAdapter();
             economy.init();
 
             // Phase 5: Repositories
-            ShopRepository shopRepo = new ShopRepository(databaseManager);
-            ListingRepository listingRepo = new ListingRepository(databaseManager);
-            ShopInventoryRepository shopInventoryRepo = new ShopInventoryRepository(databaseManager);
-            TransactionRepository txRepo = new TransactionRepository(databaseManager);
+            ShopRepository shopRepo = storageProvider.shopRepository();
+            ListingRepository listingRepo = storageProvider.listingRepository();
+            ShopInventoryRepository shopInventoryRepo = storageProvider.shopInventoryRepository();
+            TransactionRepository txRepo = storageProvider.transactionRepository();
 
             // Phase 6: Services
             SpawnEggManager eggManager = new SpawnEggManager(this, messageManager);
@@ -89,8 +90,8 @@ public final class Plugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (databaseManager != null) {
-            databaseManager.shutdown();
+        if (storageProvider != null) {
+            storageProvider.shutdown();
         }
         getLogger().info("ModernVillagerShop disabled.");
     }
