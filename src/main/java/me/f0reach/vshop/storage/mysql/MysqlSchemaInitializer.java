@@ -74,6 +74,7 @@ public final class MysqlSchemaInitializer implements SchemaInitializer {
             stmt.execute(transactionsTable);
             stmt.execute(shopInventoryTable);
             ensureListingColumns(conn);
+            ensureIndexes(conn);
         }
     }
 
@@ -84,6 +85,12 @@ public final class MysqlSchemaInitializer implements SchemaInitializer {
                 "ALTER TABLE listings ADD COLUMN cooldown_seconds INT NOT NULL DEFAULT 0");
         ensureColumn(conn, "listings", "lifetime_limit_per_player",
                 "ALTER TABLE listings ADD COLUMN lifetime_limit_per_player INT NOT NULL DEFAULT 0");
+    }
+
+    private void ensureIndexes(Connection conn) throws SQLException {
+        ensureIndex(conn, "transactions", "idx_transactions_listing_buyer_created_at",
+                "CREATE INDEX idx_transactions_listing_buyer_created_at "
+                        + "ON transactions (listing_id, buyer_uuid, created_at)");
     }
 
     private void ensureColumn(Connection conn, String tableName, String columnName, String alterSql) throws SQLException {
@@ -99,6 +106,27 @@ public final class MysqlSchemaInitializer implements SchemaInitializer {
         DatabaseMetaData metaData = conn.getMetaData();
         try (var columns = metaData.getColumns(conn.getCatalog(), null, tableName, columnName)) {
             return columns.next();
+        }
+    }
+
+    private void ensureIndex(Connection conn, String tableName, String indexName, String createSql) throws SQLException {
+        if (hasIndex(conn, tableName, indexName)) {
+            return;
+        }
+        try (Statement stmt = conn.createStatement()) {
+            stmt.execute(createSql);
+        }
+    }
+
+    private boolean hasIndex(Connection conn, String tableName, String indexName) throws SQLException {
+        DatabaseMetaData metaData = conn.getMetaData();
+        try (var indexes = metaData.getIndexInfo(conn.getCatalog(), null, tableName, false, false)) {
+            while (indexes.next()) {
+                if (indexName.equalsIgnoreCase(indexes.getString("INDEX_NAME"))) {
+                    return true;
+                }
+            }
+            return false;
         }
     }
 }

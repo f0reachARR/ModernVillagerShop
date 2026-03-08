@@ -9,8 +9,12 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.Calendar;
 import java.util.Optional;
+import java.util.TimeZone;
 import java.util.UUID;
+
+import org.checkerframework.checker.units.qual.s;
 
 public final class SqliteTransactionRepository implements TransactionRepository {
     private final ConnectionProvider connectionProvider;
@@ -43,17 +47,20 @@ public final class SqliteTransactionRepository implements TransactionRepository 
     @Override
     public Optional<Instant> findOldestTradeTimeForPlayer(int listingId, UUID playerUuid, Instant since)
             throws SQLException {
-        String sql = "SELECT MAX(created_at) AS trade_at FROM transactions WHERE listing_id = ? AND buyer_uuid = ? AND DATETIME(created_at) >= DATETIME(?)";
+        String sql = "SELECT created_at FROM transactions "
+                + "WHERE listing_id = ? AND buyer_uuid = ? AND unixepoch(created_at) >= ? "
+                + "ORDER BY created_at ASC LIMIT 1";
         try (Connection conn = connectionProvider.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, listingId);
             ps.setString(2, playerUuid.toString());
-            ps.setTimestamp(3, Timestamp.from(since));
+            ps.setLong(3, since.getEpochSecond());
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) {
                     return Optional.empty();
                 }
-                Timestamp timestamp = rs.getTimestamp("trade_at");
+                Calendar cal = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                Timestamp timestamp = rs.getTimestamp("created_at", cal);
                 return timestamp == null ? Optional.empty() : Optional.of(timestamp.toInstant());
             }
         }
@@ -77,12 +84,13 @@ public final class SqliteTransactionRepository implements TransactionRepository 
 
     @Override
     public int countTradesForPlayerSince(int listingId, UUID playerUuid, Instant since) throws SQLException {
-        String sql = "SELECT COUNT(*) FROM transactions WHERE listing_id = ? AND buyer_uuid = ? AND DATETIME(created_at) >= DATETIME(?)";
+        String sql = "SELECT COUNT(*) FROM transactions "
+                + "WHERE listing_id = ? AND buyer_uuid = ? AND unixepoch(created_at) >= ?";
         try (Connection conn = connectionProvider.getConnection();
                 PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, listingId);
             ps.setString(2, playerUuid.toString());
-            ps.setTimestamp(3, Timestamp.from(since));
+            ps.setLong(3, since.getEpochSecond());
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     return rs.getInt(1);

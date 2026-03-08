@@ -4,9 +4,12 @@ import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.economy.VaultEconomyAdapter;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Listing;
+import me.f0reach.vshop.model.ListingWithAccess;
 import me.f0reach.vshop.model.ListingMode;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopType;
+import me.f0reach.vshop.model.TradeAccessBlockReason;
+import me.f0reach.vshop.model.TradeAccessSnapshot;
 import me.f0reach.vshop.storage.ListingRepository;
 import me.f0reach.vshop.storage.ShopInventoryRepository;
 import me.f0reach.vshop.storage.ShopRepository;
@@ -109,6 +112,31 @@ public final class ShopService {
                         listing.updatedAt()));
             } else {
                 adjusted.add(listing);
+            }
+        }
+        return adjusted;
+    }
+
+    public List<ListingWithAccess> getListingsForDisplayWithAccess(Shop shop, boolean includeDisabled, UUID playerUuid)
+            throws SQLException {
+        List<ListingWithAccess> entries = listingRepo.findDisplayEntriesByShopId(shop.shopId(), playerUuid, Instant.now());
+        if (!includeDisabled) {
+            entries = entries.stream().filter(entry -> entry.listing().enabled()).toList();
+        }
+
+        if (shop.type() != ShopType.PLAYER) {
+            return entries;
+        }
+
+        Map<Integer, ItemStack> storage = getShopInventoryContents(shop.shopId());
+        List<ListingWithAccess> adjusted = new ArrayList<>(entries.size());
+        for (ListingWithAccess entry : entries) {
+            Listing listing = entry.listing();
+            if (listing.mode() == ListingMode.SELL) {
+                int realStock = countMatchingItems(storage, listing.itemSerialized());
+                adjusted.add(new ListingWithAccess(copyListingWithStock(listing, realStock), entry.access()));
+            } else {
+                adjusted.add(entry);
             }
         }
         return adjusted;
@@ -224,6 +252,23 @@ public final class ShopService {
         }
 
         return new TradeAccess(null, 0, limit - count);
+    }
+
+    public static TradeAccess toTradeAccess(TradeAccessSnapshot snapshot) {
+        if (snapshot == null || snapshot.blockedReason() == TradeAccessBlockReason.NONE) {
+            return new TradeAccess(null,
+                    snapshot == null ? 0 : snapshot.remainingCooldownSeconds(),
+                    snapshot == null ? Integer.MAX_VALUE : snapshot.remainingLifetimeTrades());
+        }
+        return new TradeAccess(
+                switch (snapshot.blockedReason()) {
+                    case COOLDOWN_ACTIVE -> TradeResult.COOLDOWN_ACTIVE;
+                    case LIFETIME_LIMIT_REACHED -> TradeResult.LIFETIME_LIMIT_REACHED;
+                    case NONE -> null;
+                },
+                snapshot.remainingCooldownSeconds(),
+                snapshot.remainingLifetimeTrades()
+        );
     }
 
     public TradeResult previewTrade(Player player, Listing listing, Shop shop) throws SQLException {
@@ -498,6 +543,24 @@ public final class ShopService {
             }
         }
         return count;
+    }
+
+    private Listing copyListingWithStock(Listing listing, int stock) {
+        return new Listing(
+                listing.listingId(),
+                listing.shopId(),
+                listing.uiSlot(),
+                listing.mode(),
+                listing.itemSerialized(),
+                listing.unitPrice(),
+                listing.tradeQuantity(),
+                stock,
+                listing.targetStock(),
+                listing.cooldownSeconds(),
+                listing.lifetimeLimitPerPlayer(),
+                listing.enabled(),
+                listing.updatedAt()
+        );
     }
 
     public ShopRepository getShopRepo() {

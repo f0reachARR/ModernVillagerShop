@@ -2,6 +2,7 @@ package me.f0reach.vshop.ui.inventory;
 
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Listing;
+import me.f0reach.vshop.model.ListingWithAccess;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.ui.UIManager;
@@ -13,6 +14,7 @@ import org.bukkit.event.inventory.InventoryClickEvent;
 
 import java.sql.SQLException;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
@@ -20,6 +22,7 @@ import java.util.logging.Level;
 public final class ShopListingUI extends PaginatedInventoryUI {
     private final Shop shop;
     private final UIManager uiManager;
+    private final Map<Integer, ListingWithAccess> accessByListingId = new HashMap<>();
 
     public ShopListingUI(Player viewer, Shop shop, MessageManager messages, UIManager uiManager) {
         super(viewer, messages.get("shop.inventory_title",
@@ -31,8 +34,15 @@ public final class ShopListingUI extends PaginatedInventoryUI {
     @Override
     protected List<Listing> getListings() {
         try {
-            return uiManager.getShopService().getListingsForDisplay(shop, false);
+            List<ListingWithAccess> entries = uiManager.getShopService()
+                    .getListingsForDisplayWithAccess(shop, false, viewer.getUniqueId());
+            accessByListingId.clear();
+            for (ListingWithAccess entry : entries) {
+                accessByListingId.put(entry.listing().listingId(), entry);
+            }
+            return entries.stream().map(ListingWithAccess::listing).toList();
         } catch (SQLException e) {
+            accessByListingId.clear();
             viewer.getServer().getLogger().log(Level.SEVERE, "Failed to load listings", e);
             return Collections.emptyList();
         }
@@ -41,18 +51,13 @@ public final class ShopListingUI extends PaginatedInventoryUI {
     @Override
     protected void renderContentSlots(Map<Integer, Listing> pageListings) {
         for (Map.Entry<Integer, Listing> entry : pageListings.entrySet()) {
-            ShopService.TradeAccess tradeAccess = null;
-            try {
-                tradeAccess = uiManager.getShopService().getTradeAccess(viewer, entry.getValue());
-            } catch (SQLException e) {
-                viewer.getServer().getLogger().log(Level.WARNING, "Failed to load trade access state", e);
-            }
+            ListingWithAccess displayEntry = accessByListingId.get(entry.getValue().listingId());
             inventory.setItem(entry.getKey(), InventoryItemBuilder.buildListingItem(
                     entry.getValue(),
                     messages,
                     uiManager.getShopService().getEconomy(),
                     false,
-                    tradeAccess
+                    displayEntry != null ? displayEntry.access() : null
             ));
         }
     }
