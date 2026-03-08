@@ -1,7 +1,9 @@
-package me.f0reach.vshop.storage;
+package me.f0reach.vshop.storage.sqlite;
 
 import me.f0reach.vshop.model.Listing;
 import me.f0reach.vshop.model.ListingMode;
+import me.f0reach.vshop.storage.ConnectionProvider;
+import me.f0reach.vshop.storage.ListingRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -14,10 +16,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-public final class MysqlListingRepository implements ListingRepository {
+public final class SqliteListingRepository implements ListingRepository {
     private final ConnectionProvider connectionProvider;
 
-    public MysqlListingRepository(ConnectionProvider connectionProvider) {
+    public SqliteListingRepository(ConnectionProvider connectionProvider) {
         this.connectionProvider = connectionProvider;
     }
 

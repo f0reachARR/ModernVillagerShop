@@ -1,4 +1,7 @@
-package me.f0reach.vshop.storage;
+package me.f0reach.vshop.storage.mysql;
+
+import me.f0reach.vshop.storage.ConnectionProvider;
+import me.f0reach.vshop.storage.ShopInventoryRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;

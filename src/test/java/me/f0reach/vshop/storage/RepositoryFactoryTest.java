@@ -1,5 +1,7 @@
 package me.f0reach.vshop.storage;
 
+import me.f0reach.vshop.storage.mysql.*;
+import me.f0reach.vshop.storage.sqlite.*;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;

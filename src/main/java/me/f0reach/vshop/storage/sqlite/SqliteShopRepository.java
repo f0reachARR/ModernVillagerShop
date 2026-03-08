@@ -1,7 +1,9 @@
-package me.f0reach.vshop.storage;
+package me.f0reach.vshop.storage.sqlite;
 
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopType;
+import me.f0reach.vshop.storage.ConnectionProvider;
+import me.f0reach.vshop.storage.ShopRepository;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -15,10 +17,10 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public final class MysqlShopRepository implements ShopRepository {
+public final class SqliteShopRepository implements ShopRepository {
     private final ConnectionProvider connectionProvider;
 
-    public MysqlShopRepository(ConnectionProvider connectionProvider) {
+    public SqliteShopRepository(ConnectionProvider connectionProvider) {
         this.connectionProvider = connectionProvider;
     }
 

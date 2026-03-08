@@ -1,5 +1,8 @@
 package me.f0reach.vshop.storage;
 
+import me.f0reach.vshop.storage.mysql.*;
+import me.f0reach.vshop.storage.sqlite.*;
+
 public final class RepositoryFactory {
     public ShopRepository createShopRepository(StorageType storageType, ConnectionProvider connectionProvider) {
         return switch (storageType) {
