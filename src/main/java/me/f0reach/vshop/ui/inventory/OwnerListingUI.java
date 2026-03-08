@@ -4,6 +4,7 @@ import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Listing;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopType;
+import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.ui.UIManager;
 import me.f0reach.vshop.ui.inventory.base.PaginatedInventoryUI;
 import me.f0reach.vshop.ui.inventory.item.InventoryItemBuilder;
@@ -49,8 +50,7 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
                     messages,
                     uiManager.getShopService().getEconomy(),
                     true,
-                    null
-            ));
+                    new ShopService.TradeAccess(null, 0, 0)));
         }
     }
 
@@ -72,7 +72,9 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
     }
 
     @Override
-    protected boolean hasTrailingCreatePage() { return true; }
+    protected boolean hasTrailingCreatePage() {
+        return true;
+    }
 
     @Override
     protected void renderNavExtras() {
@@ -90,5 +92,7 @@ public final class OwnerListingUI extends PaginatedInventoryUI {
         return false;
     }
 
-    public Shop getShop() { return shop; }
+    public Shop getShop() {
+        return shop;
+    }
 }
