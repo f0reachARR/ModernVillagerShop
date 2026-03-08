@@ -30,12 +30,8 @@ class SqliteListingRepositoryTest {
 
     @Test
     void aggregatesTradeAccessForShopListingsWithoutNPlusOne() throws Exception {
-        String jdbcUrl = "jdbc:sqlite:" + tempDir.resolve("display-access.db");
-        ConnectionProvider provider = () -> DriverManager.getConnection(jdbcUrl);
-
-        SqliteSchemaInitializer schemaInitializer = new SqliteSchemaInitializer();
-        schemaInitializer.initialize(provider);
-
+        SqliteTestDatabase database = SqliteTestDatabase.create(tempDir, "display-access.db");
+        ConnectionProvider provider = database.connectionProvider();
         SqliteShopRepository shopRepository = new SqliteShopRepository(provider);
         SqliteListingRepository listingRepository = new SqliteListingRepository(provider);
 
