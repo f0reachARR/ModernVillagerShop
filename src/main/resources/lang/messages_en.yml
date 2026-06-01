@@ -1,0 +1,59 @@
+# MiniMessage messages (English)
+command:
+  help:
+    header: "<gold>=== ModernVillagerShop Help ==="
+    line: "<yellow>/vshop <gray>- <white><desc>"
+  unknown: "<red>Unknown subcommand. See /vshop help."
+  no-permission: "<red>You don't have permission."
+  player-only: "<red>This command can only be used by a player."
+  shop-not-found: "<red>Shop not found: <shop_id>"
+  egg:
+    issued: "<green>Gave a spawn egg to <player>."
+    not-found: "<red>Player not found: <player>"
+  reload:
+    done: "<green>Configuration reloaded."
+  migrate:
+    started: "<yellow>Migration started: <from> -> <to>"
+    done: "<green>Migration completed."
+    failed: "<red>Migration failed: <reason>"
+
+shop:
+  created: "<green>Shop <shop_id> created."
+  deleted: "<green>Shop <shop_id> deleted."
+  suspended: "<yellow>Shop <shop_id> suspended."
+  resumed: "<green>Shop <shop_id> resumed."
+  egg:
+    name: "<aqua>Shop Spawn Egg <gray>(<type>)"
+    lore-lines: "<gray>Rows: <lines>"
+    lore-admin: "<gray>For admin shops"
+  villager:
+    default-name: "Shop"
+  place:
+    too-close: "<red>Cannot place shop too close to existing one."
+    placed: "<green>Shop placed."
+    failed: "<red>Failed to place shop."
+  open:
+    suspended: "<yellow>This shop is suspended."
+    too-far: "<red>Get closer to this shop."
+  edit:
+    no-permission: "<red>You do not have permission to edit this shop."
+    editing: "<yellow>Editing: <shop_name>"
+
+trade:
+  sold: "<green>Sold: <item> x<amount> = <price>"
+  bought: "<green>Bought: <item> x<amount> = <price>"
+  out-of-stock: "<red>Out of stock."
+  buy-full: "<red>Buy slot is full."
+  not-enough-money-buyer: "<red>You don't have enough money."
+  not-enough-money-owner: "<red>The shop owner does not have enough funds."
+  limit-reached: "<red>Trade limit reached."
+  price-drift: "<red>Price changed; transaction canceled. Please reopen."
+
+error:
+  invalid-amount: "<red>Invalid amount."
+  invalid-price: "<red>Invalid price."
+  blacklisted-item: "<red>This item is not tradable."
+  generic: "<red>An error occurred: <reason>"
+
+system:
+  prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"

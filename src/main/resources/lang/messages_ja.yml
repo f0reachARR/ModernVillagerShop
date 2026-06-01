@@ -1,0 +1,59 @@
+# MiniMessage messages (Japanese)
+command:
+  help:
+    header: "<gold>=== ModernVillagerShop ヘルプ ==="
+    line: "<yellow>/vshop <gray>- <white><desc>"
+  unknown: "<red>不明なサブコマンドです。/vshop help を参照してください。"
+  no-permission: "<red>権限がありません。"
+  player-only: "<red>このコマンドはプレイヤーのみ実行できます。"
+  shop-not-found: "<red>指定されたショップが見つかりません: <shop_id>"
+  egg:
+    issued: "<green>スポーンエッグを <player> に配布しました。"
+    not-found: "<red>対象プレイヤーが見つかりません: <player>"
+  reload:
+    done: "<green>設定をリロードしました。"
+  migrate:
+    started: "<yellow>マイグレーションを開始しました: <from> -> <to>"
+    done: "<green>マイグレーション完了。"
+    failed: "<red>マイグレーション失敗: <reason>"
+
+shop:
+  created: "<green>ショップ <shop_id> を作成しました。"
+  deleted: "<green>ショップ <shop_id> を削除しました。"
+  suspended: "<yellow>ショップ <shop_id> を一時停止しました。"
+  resumed: "<green>ショップ <shop_id> の公開を再開しました。"
+  egg:
+    name: "<aqua>ショップスポーンエッグ <gray>(<type>)"
+    lore-lines: "<gray>行数: <lines>"
+    lore-admin: "<gray>管理者ショップ用"
+  villager:
+    default-name: "ショップ"
+  place:
+    too-close: "<red>近くにショップがあるため設置できません。"
+    placed: "<green>ショップを設置しました。"
+    failed: "<red>ショップの設置に失敗しました。"
+  open:
+    suspended: "<yellow>このショップは一時停止中です。"
+    too-far: "<red>このショップに近づいてください。"
+  edit:
+    no-permission: "<red>このショップを編集する権限がありません。"
+    editing: "<yellow>編集モード中: <shop_name>"
+
+trade:
+  sold: "<green>販売しました: <item> x<amount> = <price>"
+  bought: "<green>買い取りました: <item> x<amount> = <price>"
+  out-of-stock: "<red>在庫が不足しています。"
+  buy-full: "<red>受入枠が満杯です。"
+  not-enough-money-buyer: "<red>所持金が足りません。"
+  not-enough-money-owner: "<red>店主の残高が不足しているため取引できません。"
+  limit-reached: "<red>取引上限に達しています。"
+  price-drift: "<red>価格が変動したため取引をキャンセルしました。再度開いてください。"
+
+error:
+  invalid-amount: "<red>数量の入力が不正です。"
+  invalid-price: "<red>価格の入力が不正です。"
+  blacklisted-item: "<red>このアイテムは取引できません。"
+  generic: "<red>エラーが発生しました: <reason>"
+
+system:
+  prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"

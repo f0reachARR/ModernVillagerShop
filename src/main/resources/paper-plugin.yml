@@ -1,6 +1,6 @@
 name: ModernVillagerShop
 version: "${version}"
-main: me.f0reach.vshop.Plugin
+main: me.f0reach.vshop.ModernVillagerShopPlugin
 api-version: "1.21"
 authors: [f0reachARR]
 description: VillagerShop for 1.21.8+ Minecraft
@@ -10,3 +10,9 @@ dependencies:
         Vault:
             load: BEFORE
             required: true
+        BedrockDialog:
+            load: BEFORE
+            required: true
+        PlaceholderAPI:
+            load: BEFORE
+            required: false

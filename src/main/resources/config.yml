@@ -1,0 +1,96 @@
+# ModernVillagerShop configuration
+
+locale: ja_JP
+fallbackLocale: en_US
+
+storage:
+  type: sqlite # sqlite | mysql
+  sqlite:
+    file: shops.db
+  mysql:
+    host: localhost
+    port: 3306
+    database: vshop
+    username: root
+    password: ""
+    properties: "useUnicode=true&characterEncoding=utf8&useSSL=false"
+    poolSize: 8
+
+economy:
+  feeRate: 0.05
+  priceMin: 1
+  priceMax: 1000000
+  amountMax: 64
+  fractionDigits: 2
+  roundingMode: HALF_UP
+  priceDriftTolerance: 0.01
+  currencyFormat: "<amount> <currency>"
+  priceProvider:
+    enabled: true
+
+shop:
+  maxShopsPerPlayer: -1 # -1 = unlimited
+  openDistance: 6.0
+  minDistance: 0.5
+  defaultLimitScope: PER_PLAYER # PER_PLAYER | GLOBAL
+  villagerNameFormat: "<shop_name> <gray>[<primary>]</gray>"
+
+playerCache:
+  maxEntries: 5000
+  defaultSort: LAST_SEEN_DESC # LAST_SEEN_DESC | NAME_ASC
+  textureTtl: 7d
+
+items:
+  blacklist:
+    - SHULKER_BOX
+    - WHITE_SHULKER_BOX
+    - ORANGE_SHULKER_BOX
+    - MAGENTA_SHULKER_BOX
+    - LIGHT_BLUE_SHULKER_BOX
+    - YELLOW_SHULKER_BOX
+    - LIME_SHULKER_BOX
+    - PINK_SHULKER_BOX
+    - GRAY_SHULKER_BOX
+    - LIGHT_GRAY_SHULKER_BOX
+    - CYAN_SHULKER_BOX
+    - PURPLE_SHULKER_BOX
+    - BLUE_SHULKER_BOX
+    - BROWN_SHULKER_BOX
+    - GREEN_SHULKER_BOX
+    - RED_SHULKER_BOX
+    - BLACK_SHULKER_BOX
+    - BUNDLE
+
+placeholderapi:
+  enabled: true
+
+ui:
+  chest:
+    icons:
+      nextPage:
+        material: ARROW
+        name: "<white>次のページ"
+      prevPage:
+        material: ARROW
+        name: "<white>前のページ"
+      close:
+        material: BARRIER
+        name: "<red>閉じる"
+      sort:
+        material: COMPARATOR
+        name: "<white>並び替え"
+      filter:
+        material: HOPPER
+        name: "<white>絞り込み"
+      back:
+        material: OAK_DOOR
+        name: "<white>戻る"
+      unknownPlayer:
+        material: PLAYER_HEAD
+        name: "<gray>(不明)"
+      unavailable:
+        material: BARRIER
+        name: "<red>利用不可"
+      emptySlot:
+        material: GRAY_STAINED_GLASS_PANE
+        name: " "
