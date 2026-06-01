@@ -30,6 +30,7 @@ shop:
     default-name: "Shop"
   place:
     too-close: "<red>Cannot place shop too close to existing one."
+    too-many: "<red>You have reached your shop count limit."
     placed: "<green>Shop placed."
     failed: "<red>Failed to place shop."
   open:

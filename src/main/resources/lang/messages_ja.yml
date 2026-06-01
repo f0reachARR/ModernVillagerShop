@@ -30,6 +30,7 @@ shop:
     default-name: "ショップ"
   place:
     too-close: "<red>近くにショップがあるため設置できません。"
+    too-many: "<red>所有ショップ数の上限に達しています。"
     placed: "<green>ショップを設置しました。"
     failed: "<red>ショップの設置に失敗しました。"
   open:
