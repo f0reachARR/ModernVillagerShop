@@ -1,5 +1,7 @@
 package me.f0reach.vshop;
 
+import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import me.f0reach.vshop.command.VShopCommand;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.shop.ShopRegistry;
@@ -53,6 +55,11 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new ShopEggListener(this, eggFactory, shopService, messages), this);
         pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, config), this);
+
+        VShopCommand cmd = new VShopCommand(this);
+        getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
+                event -> event.registrar().register(cmd.build(),
+                        "ModernVillagerShop main command", java.util.List.of("vs")));
 
         getLogger().info("ModernVillagerShop enabled (locale=" + messages.primaryLocale()
                 + ", storage=" + config.storageType() + ", shops=" + registry.all().size() + ")");
