@@ -16,3 +16,118 @@ dependencies:
         PlaceholderAPI:
             load: BEFORE
             required: false
+
+permissions:
+    modernvillagershop.use:
+        description: ショップUIを開く（購入・納品）
+        default: "true"
+    modernvillagershop.egg:
+        description: プレイヤーショップ用スポーンエッグの使用
+        default: "op"
+    modernvillagershop.list:
+        description: ショップ一覧の閲覧
+        default: "true"
+    modernvillagershop.search:
+        description: ショップ検索の実行
+        default: "true"
+    modernvillagershop.stats:
+        description: 統計情報の閲覧
+        default: "true"
+    modernvillagershop.history:
+        description: 自身の取引履歴の閲覧
+        default: "true"
+    modernvillagershop.history.others:
+        description: 他者・他ショップの取引履歴閲覧
+        default: "op"
+    modernvillagershop.open.nearby:
+        description: 近距離ショップのみオープン許可
+        default: "true"
+    modernvillagershop.open.any:
+        description: 距離問わずショップオープン許可（nearbyより優先）
+        default: "op"
+
+    modernvillagershop.edit:
+        description: 自ショップの編集UIを開く
+        default: "true"
+    modernvillagershop.edit.move:
+        description: 自ショップの移動
+        default: "true"
+    modernvillagershop.edit.rename:
+        description: 自ショップの名称変更
+        default: "true"
+    modernvillagershop.edit.profession:
+        description: 自ショップの職業変更
+        default: "true"
+    modernvillagershop.edit.suspend:
+        description: 自ショップの公開・一時停止切り替え
+        default: "true"
+    modernvillagershop.edit.delete:
+        description: 自ショップの削除（PRIMARY のみ実行可）
+        default: "true"
+    modernvillagershop.edit.delete.refund:
+        description: ショップ削除時にスポーンエッグをドロップする
+        default: "true"
+    modernvillagershop.edit.others:
+        description: 他人のショップを編集（ロール無視）
+        default: "op"
+
+    modernvillagershop.coowner.manage:
+        description: 共同オーナーの追加・削除・役割変更・持分変更
+        default: "true"
+    modernvillagershop.coowner.manage.others:
+        description: 任意のショップの共同オーナー管理（ロール無視）
+        default: "op"
+    modernvillagershop.coowner.transfer:
+        description: PRIMARY 権限の移譲
+        default: "true"
+    modernvillagershop.coowner.transfer.others:
+        description: 任意のショップの PRIMARY 強制移譲
+        default: "op"
+
+    modernvillagershop.admin.egg:
+        description: 管理者ショップ用スポーンエッグの使用
+        default: "op"
+    modernvillagershop.admin.edit:
+        description: 管理者ショップの編集
+        default: "op"
+
+    modernvillagershop.migrate:
+        description: ストレージマイグレーション実行
+        default: "op"
+    modernvillagershop.reload:
+        description: 設定リロード
+        default: "op"
+
+    modernvillagershop.admin:
+        description: 全ての管理者向け権限のまとめ
+        default: "op"
+        children:
+            modernvillagershop.admin.egg: true
+            modernvillagershop.admin.edit: true
+            modernvillagershop.edit.others: true
+            modernvillagershop.coowner.manage.others: true
+            modernvillagershop.coowner.transfer.others: true
+            modernvillagershop.history.others: true
+            modernvillagershop.open.any: true
+            modernvillagershop.migrate: true
+            modernvillagershop.reload: true
+    modernvillagershop.player:
+        description: 一般プレイヤー向け権限のまとめ
+        default: "true"
+        children:
+            modernvillagershop.use: true
+            modernvillagershop.egg: true
+            modernvillagershop.list: true
+            modernvillagershop.search: true
+            modernvillagershop.stats: true
+            modernvillagershop.history: true
+            modernvillagershop.open.nearby: true
+            modernvillagershop.edit: true
+            modernvillagershop.edit.move: true
+            modernvillagershop.edit.rename: true
+            modernvillagershop.edit.profession: true
+            modernvillagershop.edit.suspend: true
+            modernvillagershop.edit.delete: true
+            modernvillagershop.edit.delete.refund: true
+            modernvillagershop.coowner.manage: true
+            modernvillagershop.coowner.transfer: true
