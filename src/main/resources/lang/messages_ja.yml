@@ -60,6 +60,7 @@ trade:
   not-enough-money-owner: "<red>店主の残高が不足しているため取引できません。"
   limit-reached: "<red>取引上限に達しています。"
   price-drift: "<red>価格が変動したため取引をキャンセルしました。再度開いてください。"
+  frozen-at: "<dark_gray>(価格凍結: <time>)</dark_gray>"
   amount-prompt:
     title: "<white>数量入力"
     body: "<gray><item> を取引する数量 (パック数) を入力してください。"

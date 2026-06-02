@@ -52,19 +52,31 @@ public final class TradeService {
     private final PluginConfig config;
     private final TradeNotifier notifier;
     private final me.f0reach.vshop.shop.edit.ShopEditService editService;
+    private final PriceResolver priceResolver;
 
     public TradeService(StorageManager storage, EconomyService economy, PluginConfig config, TradeNotifier notifier,
-                        me.f0reach.vshop.shop.edit.ShopEditService editService) {
+                        me.f0reach.vshop.shop.edit.ShopEditService editService, PriceResolver priceResolver) {
         this.storage = storage;
         this.economy = economy;
         this.config = config;
         this.notifier = notifier;
         this.editService = editService;
+        this.priceResolver = priceResolver;
     }
 
     public TradeResult execute(TradeRequest req) {
         if (editService != null && editService.isEditing(req.shop().id())) {
             return new TradeResult.Failure("shop.edit.busy");
+        }
+        // Re-resolve the price right before settlement (spec §12.3.2). If it
+        // has drifted beyond `economy.priceDriftTolerance` against the snapshot
+        // taken at confirm-open time, kill the trade and ask the user to reopen.
+        if (priceResolver != null) {
+            PriceResolver.Resolution live = priceResolver.resolve(
+                    req.shop(), req.slot(), req.side(), req.viewer(), req.totalItems());
+            if (priceResolver.isDriftBeyondTolerance(req.unitPriceSnapshot(), live.finalPrice())) {
+                return new TradeResult.Failure("trade.price-drift");
+            }
         }
         // Let other plugins veto the trade before any money or items move.
         ShopPreTransactionEvent pre = new ShopPreTransactionEvent(req.shop(), req.slot(), req.side(),
@@ -159,7 +171,10 @@ public final class TradeService {
                     TradeSide.SELL, buyer.getUniqueId(),
                     shop.isPlayerShop() ? shop.ownerUuid() : null,
                     cloneAs(slot.itemTemplate(), 1), totalItems,
-                    req.unitPriceSnapshot(), fee, slot.unitPrice(), req.unitPriceSnapshot(), null);
+                    req.unitPriceSnapshot(), fee,
+                    req.basePrice() != null ? req.basePrice() : slot.unitPrice(),
+                    req.unitPriceSnapshot(),
+                    req.resolvedBy());
             long txId = storage.transactions().insertTx(c, rec);
             final TradeRecord recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
                     rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),
@@ -207,7 +222,10 @@ public final class TradeService {
 
         Player deliverer = req.viewer();
         int totalItems = req.totalItems();
-        BigDecimal unit = slot.buyUnitPrice() != null ? slot.buyUnitPrice() : slot.unitPrice();
+        // Use the snapshot price agreed in the confirm dialog. The execute()
+        // drift check above already guaranteed it's within tolerance of the
+        // currently-resolved price.
+        BigDecimal unit = req.unitPriceSnapshot();
         BigDecimal gross = economy.round(unit.multiply(BigDecimal.valueOf(req.packCount())));
         BigDecimal fee = economy.computeFee(gross);
         BigDecimal payoutToDeliverer = gross.subtract(fee);
@@ -286,11 +304,14 @@ public final class TradeService {
             updateBuyCapacity(c, slot.id(), newCapacity);
 
             // 8. Insert tx record + notifications
+            BigDecimal baseForRec = req.basePrice() != null
+                    ? req.basePrice()
+                    : (slot.buyUnitPrice() != null ? slot.buyUnitPrice() : slot.unitPrice());
             TradeRecord rec = new TradeRecord(0, Instant.now(), shop.id(), slot.id(),
                     TradeSide.BUY, shop.isPlayerShop() ? shop.ownerUuid() : null,
                     deliverer.getUniqueId(),
                     cloneAs(slot.itemTemplate(), 1), totalItems,
-                    unit, fee, unit, unit, null);
+                    unit, fee, baseForRec, unit, req.resolvedBy());
             long txId = storage.transactions().insertTx(c, rec);
             final TradeRecord recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
                     rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),

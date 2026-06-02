@@ -60,6 +60,7 @@ trade:
   not-enough-money-owner: "<red>The shop owner does not have enough funds."
   limit-reached: "<red>Trade limit reached."
   price-drift: "<red>Price changed; transaction canceled. Please reopen."
+  frozen-at: "<dark_gray>(price frozen at <time>)</dark_gray>"
   amount-prompt:
     title: "<white>Enter amount"
     body: "<gray>How many packs of <item> would you like to trade?"

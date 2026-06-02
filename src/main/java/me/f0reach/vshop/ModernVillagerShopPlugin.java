@@ -23,6 +23,7 @@ import me.f0reach.vshop.shop.listener.NotificationFlushListener;
 import me.f0reach.vshop.shop.listener.PlayerCacheListener;
 import me.f0reach.vshop.shop.listener.ShopEggListener;
 import me.f0reach.vshop.shop.listener.ShopVillagerListener;
+import me.f0reach.vshop.shop.trade.PriceResolver;
 import me.f0reach.vshop.shop.trade.TradeFlow;
 import me.f0reach.vshop.shop.trade.TradeNotifier;
 import me.f0reach.vshop.shop.trade.TradeService;
@@ -63,6 +64,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private SlotEditFlow slotEditFlow;
     private CoOwnerFlow coOwnerFlow;
     private PriceRegistry priceRegistry;
+    private PriceResolver priceResolver;
     private ModernVillagerShopAPI api;
     private MvshopPlaceholders papiExpansion;
     private PlayerCacheService playerCacheService;
@@ -98,12 +100,15 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.eggFactory = new SpawnEggFactory(this, messages);
         this.dialogService = new DialogService(this);
         this.iconConfig = new IconConfig(messages, config.uiSection());
-        this.browseUi = new ShopBrowseUi(storage, iconConfig, messages);
+        this.priceRegistry = new PriceRegistry();
+        this.priceResolver = new PriceResolver(priceRegistry, config);
+        this.browseUi = new ShopBrowseUi(storage, iconConfig, messages, priceResolver);
         this.openService = new ShopOpenService(browseUi, messages, config);
         this.tradeNotifier = new TradeNotifier(this, messages, storage, economyService);
         this.editService = new ShopEditService(storage, registry);
-        this.tradeService = new TradeService(storage, economyService, config, tradeNotifier, editService);
-        this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config);
+        this.tradeService = new TradeService(storage, economyService, config, tradeNotifier,
+                editService, priceResolver);
+        this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config, priceResolver);
         this.editUi = new ShopEditUi(storage, iconConfig, messages);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
         this.playerCacheService = new PlayerCacheService(this);
@@ -112,7 +117,6 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
                 playerPickerUi, playerCacheService);
         this.restockUi = new ShopRestockUi(storage, messages, editService);
         this.actionMenu = new ShopActionMenu(this, dialogService, messages, editService, restockUi, coOwnerFlow);
-        this.priceRegistry = new PriceRegistry();
         this.api = new ModernVillagerShopAPI(registry, storage, priceRegistry);
         getServer().getServicesManager().register(ModernVillagerShopAPI.class, api, this,
                 org.bukkit.plugin.ServicePriority.Normal);
@@ -196,6 +200,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public SlotEditFlow slotEditFlow() { return slotEditFlow; }
     public CoOwnerFlow coOwnerFlow() { return coOwnerFlow; }
     public PriceRegistry priceRegistry() { return priceRegistry; }
+    public PriceResolver priceResolver() { return priceResolver; }
     public ModernVillagerShopAPI api() { return api; }
     public PlayerCacheService playerCacheService() { return playerCacheService; }
     public PlayerPickerUi playerPickerUi() { return playerPickerUi; }

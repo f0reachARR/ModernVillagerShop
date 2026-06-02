@@ -4,6 +4,7 @@ import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeSide;
+import me.f0reach.vshop.shop.trade.PriceResolver;
 import me.f0reach.vshop.storage.StorageManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -14,6 +15,7 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
+import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,12 +42,15 @@ public final class ShopBrowseUi {
     private final IconConfig icons;
     private final MessageManager messages;
     private final MiniMessage mm;
+    private final PriceResolver priceResolver;
 
-    public ShopBrowseUi(StorageManager storage, IconConfig icons, MessageManager messages) {
+    public ShopBrowseUi(StorageManager storage, IconConfig icons, MessageManager messages,
+                        PriceResolver priceResolver) {
         this.storage = storage;
         this.icons = icons;
         this.messages = messages;
         this.mm = messages.miniMessage();
+        this.priceResolver = priceResolver;
     }
 
     public void open(Player viewer, Shop shop, int page) {
@@ -87,7 +92,7 @@ public final class ShopBrowseUi {
 
         Map<Integer, ShopSlot> pageSlots = byPage.getOrDefault(holder.page(), Map.of());
         for (var e : pageSlots.entrySet()) {
-            inv.setItem(e.getKey(), renderSlot(e.getValue()));
+            inv.setItem(e.getKey(), renderSlot(shop, e.getValue()));
         }
 
         // Navigation row. Prev/next only render when there's somewhere to go —
@@ -104,7 +109,7 @@ public final class ShopBrowseUi {
         inv.setItem(SLOT_CLOSE, icons.icon("close", Material.BARRIER, "<red>Close"));
     }
 
-    private ItemStack renderSlot(ShopSlot slot) {
+    private ItemStack renderSlot(Shop shop, ShopSlot slot) {
         ItemStack stack = slot.itemTemplate().clone();
         stack.setAmount(Math.max(1, Math.min(stack.getMaxStackSize(), slot.unitAmount())));
         ItemMeta meta = stack.getItemMeta();
@@ -112,19 +117,30 @@ public final class ShopBrowseUi {
 
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("種別: " + slot.side(), NamedTextColor.AQUA));
+        Component sellReason = null;
+        Component buyReason = null;
         if (slot.side() == TradeSide.SELL || slot.side() == TradeSide.BOTH) {
-            lore.add(Component.text("販売単価: " + slot.unitPrice() + " / " + slot.unitAmount() + "個",
+            PriceResolver.Resolution sell = priceResolver.resolve(shop, slot, TradeSide.SELL, null,
+                    slot.unitAmount());
+            BigDecimal sellPrice = sell.finalPrice();
+            lore.add(Component.text("販売単価: " + sellPrice + " / " + slot.unitAmount() + "個",
                     NamedTextColor.YELLOW));
+            sellReason = sell.reason();
         }
         if (slot.side() == TradeSide.BUY || slot.side() == TradeSide.BOTH) {
-            lore.add(Component.text("買取単価: "
-                    + (slot.buyUnitPrice() == null ? slot.unitPrice() : slot.buyUnitPrice())
-                    + " / 受入残: " + slot.buyCapacity(), NamedTextColor.GOLD));
+            PriceResolver.Resolution buy = priceResolver.resolve(shop, slot, TradeSide.BUY, null,
+                    slot.unitAmount());
+            BigDecimal buyPrice = buy.finalPrice();
+            lore.add(Component.text("買取単価: " + buyPrice + " / 受入残: " + slot.buyCapacity(),
+                    NamedTextColor.GOLD));
+            buyReason = buy.reason();
         }
         if (slot.tradeLimit() != null) {
             lore.add(Component.text("取引上限: " + slot.tradeLimit() + " (" + slot.limitScope() + ")",
                     NamedTextColor.GRAY));
         }
+        if (sellReason != null) lore.add(sellReason);
+        if (buyReason != null && (sellReason == null || !buyReason.equals(sellReason))) lore.add(buyReason);
         meta.lore(lore);
         stack.setItemMeta(meta);
         return stack;

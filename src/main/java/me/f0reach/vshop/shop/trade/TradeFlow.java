@@ -12,6 +12,9 @@ import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
 
 import java.math.BigDecimal;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -22,19 +25,25 @@ import java.util.List;
  */
 public final class TradeFlow {
 
+    private static final DateTimeFormatter FROZEN_AT_FMT = DateTimeFormatter
+            .ofPattern("HH:mm:ss")
+            .withZone(ZoneId.systemDefault());
+
     private final DialogService dialogs;
     private final TradeService tradeService;
     private final MessageManager messages;
     private final EconomyService economy;
     private final PluginConfig config;
+    private final PriceResolver priceResolver;
 
     public TradeFlow(DialogService dialogs, TradeService tradeService, MessageManager messages,
-                     EconomyService economy, PluginConfig config) {
+                     EconomyService economy, PluginConfig config, PriceResolver priceResolver) {
         this.dialogs = dialogs;
         this.tradeService = tradeService;
         this.messages = messages;
         this.economy = economy;
         this.config = config;
+        this.priceResolver = priceResolver;
     }
 
     public void start(Player viewer, Shop shop, ShopSlot slot) {
@@ -94,13 +103,15 @@ public final class TradeFlow {
     }
 
     private void showConfirm(Player viewer, Shop shop, ShopSlot slot, TradeSide side, int packs) {
-        BigDecimal unit = side == TradeSide.SELL
-                ? slot.unitPrice()
-                : (slot.buyUnitPrice() != null ? slot.buyUnitPrice() : slot.unitPrice());
+        int totalItems = packs * slot.unitAmount();
+        // Freeze the price (snapshot) at confirm-open time per spec §12.3.2.
+        // For player shops / when providers are disabled, this is just the
+        // static slot price; for admin shops it runs the provider pipeline.
+        PriceResolver.Resolution resolution = priceResolver.resolve(shop, slot, side, viewer, totalItems);
+        BigDecimal unit = resolution.finalPrice();
         BigDecimal gross = unit.multiply(BigDecimal.valueOf(packs));
         BigDecimal fee = economy.computeFee(gross);
         BigDecimal payout = gross.subtract(fee);
-        int totalItems = packs * slot.unitAmount();
 
         Component item = displayName(slot);
 
@@ -113,17 +124,27 @@ public final class TradeFlow {
                 Placeholder.parsed("price", economy.format(gross)),
                 Placeholder.parsed("payout", economy.format(payout)),
                 Placeholder.parsed("fee", economy.format(fee)));
+        if (resolution.reason() != null) {
+            body = body.append(Component.newline()).append(resolution.reason());
+        }
+        // Spec §12.3.2: surface the snapshot freeze time so the user can tell
+        // when the price was locked in.
+        body = body.append(Component.newline()).append(messages.get("trade.frozen-at",
+                Placeholder.parsed("time", FROZEN_AT_FMT.format(Instant.now()))));
         Component title = messages.get(key + ".title");
         Component yes = messages.get(key + ".yes");
         Component no = messages.get(key + ".no");
 
-        dialogs.confirmOnce(viewer, title, body, yes, no,
-                () -> execute(viewer, shop, slot, side, packs, unit),
+        final Component finalBody = body;
+        dialogs.confirmOnce(viewer, title, finalBody, yes, no,
+                () -> execute(viewer, shop, slot, side, packs, resolution),
                 () -> {});
     }
 
-    private void execute(Player viewer, Shop shop, ShopSlot slot, TradeSide side, int packs, BigDecimal unitSnapshot) {
-        TradeRequest req = new TradeRequest(viewer, shop, slot, side, packs, unitSnapshot);
+    private void execute(Player viewer, Shop shop, ShopSlot slot, TradeSide side,
+                         int packs, PriceResolver.Resolution snapshot) {
+        TradeRequest req = new TradeRequest(viewer, shop, slot, side, packs,
+                snapshot.finalPrice(), snapshot.basePrice(), snapshot.resolvedBy());
         TradeResult result = tradeService.execute(req);
         if (result instanceof TradeResult.Success ok) {
             String key = ok.side() == TradeSide.SELL ? "trade.sold" : "trade.bought";
