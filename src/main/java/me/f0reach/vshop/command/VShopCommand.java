@@ -74,6 +74,30 @@ public final class VShopCommand {
                                         .executes(ctx -> transfer(ctx.getSource().getSender(),
                                                 StringArgumentType.getString(ctx, "shopId"),
                                                 StringArgumentType.getString(ctx, "player"))))))
+                .then(Commands.literal("stats")
+                        .requires(s -> s.getSender().hasPermission("modernvillagershop.stats"))
+                        .then(Commands.argument("shopId", StringArgumentType.word())
+                                .executes(ctx -> stats(ctx.getSource().getSender(),
+                                        StringArgumentType.getString(ctx, "shopId")))))
+                .then(Commands.literal("search")
+                        .requires(s -> s.getSender().hasPermission("modernvillagershop.search"))
+                        .then(Commands.argument("item", StringArgumentType.word())
+                                .executes(ctx -> search(ctx.getSource().getSender(),
+                                        StringArgumentType.getString(ctx, "item")))))
+                .then(Commands.literal("history")
+                        .requires(s -> s.getSender().hasPermission("modernvillagershop.history")
+                                || s.getSender().hasPermission("modernvillagershop.history.others"))
+                        .executes(ctx -> history(ctx.getSource().getSender(), 1))
+                        .then(Commands.argument("page", IntegerArgumentType.integer(1))
+                                .executes(ctx -> history(ctx.getSource().getSender(),
+                                        IntegerArgumentType.getInteger(ctx, "page")))))
+                .then(Commands.literal("migrate")
+                        .requires(s -> s.getSender().hasPermission("modernvillagershop.migrate"))
+                        .then(Commands.argument("from", StringArgumentType.word())
+                                .then(Commands.argument("to", StringArgumentType.word())
+                                        .executes(ctx -> migrate(ctx.getSource().getSender(),
+                                                StringArgumentType.getString(ctx, "from"),
+                                                StringArgumentType.getString(ctx, "to"))))))
                 .then(Commands.literal("egg")
                         .requires(s -> s.getSender().hasPermission("modernvillagershop.egg")
                                 || s.getSender().hasPermission("modernvillagershop.admin.egg"))
@@ -101,7 +125,14 @@ public final class VShopCommand {
         for (String line : List.of(
                 "<yellow>/vshop list [page] <gray>- ショップ一覧",
                 "<yellow>/vshop open <shopId> <gray>- ショップを開く",
+                "<yellow>/vshop edit <shopId> <gray>- 編集UIを開く",
+                "<yellow>/vshop coowner <shopId> <gray>- 共同オーナー管理",
+                "<yellow>/vshop transfer <shopId> <player> <gray>- PRIMARY 移譲",
+                "<yellow>/vshop stats <shopId> <gray>- ショップ統計",
+                "<yellow>/vshop search <item> <gray>- アイテム検索",
+                "<yellow>/vshop history [page] <gray>- 自身の取引履歴",
                 "<yellow>/vshop egg <player> <lines|inf|admin> <gray>- スポーンエッグ配布",
+                "<yellow>/vshop migrate <from> <to> <gray>- ストレージ移行",
                 "<yellow>/vshop reload <gray>- 設定リロード"
         )) {
             sender.sendMessage(messages.miniMessage().deserialize(line));
@@ -215,6 +246,117 @@ public final class VShopCommand {
             return 0;
         }
         plugin.coOwnerFlow().openTransfer(viewer, match, targetName);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int stats(CommandSender sender, String shopIdPrefix) {
+        Shop match = findShopByPrefix(shopIdPrefix);
+        if (match == null) {
+            sender.sendMessage(messages.get("command.shop-not-found",
+                    Placeholder.parsed("shop_id", shopIdPrefix)));
+            return 0;
+        }
+        try {
+            var agg = plugin.api().statsFor(match.id());
+            int slotCount = plugin.storage().slots().findByShop(match.id()).size();
+            var econ = plugin.economyService();
+            var mm = messages.miniMessage();
+            sender.sendMessage(mm.deserialize("<gold>=== " + match.name() + " 統計 ==="));
+            sender.sendMessage(mm.deserialize("<gray>出品枠: <white>" + slotCount));
+            sender.sendMessage(mm.deserialize("<gray>SELL件数: <white>" + agg.sellCount()
+                    + " <gray>合計: <white>" + econ.format(agg.totalSalesValue())));
+            sender.sendMessage(mm.deserialize("<gray>BUY件数: <white>" + agg.buyCount()
+                    + " <gray>合計: <white>" + econ.format(agg.totalBuyValue())));
+            sender.sendMessage(mm.deserialize("<gray>累計手数料: <white>" + econ.format(agg.totalFees())));
+        } catch (java.sql.SQLException ex) {
+            sender.sendMessage(messages.get("error.generic",
+                    Placeholder.parsed("reason", ex.getMessage())));
+            return 0;
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int search(CommandSender sender, String query) {
+        String needle = query.toLowerCase(java.util.Locale.ROOT);
+        org.bukkit.Material material = org.bukkit.Material.matchMaterial(query);
+        var mm = messages.miniMessage();
+        sender.sendMessage(mm.deserialize("<gold>=== 検索: " + query + " ==="));
+        int hits = 0;
+        try {
+            for (Shop s : plugin.registry().all()) {
+                for (var slot : plugin.storage().slots().findByShop(s.id())) {
+                    boolean match = false;
+                    if (material != null) {
+                        match = slot.itemTemplate().getType() == material;
+                    }
+                    if (!match) {
+                        match = slot.itemTemplate().getType().name().toLowerCase().contains(needle);
+                    }
+                    if (!match) continue;
+                    sender.sendMessage(mm.deserialize("<yellow>" + s.id().toString().substring(0, 8)
+                            + " <gray>" + s.name() + " <dark_gray>[" + slot.side()
+                            + " @ " + slot.unitPrice() + "]"));
+                    if (++hits >= 30) {
+                        sender.sendMessage(mm.deserialize("<gray>(以降は省略)"));
+                        return Command.SINGLE_SUCCESS;
+                    }
+                }
+            }
+        } catch (java.sql.SQLException ex) {
+            sender.sendMessage(messages.get("error.generic",
+                    Placeholder.parsed("reason", ex.getMessage())));
+            return 0;
+        }
+        if (hits == 0) sender.sendMessage(mm.deserialize("<gray>ヒットなし"));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int history(CommandSender sender, int page) {
+        if (!(sender instanceof Player viewer)) {
+            sender.sendMessage(messages.get("command.player-only"));
+            return 0;
+        }
+        int perPage = 10;
+        try {
+            var records = plugin.storage().transactions().findByPlayer(viewer.getUniqueId(),
+                    perPage, (page - 1) * perPage);
+            var mm = messages.miniMessage();
+            var econ = plugin.economyService();
+            sender.sendMessage(mm.deserialize("<gold>=== 取引履歴 (p." + page + ") ==="));
+            if (records.isEmpty()) {
+                sender.sendMessage(mm.deserialize("<gray>履歴がありません"));
+                return Command.SINGLE_SUCCESS;
+            }
+            for (var rec : records) {
+                String when = java.time.format.DateTimeFormatter
+                        .ofPattern("MM-dd HH:mm")
+                        .withZone(java.time.ZoneId.systemDefault())
+                        .format(rec.at());
+                sender.sendMessage(mm.deserialize("<gray>" + when + " <yellow>" + rec.side()
+                        + " <white>" + rec.itemSnapshot().getType().name()
+                        + " <gray>x" + rec.amount() + " @ <white>" + econ.format(rec.unitPrice())));
+            }
+        } catch (java.sql.SQLException ex) {
+            sender.sendMessage(messages.get("error.generic",
+                    Placeholder.parsed("reason", ex.getMessage())));
+            return 0;
+        }
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int migrate(CommandSender sender, String fromType, String toType) {
+        sender.sendMessage(messages.get("command.migrate.started",
+                Placeholder.parsed("from", fromType),
+                Placeholder.parsed("to", toType)));
+        try {
+            int copied = me.f0reach.vshop.storage.migrate.MigrationService.run(plugin, fromType, toType);
+            sender.sendMessage(messages.get("command.migrate.done")
+                    .append(Component.text(" (" + copied + " shops)")));
+        } catch (Exception ex) {
+            sender.sendMessage(messages.get("command.migrate.failed",
+                    Placeholder.parsed("reason", ex.getMessage())));
+            return 0;
+        }
         return Command.SINGLE_SUCCESS;
     }
 
