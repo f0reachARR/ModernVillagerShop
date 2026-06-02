@@ -7,6 +7,7 @@ import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.chest.ShopEditHolder;
 import me.f0reach.vshop.ui.chest.ShopEditUi;
+import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -35,15 +36,18 @@ public final class ShopEditListener implements Listener {
     private final ShopEditUi editUi;
     private final ShopEditService editService;
     private final SlotEditFlow slotFlow;
+    private final ShopRestockUi restockUi;
     private final StorageManager storage;
     private final MessageManager messages;
 
     public ShopEditListener(ShopRegistry registry, ShopEditUi editUi, ShopEditService editService,
-                            SlotEditFlow slotFlow, StorageManager storage, MessageManager messages) {
+                            SlotEditFlow slotFlow, ShopRestockUi restockUi,
+                            StorageManager storage, MessageManager messages) {
         this.registry = registry;
         this.editUi = editUi;
         this.editService = editService;
         this.slotFlow = slotFlow;
+        this.restockUi = restockUi;
         this.storage = storage;
         this.messages = messages;
     }
@@ -90,7 +94,11 @@ public final class ShopEditListener implements Listener {
             return;
         }
         if (raw == ShopEditUi.SLOT_RESTOCK) {
-            editor.sendMessage(messages.get("edit.restock.coming-soon"));
+            Shop restockShop = registry.byId(editHolder.shopId()).orElse(null);
+            if (restockShop == null || restockShop.isAdminShop()) return;
+            // Close the edit chest first; restockUi.open() will hand the player a fresh chest.
+            editor.closeInventory();
+            restockUi.open(editor, restockShop);
             return;
         }
         if (raw < 0 || raw >= ShopEditUi.CONTENT_SLOTS) {

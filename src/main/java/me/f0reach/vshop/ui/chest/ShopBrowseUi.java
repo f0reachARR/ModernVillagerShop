@@ -78,7 +78,7 @@ public final class ShopBrowseUi {
         }
 
         // Group slots by page (= slot_index / CONTENT_SLOTS).
-        Map<Integer, Map<Integer, ShopSlot>> byPage = new TreeMap<>();
+        TreeMap<Integer, Map<Integer, ShopSlot>> byPage = new TreeMap<>();
         for (ShopSlot s : slots) {
             int p = s.slotIndex() / CONTENT_SLOTS;
             int inner = s.slotIndex() % CONTENT_SLOTS;
@@ -90,11 +90,17 @@ public final class ShopBrowseUi {
             inv.setItem(e.getKey(), renderSlot(e.getValue()));
         }
 
-        // Navigation row.
+        // Navigation row. Prev/next only render when there's somewhere to go —
+        // the browse view is read-only, so hiding them avoids the empty-page click.
+        int maxPage = byPage.isEmpty() ? 0 : byPage.lastKey();
         ItemStack pageIcon = pageIndicator(holder.page());
         inv.setItem(SLOT_PAGE_INDICATOR, pageIcon);
-        inv.setItem(SLOT_PREV_PAGE, icons.icon("prevPage", Material.ARROW, "<white>Prev"));
-        inv.setItem(SLOT_NEXT_PAGE, icons.icon("nextPage", Material.ARROW, "<white>Next"));
+        if (holder.page() > 0) {
+            inv.setItem(SLOT_PREV_PAGE, icons.icon("prevPage", Material.ARROW, "<white>Prev"));
+        }
+        if (holder.page() < maxPage) {
+            inv.setItem(SLOT_NEXT_PAGE, icons.icon("nextPage", Material.ARROW, "<white>Next"));
+        }
         inv.setItem(SLOT_CLOSE, icons.icon("close", Material.BARRIER, "<red>Close"));
     }
 

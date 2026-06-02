@@ -95,12 +95,16 @@ public final class ShopEditUi {
             }
         }
 
-        // Navigation row
+        // Navigation row — always show prev/next here; the editor may want to
+        // create a new slot on an as-yet-empty page.
         inv.setItem(SLOT_PREV_PAGE, icons.icon("prevPage", Material.ARROW, "<white>Prev"));
         inv.setItem(SLOT_NEXT_PAGE, icons.icon("nextPage", Material.ARROW, "<white>Next"));
         inv.setItem(SLOT_CLOSE, icons.icon("close", Material.BARRIER, "<red>Close"));
         inv.setItem(SLOT_PAGE_INDICATOR, pageIndicator(holder.page()));
-        inv.setItem(SLOT_RESTOCK, restockIcon());
+        // Admin shops have no physical stock, so no restock button.
+        if (shop.isPlayerShop()) {
+            inv.setItem(SLOT_RESTOCK, restockIcon());
+        }
     }
 
     private ItemStack renderSlot(ShopSlot slot) {
