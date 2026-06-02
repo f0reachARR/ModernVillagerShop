@@ -12,6 +12,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
@@ -51,11 +52,26 @@ public final class ShopEditListener implements Listener {
     public void onClick(InventoryClickEvent event) {
         InventoryHolder holder = event.getInventory().getHolder();
         if (!(holder instanceof ShopEditHolder editHolder)) return;
-        // Disallow stack movement in this view; we read the cursor manually below.
-        event.setCancelled(true);
-
         if (!(event.getWhoClicked() instanceof Player editor)) return;
         int raw = event.getRawSlot();
+
+        // Clicks in the player's own inventory (raw >= top inventory size) are
+        // free — players need to be able to pick items up to drop them onto an
+        // empty slot to create a new entry. Block only actions that would spill
+        // into the chest grid: shift-click move, double-click collect, hotbar
+        // swap.
+        if (raw >= ShopEditUi.INVENTORY_SIZE) {
+            InventoryAction action = event.getAction();
+            if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY
+                    || action == InventoryAction.COLLECT_TO_CURSOR
+                    || action == InventoryAction.HOTBAR_SWAP) {
+                event.setCancelled(true);
+            }
+            return;
+        }
+
+        // Inside the chest grid — we own the interaction.
+        event.setCancelled(true);
 
         if (raw == ShopEditUi.SLOT_PREV_PAGE) {
             if (editHolder.page() > 0) {
