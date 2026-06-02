@@ -130,7 +130,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         pm.registerEvents(new ShopBrowseListener(registry, browseUi, storage, tradeFlow, messages), this);
         pm.registerEvents(new NotificationFlushListener(this, tradeNotifier), this);
         pm.registerEvents(new ShopEditListener(registry, editUi, editService, slotEditFlow,
-                restockUi, storage, messages), this);
+                storage, messages), this);
         pm.registerEvents(new ShopRestockListener(storage, messages, editService, config), this);
         pm.registerEvents(new PlayerPickerListener(this, playerPickerUi), this);
         pm.registerEvents(new PlayerCacheListener(playerCacheService), this);

@@ -146,7 +146,6 @@ edit:
     no: "キャンセル"
     done: "<green>出品枠を削除しました。"
   restock:
-    coming-soon: "<gray>在庫補充UIは未実装です。"
     title: "<white>在庫: <shop_name>"
     admin-shop: "<gray>管理者ショップに在庫はありません。"
     saved: "<green>在庫を保存しました。"

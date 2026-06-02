@@ -146,7 +146,6 @@ edit:
     no: "Cancel"
     done: "<green>Slot deleted."
   restock:
-    coming-soon: "<gray>Restock UI is not implemented yet."
     title: "<white>Inventory: <shop_name>"
     admin-shop: "<gray>Admin shops have no physical stock."
     saved: "<green>Inventory saved."

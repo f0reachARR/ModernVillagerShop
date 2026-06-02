@@ -32,7 +32,6 @@ public final class ShopEditUi {
     public static final int SLOT_PAGE_INDICATOR = 49;
     public static final int SLOT_CLOSE = 50;
     public static final int SLOT_NEXT_PAGE = 53;
-    public static final int SLOT_RESTOCK = 46;
 
     private final StorageManager storage;
     private final IconConfig icons;
@@ -101,10 +100,6 @@ public final class ShopEditUi {
         inv.setItem(SLOT_NEXT_PAGE, icons.icon("nextPage", Material.ARROW, "<white>Next"));
         inv.setItem(SLOT_CLOSE, icons.icon("close", Material.BARRIER, "<red>Close"));
         inv.setItem(SLOT_PAGE_INDICATOR, pageIndicator(holder.page()));
-        // Admin shops have no physical stock, so no restock button.
-        if (shop.isPlayerShop()) {
-            inv.setItem(SLOT_RESTOCK, restockIcon());
-        }
     }
 
     private ItemStack renderSlot(ShopSlot slot) {
@@ -154,17 +149,6 @@ public final class ShopEditUi {
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
             meta.displayName(Component.text("Page " + (page + 1), NamedTextColor.WHITE));
-            stack.setItemMeta(meta);
-        }
-        return stack;
-    }
-
-    private ItemStack restockIcon() {
-        ItemStack stack = new ItemStack(Material.CHEST);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text("在庫補充", NamedTextColor.GREEN));
-            meta.lore(List.of(Component.text("クリックで在庫チェストを開く", NamedTextColor.GRAY)));
             stack.setItemMeta(meta);
         }
         return stack;
