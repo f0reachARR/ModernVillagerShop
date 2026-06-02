@@ -1,5 +1,7 @@
 package me.f0reach.vshop.shop.trade;
 
+import me.f0reach.vshop.api.event.ShopPreTransactionEvent;
+import me.f0reach.vshop.api.event.ShopTransactionEvent;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
@@ -63,6 +65,13 @@ public final class TradeService {
     public TradeResult execute(TradeRequest req) {
         if (editService != null && editService.isEditing(req.shop().id())) {
             return new TradeResult.Failure("shop.edit.busy");
+        }
+        // Let other plugins veto the trade before any money or items move.
+        ShopPreTransactionEvent pre = new ShopPreTransactionEvent(req.shop(), req.slot(), req.side(),
+                req.viewer(), req.totalItems(), req.unitPriceSnapshot());
+        Bukkit.getPluginManager().callEvent(pre);
+        if (pre.isCancelled()) {
+            return new TradeResult.Failure("error.generic");
         }
         if (req.side() == TradeSide.SELL) return executeSell(req);
         if (req.side() == TradeSide.BUY) return executeBuy(req);
@@ -152,12 +161,16 @@ public final class TradeService {
                     cloneAs(slot.itemTemplate(), 1), totalItems,
                     req.unitPriceSnapshot(), fee, slot.unitPrice(), req.unitPriceSnapshot(), null);
             long txId = storage.transactions().insertTx(c, rec);
+            final TradeRecord recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
+                    rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),
+                    rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
 
             if (shop.isPlayerShop()) {
                 queueOfflineNotifications(c, coOwners, shop.id(), txId, net);
             }
 
             c.commit();
+            Bukkit.getPluginManager().callEvent(new ShopTransactionEvent(shop, recForEvent));
 
             // 8. Post-commit: deliver items + notify online owners
             giveItems(buyer, slot.itemTemplate(), totalItems);
@@ -279,6 +292,9 @@ public final class TradeService {
                     cloneAs(slot.itemTemplate(), 1), totalItems,
                     unit, fee, unit, unit, null);
             long txId = storage.transactions().insertTx(c, rec);
+            final TradeRecord recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
+                    rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),
+                    rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
 
             List<CoOwner> coOwners = shop.isPlayerShop()
                     ? storage.coOwners().findByShop(shop.id())
@@ -288,6 +304,7 @@ public final class TradeService {
             }
 
             c.commit();
+            Bukkit.getPluginManager().callEvent(new ShopTransactionEvent(shop, recForEvent));
 
             if (shop.isPlayerShop()) {
                 notifier.notifyOnline(coOwners, shop, TradeSide.BUY, totalItems, gross, slot.itemTemplate());

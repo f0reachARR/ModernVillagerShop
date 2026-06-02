@@ -1,5 +1,7 @@
 package me.f0reach.vshop.shop;
 
+import me.f0reach.vshop.api.event.ShopCreateEvent;
+import me.f0reach.vshop.api.event.ShopDeleteEvent;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.model.CoOwner;
 import me.f0reach.vshop.model.CoOwnerRole;
@@ -8,6 +10,7 @@ import me.f0reach.vshop.model.ShopLocation;
 import me.f0reach.vshop.model.ShopType;
 import me.f0reach.vshop.shop.egg.SpawnEggMeta;
 import me.f0reach.vshop.storage.StorageManager;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.entity.Player;
 
@@ -103,6 +106,7 @@ public final class ShopService {
                     new BigDecimal("100.00"), now, ownerId));
         }
         registry.put(shop);
+        Bukkit.getPluginManager().callEvent(new ShopCreateEvent(shop, creator));
         return shop;
     }
 
@@ -110,6 +114,7 @@ public final class ShopService {
         villagers.remove(shop);
         storage.shops().delete(shop.id());
         registry.remove(shop.id());
+        Bukkit.getPluginManager().callEvent(new ShopDeleteEvent(shop));
     }
 
     public void update(Shop shop) throws SQLException {

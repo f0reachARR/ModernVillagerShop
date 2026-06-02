@@ -1,10 +1,13 @@
 package me.f0reach.vshop.shop.edit;
 
+import me.f0reach.vshop.api.event.ShopSlotChangeEvent;
 import me.f0reach.vshop.model.CoOwner;
 import me.f0reach.vshop.model.CoOwnerRole;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
+import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.storage.StorageManager;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
 import java.sql.SQLException;
@@ -20,10 +23,12 @@ import java.util.concurrent.ConcurrentHashMap;
 public final class ShopEditService {
 
     private final StorageManager storage;
+    private final ShopRegistry registry;
     private final Set<UUID> editingShops = ConcurrentHashMap.newKeySet();
 
-    public ShopEditService(StorageManager storage) {
+    public ShopEditService(StorageManager storage, ShopRegistry registry) {
         this.storage = storage;
+        this.registry = registry;
     }
 
     /** Whether the given player may open the edit UI for this shop. */
@@ -46,11 +51,22 @@ public final class ShopEditService {
     }
 
     public void persistSlot(ShopSlot slot) throws SQLException {
+        boolean isCreate = storage.slots().findById(slot.id()).isEmpty();
         storage.slots().upsert(slot);
+        Shop shop = registry.byId(slot.shopId()).orElse(null);
+        if (shop != null) {
+            Bukkit.getPluginManager().callEvent(new ShopSlotChangeEvent(shop, slot,
+                    isCreate ? ShopSlotChangeEvent.Kind.CREATED : ShopSlotChangeEvent.Kind.UPDATED));
+        }
     }
 
     public void deleteSlot(ShopSlot slot) throws SQLException {
         storage.slots().delete(slot.id());
+        Shop shop = registry.byId(slot.shopId()).orElse(null);
+        if (shop != null) {
+            Bukkit.getPluginManager().callEvent(new ShopSlotChangeEvent(shop, slot,
+                    ShopSlotChangeEvent.Kind.DELETED));
+        }
     }
 
     public void beginEditing(UUID shopId) { editingShops.add(shopId); }

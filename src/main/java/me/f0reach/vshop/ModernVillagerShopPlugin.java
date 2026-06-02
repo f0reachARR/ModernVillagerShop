@@ -1,9 +1,12 @@
 package me.f0reach.vshop;
 
 import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
+import me.f0reach.vshop.api.ModernVillagerShopAPI;
+import me.f0reach.vshop.api.price.PriceRegistry;
 import me.f0reach.vshop.command.VShopCommand;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.economy.EconomyService;
+import me.f0reach.vshop.integration.MvshopPlaceholders;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
@@ -52,6 +55,9 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopEditUi editUi;
     private SlotEditFlow slotEditFlow;
     private CoOwnerFlow coOwnerFlow;
+    private PriceRegistry priceRegistry;
+    private ModernVillagerShopAPI api;
+    private MvshopPlaceholders papiExpansion;
 
     @Override
     public void onEnable() {
@@ -84,12 +90,16 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.browseUi = new ShopBrowseUi(storage, iconConfig, messages);
         this.openService = new ShopOpenService(browseUi, messages, config);
         this.tradeNotifier = new TradeNotifier(this, messages, storage, economyService);
-        this.editService = new ShopEditService(storage);
+        this.editService = new ShopEditService(storage, registry);
         this.tradeService = new TradeService(storage, economyService, config, tradeNotifier, editService);
         this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config);
         this.editUi = new ShopEditUi(storage, iconConfig, messages);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
         this.coOwnerFlow = new CoOwnerFlow(dialogService, messages, storage, shopService, villagerManager);
+        this.priceRegistry = new PriceRegistry();
+        this.api = new ModernVillagerShopAPI(registry, storage, priceRegistry);
+        getServer().getServicesManager().register(ModernVillagerShopAPI.class, api, this,
+                org.bukkit.plugin.ServicePriority.Normal);
 
         try {
             shopService.loadAll();
@@ -109,12 +119,27 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
                 event -> event.registrar().register(cmd.build(),
                         "ModernVillagerShop main command", java.util.List.of("vs")));
 
+        // Hook up PlaceholderAPI when present + enabled in config.
+        if (config.placeholderApiEnabled()
+                && getServer().getPluginManager().isPluginEnabled("PlaceholderAPI")) {
+            this.papiExpansion = new MvshopPlaceholders(this);
+            if (papiExpansion.register()) {
+                getLogger().info("Registered PlaceholderAPI expansion.");
+            } else {
+                getLogger().warning("Failed to register PlaceholderAPI expansion.");
+            }
+        }
+
         getLogger().info("ModernVillagerShop enabled (locale=" + messages.primaryLocale()
                 + ", storage=" + config.storageType() + ", shops=" + registry.all().size() + ")");
     }
 
     @Override
     public void onDisable() {
+        if (papiExpansion != null) {
+            try { papiExpansion.unregister(); } catch (Throwable ignored) {}
+            papiExpansion = null;
+        }
         if (storage != null) {
             storage.close();
             storage = null;
@@ -149,4 +174,6 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public ShopEditUi editUi() { return editUi; }
     public SlotEditFlow slotEditFlow() { return slotEditFlow; }
     public CoOwnerFlow coOwnerFlow() { return coOwnerFlow; }
+    public PriceRegistry priceRegistry() { return priceRegistry; }
+    public ModernVillagerShopAPI api() { return api; }
 }
