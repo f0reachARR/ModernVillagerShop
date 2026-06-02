@@ -2,8 +2,6 @@
 command:
   help:
     header: "<gold>=== ModernVillagerShop ヘルプ ==="
-    line: "<yellow>/vshop <gray>- <white><desc>"
-  unknown: "<red>不明なサブコマンドです。/vshop help を参照してください。"
   no-permission: "<red>権限がありません。"
   player-only: "<red>このコマンドはプレイヤーのみ実行できます。"
   shop-not-found: "<red>指定されたショップが見つかりません: <shop_id>"
@@ -28,7 +26,6 @@ command:
     next-hint: "<gray>次ページ: <yellow>/vshop search <query> <page>"
 
 shop:
-  created: "<green>ショップ <shop_id> を作成しました。"
   deleted: "<green>ショップ <shop_id> を削除しました。"
   suspended: "<yellow>ショップ <shop_id> を一時停止しました。"
   resumed: "<green>ショップ <shop_id> の公開を再開しました。"
@@ -36,13 +33,10 @@ shop:
     name: "<aqua>ショップスポーンエッグ <gray>(<type>)"
     lore-lines: "<gray>行数: <lines>"
     lore-admin: "<gray>管理者ショップ用"
-  villager:
-    default-name: "ショップ"
   place:
     too-close: "<red>近くにショップがあるため設置できません。"
     too-many: "<red>所有ショップ数の上限に達しています。"
     placed: "<green>ショップを設置しました。"
-    failed: "<red>ショップの設置に失敗しました。"
   open:
     suspended: "<yellow>このショップは一時停止中です。"
     too-far: "<red>このショップに近づいてください。"
@@ -102,10 +96,8 @@ coowner:
     add: "<green>追加"
   add:
     title: "<white>共同オーナー追加"
-    body: "<gray>プレイヤー名・役割・持分を入力してください。"
     body-for: "<gray><player> を共同オーナーに追加します。役割と持分を指定してください。"
     submit: "追加"
-    name-label: "プレイヤー名"
     role-label: "役割"
     share-label: "持分 (0-100)"
     invalid-name: "<red>プレイヤー名が無効です。"
@@ -225,8 +217,3 @@ player-picker:
   search-submit: "適用"
   search-label: "クエリ"
 
-coowner-extra:
-  __unused: ""
-
-system:
-  prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"

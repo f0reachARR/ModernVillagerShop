@@ -2,8 +2,6 @@
 command:
   help:
     header: "<gold>=== ModernVillagerShop Help ==="
-    line: "<yellow>/vshop <gray>- <white><desc>"
-  unknown: "<red>Unknown subcommand. See /vshop help."
   no-permission: "<red>You don't have permission."
   player-only: "<red>This command can only be used by a player."
   shop-not-found: "<red>Shop not found: <shop_id>"
@@ -28,7 +26,6 @@ command:
     next-hint: "<gray>Next page: <yellow>/vshop search <query> <page>"
 
 shop:
-  created: "<green>Shop <shop_id> created."
   deleted: "<green>Shop <shop_id> deleted."
   suspended: "<yellow>Shop <shop_id> suspended."
   resumed: "<green>Shop <shop_id> resumed."
@@ -36,13 +33,10 @@ shop:
     name: "<aqua>Shop Spawn Egg <gray>(<type>)"
     lore-lines: "<gray>Rows: <lines>"
     lore-admin: "<gray>For admin shops"
-  villager:
-    default-name: "Shop"
   place:
     too-close: "<red>Cannot place shop too close to existing one."
     too-many: "<red>You have reached your shop count limit."
     placed: "<green>Shop placed."
-    failed: "<red>Failed to place shop."
   open:
     suspended: "<yellow>This shop is suspended."
     too-far: "<red>Get closer to this shop."
@@ -102,10 +96,8 @@ coowner:
     add: "<green>Add"
   add:
     title: "<white>Add co-owner"
-    body: "<gray>Enter player name, role, and share."
     body-for: "<gray>Adding <player>. Choose role and share."
     submit: "Add"
-    name-label: "Player name"
     role-label: "Role"
     share-label: "Share (0-100)"
     invalid-name: "<red>Invalid player name."
@@ -225,5 +217,3 @@ player-picker:
   search-submit: "Apply"
   search-label: "Query"
 
-system:
-  prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"
