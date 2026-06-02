@@ -3,6 +3,7 @@ package me.f0reach.vshop.storage.sqlite;
 import me.f0reach.vshop.item.ItemStackCodec;
 import me.f0reach.vshop.model.TradeRecord;
 import me.f0reach.vshop.model.TradeSide;
+import me.f0reach.vshop.storage.repo.HistoryFilterSql;
 import me.f0reach.vshop.storage.repo.ShopTransactionRepository;
 import org.bukkit.inventory.ItemStack;
 
@@ -92,6 +93,35 @@ public final class SqliteShopTransactionRepository implements ShopTransactionRep
             }
         }
         return out;
+    }
+
+    @Override
+    public List<TradeRecord> findFiltered(HistoryFilter filter, int limit, int offset) throws SQLException {
+        List<TradeRecord> out = new ArrayList<>();
+        String sql = "SELECT * FROM shop_transactions" + HistoryFilterSql.whereClause(filter)
+                + " ORDER BY occurred_at DESC LIMIT ? OFFSET ?";
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            int idx = HistoryFilterSql.bind(ps, 1, filter);
+            ps.setInt(idx++, limit);
+            ps.setInt(idx, offset);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) out.add(map(rs));
+            }
+        }
+        return out;
+    }
+
+    @Override
+    public long countFiltered(HistoryFilter filter) throws SQLException {
+        String sql = "SELECT COUNT(*) FROM shop_transactions" + HistoryFilterSql.whereClause(filter);
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sql)) {
+            HistoryFilterSql.bind(ps, 1, filter);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next() ? rs.getLong(1) : 0L;
+            }
+        }
     }
 
     @Override

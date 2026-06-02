@@ -17,6 +17,10 @@ public interface ShopTransactionRepository {
 
     List<TradeRecord> findByPlayer(UUID playerUuid, int limit, int offset) throws SQLException;
 
+    List<TradeRecord> findFiltered(HistoryFilter filter, int limit, int offset) throws SQLException;
+
+    long countFiltered(HistoryFilter filter) throws SQLException;
+
     /** Aggregated counts by side for a shop. */
     AggregateStats aggregate(UUID shopId) throws SQLException;
 
@@ -32,4 +36,20 @@ public interface ShopTransactionRepository {
     ) {}
 
     record DailyBucket(Instant dayStart, long count, java.math.BigDecimal value) {}
+
+    /**
+     * Optional filters for {@link #findFiltered}. A null field means no constraint.
+     * playerUuid matches either buyer or seller.
+     */
+    record HistoryFilter(
+            UUID shopId,
+            UUID playerUuid,
+            TradeSide side,
+            Instant from,
+            Instant to
+    ) {
+        public static HistoryFilter forPlayer(UUID playerUuid) {
+            return new HistoryFilter(null, playerUuid, null, null, null);
+        }
+    }
 }

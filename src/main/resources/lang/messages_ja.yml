@@ -16,6 +16,16 @@ command:
     started: "<yellow>マイグレーションを開始しました: <from> -> <to>"
     done: "<green>マイグレーション完了。"
     failed: "<red>マイグレーション失敗: <reason>"
+  history:
+    header: "<gold>=== 取引履歴 (p.<page>/<pages>, <total>件)<filters> ==="
+    empty: "<gray>履歴がありません"
+    next-hint: "<gray>次ページ: <yellow>/vshop history <args>"
+    bad-flag: "<red>引数エラー: <reason>"
+    player-not-found: "<red>プレイヤーが見つかりません: <player>"
+  search:
+    header: "<gold>=== 検索: <query> (<page>/<pages>, <total>件) ==="
+    empty: "<gray>ヒットなし"
+    next-hint: "<gray>次ページ: <yellow>/vshop search <query> <page>"
 
 shop:
   created: "<green>ショップ <shop_id> を作成しました。"

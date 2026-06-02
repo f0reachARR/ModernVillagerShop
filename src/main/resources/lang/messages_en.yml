@@ -16,6 +16,16 @@ command:
     started: "<yellow>Migration started: <from> -> <to>"
     done: "<green>Migration completed."
     failed: "<red>Migration failed: <reason>"
+  history:
+    header: "<gold>=== Trade history (p.<page>/<pages>, <total> rows)<filters> ==="
+    empty: "<gray>No history yet."
+    next-hint: "<gray>Next page: <yellow>/vshop history <args>"
+    bad-flag: "<red>Argument error: <reason>"
+    player-not-found: "<red>Player not found: <player>"
+  search:
+    header: "<gold>=== Search: <query> (<page>/<pages>, <total> hits) ==="
+    empty: "<gray>No matches."
+    next-hint: "<gray>Next page: <yellow>/vshop search <query> <page>"
 
 shop:
   created: "<green>Shop <shop_id> created."
