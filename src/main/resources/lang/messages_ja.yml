@@ -81,6 +81,46 @@ error:
   blacklisted-item: "<red>このアイテムは取引できません。"
   generic: "<red>エラーが発生しました: <reason>"
 
+coowner:
+  no-permission: "<red>共同オーナーを管理する権限がありません。"
+  admin-shop: "<red>管理者ショップには共同オーナーを設定できません。"
+  primary-immutable: "<gray>PRIMARYは直接編集できません。移譲を使用してください。"
+  list:
+    title: "<white>共同オーナー: <shop_name>"
+    body: "<gray>編集対象を選択するか、追加してください。"
+    add: "<green>追加"
+  add:
+    title: "<white>共同オーナー追加"
+    body: "<gray>プレイヤー名・役割・持分を入力してください。"
+    submit: "追加"
+    name-label: "プレイヤー名"
+    role-label: "役割"
+    share-label: "持分 (0-100)"
+    invalid-name: "<red>プレイヤー名が無効です。"
+    done: "<green>共同オーナーを更新しました。"
+  member:
+    title: "<white>共同オーナー操作"
+    body: "<gray><player> [<role> <share>%]"
+    edit: "<yellow>役割・持分を変更"
+    remove: "<red>削除"
+  edit:
+    title: "<white>共同オーナーの編集"
+    body: "<gray>新しい役割・持分を入力してください。"
+    submit: "保存"
+  remove:
+    title: "<white>共同オーナーの削除"
+    body: "<gray><player> を共同オーナーから外しますか？"
+    yes: "削除する"
+    no: "やめる"
+    done: "<green>共同オーナーを削除しました。"
+  transfer:
+    title: "<white>PRIMARY 移譲"
+    body: "<gray>このショップの PRIMARY を <player> へ移譲します。\nあなたは MANAGER に降格します。"
+    yes: "移譲する"
+    no: "やめる"
+    same-player: "<red>同じプレイヤーには移譲できません。"
+    done: "<green>PRIMARY を <player> に移譲しました。"
+
 edit:
   slot:
     create-title: "<white>出品枠の作成"

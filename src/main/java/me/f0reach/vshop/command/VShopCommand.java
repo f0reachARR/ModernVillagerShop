@@ -60,6 +60,20 @@ public final class VShopCommand {
                         .then(Commands.argument("shopId", StringArgumentType.word())
                                 .executes(ctx -> edit(ctx.getSource().getSender(),
                                         StringArgumentType.getString(ctx, "shopId")))))
+                .then(Commands.literal("coowner")
+                        .requires(s -> s.getSender().hasPermission("modernvillagershop.coowner.manage")
+                                || s.getSender().hasPermission("modernvillagershop.coowner.manage.others"))
+                        .then(Commands.argument("shopId", StringArgumentType.word())
+                                .executes(ctx -> coowner(ctx.getSource().getSender(),
+                                        StringArgumentType.getString(ctx, "shopId")))))
+                .then(Commands.literal("transfer")
+                        .requires(s -> s.getSender().hasPermission("modernvillagershop.coowner.transfer")
+                                || s.getSender().hasPermission("modernvillagershop.coowner.transfer.others"))
+                        .then(Commands.argument("shopId", StringArgumentType.word())
+                                .then(Commands.argument("player", StringArgumentType.word())
+                                        .executes(ctx -> transfer(ctx.getSource().getSender(),
+                                                StringArgumentType.getString(ctx, "shopId"),
+                                                StringArgumentType.getString(ctx, "player"))))))
                 .then(Commands.literal("egg")
                         .requires(s -> s.getSender().hasPermission("modernvillagershop.egg")
                                 || s.getSender().hasPermission("modernvillagershop.admin.egg"))
@@ -163,6 +177,44 @@ public final class VShopCommand {
         plugin.editUi().open(editor, match, 0);
         editor.sendMessage(messages.get("shop.edit.editing",
                 Placeholder.parsed("shop_name", match.name())));
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int coowner(CommandSender sender, String shopIdPrefix) {
+        Shop match = findShopByPrefix(shopIdPrefix);
+        if (match == null) {
+            sender.sendMessage(messages.get("command.shop-not-found",
+                    Placeholder.parsed("shop_id", shopIdPrefix)));
+            return 0;
+        }
+        if (!(sender instanceof Player viewer)) {
+            sender.sendMessage(messages.get("command.player-only"));
+            return 0;
+        }
+        if (match.isAdminShop()) {
+            viewer.sendMessage(messages.get("coowner.admin-shop"));
+            return 0;
+        }
+        plugin.coOwnerFlow().openManager(viewer, match);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int transfer(CommandSender sender, String shopIdPrefix, String targetName) {
+        Shop match = findShopByPrefix(shopIdPrefix);
+        if (match == null) {
+            sender.sendMessage(messages.get("command.shop-not-found",
+                    Placeholder.parsed("shop_id", shopIdPrefix)));
+            return 0;
+        }
+        if (!(sender instanceof Player viewer)) {
+            sender.sendMessage(messages.get("command.player-only"));
+            return 0;
+        }
+        if (match.isAdminShop()) {
+            viewer.sendMessage(messages.get("coowner.admin-shop"));
+            return 0;
+        }
+        plugin.coOwnerFlow().openTransfer(viewer, match, targetName);
         return Command.SINGLE_SUCCESS;
     }
 

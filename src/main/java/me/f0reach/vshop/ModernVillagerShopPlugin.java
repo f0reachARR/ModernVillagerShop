@@ -9,6 +9,7 @@ import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
+import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
 import me.f0reach.vshop.shop.edit.ShopEditListener;
 import me.f0reach.vshop.shop.edit.ShopEditService;
 import me.f0reach.vshop.shop.edit.SlotEditFlow;
@@ -50,6 +51,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopEditService editService;
     private ShopEditUi editUi;
     private SlotEditFlow slotEditFlow;
+    private CoOwnerFlow coOwnerFlow;
 
     @Override
     public void onEnable() {
@@ -87,6 +89,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config);
         this.editUi = new ShopEditUi(storage, iconConfig, messages);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
+        this.coOwnerFlow = new CoOwnerFlow(dialogService, messages, storage, shopService, villagerManager);
 
         try {
             shopService.loadAll();
@@ -145,4 +148,5 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public ShopEditService editService() { return editService; }
     public ShopEditUi editUi() { return editUi; }
     public SlotEditFlow slotEditFlow() { return slotEditFlow; }
+    public CoOwnerFlow coOwnerFlow() { return coOwnerFlow; }
 }

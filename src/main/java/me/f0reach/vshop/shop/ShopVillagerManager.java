@@ -127,4 +127,27 @@ public final class ShopVillagerManager {
         Villager v = findEntity(shop);
         if (v != null) v.remove();
     }
+
+    /**
+     * Re-renders the villager's custom name from the (now possibly updated)
+     * shop name / PRIMARY without touching other attributes. Best-effort: if
+     * the villager isn't currently loaded, the next chunk-load will pick up
+     * the change via spawn().
+     */
+    public void refreshDisplayName(Shop shop) {
+        Villager v = findEntity(shop);
+        if (v == null) return;
+        v.customName(buildName(shop, configSnapshot()));
+        v.setCustomNameVisible(true);
+    }
+
+    private PluginConfig configSnapshot() {
+        // We don't have a config reference in this manager; pull from the running plugin.
+        Plugin p = plugin;
+        if (p instanceof me.f0reach.vshop.ModernVillagerShopPlugin mvs) {
+            return mvs.pluginConfig();
+        }
+        // Fallback — should never be hit at runtime.
+        return new PluginConfig(plugin.getConfig());
+    }
 }

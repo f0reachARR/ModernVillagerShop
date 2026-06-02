@@ -81,6 +81,46 @@ error:
   blacklisted-item: "<red>This item is not tradable."
   generic: "<red>An error occurred: <reason>"
 
+coowner:
+  no-permission: "<red>You do not have permission to manage co-owners."
+  admin-shop: "<red>Admin shops have no co-owners."
+  primary-immutable: "<gray>PRIMARY cannot be edited directly — use transfer."
+  list:
+    title: "<white>Co-owners: <shop_name>"
+    body: "<gray>Pick a member to edit, or add a new one."
+    add: "<green>Add"
+  add:
+    title: "<white>Add co-owner"
+    body: "<gray>Enter player name, role, and share."
+    submit: "Add"
+    name-label: "Player name"
+    role-label: "Role"
+    share-label: "Share (0-100)"
+    invalid-name: "<red>Invalid player name."
+    done: "<green>Co-owner updated."
+  member:
+    title: "<white>Co-owner actions"
+    body: "<gray><player> [<role> <share>%]"
+    edit: "<yellow>Change role / share"
+    remove: "<red>Remove"
+  edit:
+    title: "<white>Edit co-owner"
+    body: "<gray>Set the new role and share."
+    submit: "Save"
+  remove:
+    title: "<white>Remove co-owner"
+    body: "<gray>Remove <player> from co-owners?"
+    yes: "Remove"
+    no: "Cancel"
+    done: "<green>Co-owner removed."
+  transfer:
+    title: "<white>Transfer PRIMARY"
+    body: "<gray>Transfer PRIMARY to <player>?\nYou will be demoted to MANAGER."
+    yes: "Transfer"
+    no: "Cancel"
+    same-player: "<red>You can't transfer to yourself."
+    done: "<green>PRIMARY transferred to <player>."
+
 edit:
   slot:
     create-title: "<white>Create slot"
