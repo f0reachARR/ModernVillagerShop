@@ -102,14 +102,14 @@ public final class ShopActionMenu {
         if (hasAnyPerm(viewer, "modernvillagershop.edit.rename",
                 "modernvillagershop.edit.others", "modernvillagershop.admin.edit")) {
             buttons.add(new DialogService.ButtonSpec(
-                    messages.get("action.rename",
+                    messages.get("action.rename.button",
                             Placeholder.parsed("current", shop.name())),
                     () -> openRename(viewer, shop)));
         }
         if (hasAnyPerm(viewer, "modernvillagershop.edit.profession",
                 "modernvillagershop.edit.others", "modernvillagershop.admin.edit")) {
             buttons.add(new DialogService.ButtonSpec(
-                    messages.get("action.profession",
+                    messages.get("action.profession.button",
                             Placeholder.parsed("current", professionLabel(shop.profession()))),
                     () -> openProfession(viewer, shop)));
         }
@@ -133,7 +133,7 @@ public final class ShopActionMenu {
                 "modernvillagershop.admin.edit") && (isPrimary || shop.isAdminShop()
                         || viewer.hasPermission("modernvillagershop.edit.others")
                         || viewer.hasPermission("modernvillagershop.admin.edit"))) {
-            buttons.add(new DialogService.ButtonSpec(messages.get("action.delete"),
+            buttons.add(new DialogService.ButtonSpec(messages.get("action.delete.button"),
                     () -> openDelete(viewer, shop)));
         }
 
