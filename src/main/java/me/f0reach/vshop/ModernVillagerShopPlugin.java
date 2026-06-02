@@ -12,12 +12,15 @@ import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
+import me.f0reach.vshop.shop.cache.PlayerCacheService;
 import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
+import me.f0reach.vshop.shop.edit.ShopActionMenu;
 import me.f0reach.vshop.shop.edit.ShopEditListener;
 import me.f0reach.vshop.shop.edit.ShopEditService;
 import me.f0reach.vshop.shop.edit.SlotEditFlow;
 import me.f0reach.vshop.shop.egg.SpawnEggFactory;
 import me.f0reach.vshop.shop.listener.NotificationFlushListener;
+import me.f0reach.vshop.shop.listener.PlayerCacheListener;
 import me.f0reach.vshop.shop.listener.ShopEggListener;
 import me.f0reach.vshop.shop.listener.ShopVillagerListener;
 import me.f0reach.vshop.shop.trade.TradeFlow;
@@ -25,9 +28,13 @@ import me.f0reach.vshop.shop.trade.TradeNotifier;
 import me.f0reach.vshop.shop.trade.TradeService;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.chest.IconConfig;
+import me.f0reach.vshop.ui.chest.PlayerPickerListener;
+import me.f0reach.vshop.ui.chest.PlayerPickerUi;
 import me.f0reach.vshop.ui.chest.ShopBrowseListener;
 import me.f0reach.vshop.ui.chest.ShopBrowseUi;
 import me.f0reach.vshop.ui.chest.ShopEditUi;
+import me.f0reach.vshop.ui.chest.ShopRestockListener;
+import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -58,6 +65,10 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private PriceRegistry priceRegistry;
     private ModernVillagerShopAPI api;
     private MvshopPlaceholders papiExpansion;
+    private PlayerCacheService playerCacheService;
+    private PlayerPickerUi playerPickerUi;
+    private ShopRestockUi restockUi;
+    private ShopActionMenu actionMenu;
 
     @Override
     public void onEnable() {
@@ -95,7 +106,12 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config);
         this.editUi = new ShopEditUi(storage, iconConfig, messages);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
-        this.coOwnerFlow = new CoOwnerFlow(dialogService, messages, storage, shopService, villagerManager);
+        this.playerCacheService = new PlayerCacheService(this);
+        this.playerPickerUi = new PlayerPickerUi(playerCacheService, messages, dialogService);
+        this.coOwnerFlow = new CoOwnerFlow(dialogService, messages, storage, shopService, villagerManager,
+                playerPickerUi, playerCacheService);
+        this.restockUi = new ShopRestockUi(storage, messages, editService);
+        this.actionMenu = new ShopActionMenu(this, dialogService, messages, editService, restockUi, coOwnerFlow);
         this.priceRegistry = new PriceRegistry();
         this.api = new ModernVillagerShopAPI(registry, storage, priceRegistry);
         getServer().getServicesManager().register(ModernVillagerShopAPI.class, api, this,
@@ -109,10 +125,14 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new ShopEggListener(this, eggFactory, shopService, messages), this);
-        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, openService, config), this);
+        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, openService,
+                actionMenu, config), this);
         pm.registerEvents(new ShopBrowseListener(registry, browseUi, storage, tradeFlow, messages), this);
         pm.registerEvents(new NotificationFlushListener(this, tradeNotifier), this);
         pm.registerEvents(new ShopEditListener(registry, editUi, editService, slotEditFlow, storage, messages), this);
+        pm.registerEvents(new ShopRestockListener(storage, messages, editService, config), this);
+        pm.registerEvents(new PlayerPickerListener(this, playerPickerUi), this);
+        pm.registerEvents(new PlayerCacheListener(playerCacheService), this);
 
         VShopCommand cmd = new VShopCommand(this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
@@ -176,4 +196,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public CoOwnerFlow coOwnerFlow() { return coOwnerFlow; }
     public PriceRegistry priceRegistry() { return priceRegistry; }
     public ModernVillagerShopAPI api() { return api; }
+    public PlayerCacheService playerCacheService() { return playerCacheService; }
+    public PlayerPickerUi playerPickerUi() { return playerPickerUi; }
+    public ShopRestockUi restockUi() { return restockUi; }
+    public ShopActionMenu actionMenu() { return actionMenu; }
 }

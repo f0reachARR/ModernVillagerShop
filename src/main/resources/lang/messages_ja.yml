@@ -92,6 +92,7 @@ coowner:
   add:
     title: "<white>共同オーナー追加"
     body: "<gray>プレイヤー名・役割・持分を入力してください。"
+    body-for: "<gray><player> を共同オーナーに追加します。役割と持分を指定してください。"
     submit: "追加"
     name-label: "プレイヤー名"
     role-label: "役割"
@@ -146,6 +147,53 @@ edit:
     done: "<green>出品枠を削除しました。"
   restock:
     coming-soon: "<gray>在庫補充UIは未実装です。"
+    title: "<white>在庫: <shop_name>"
+    admin-shop: "<gray>管理者ショップに在庫はありません。"
+    saved: "<green>在庫を保存しました。"
+    returned: "<yellow>取引禁止アイテムを返却しました。"
+
+action:
+  title: "<white>ショップ操作: <shop_name>"
+  body: "<gray>種別: <type> / 停止中: <suspended>\n操作を選択してください。"
+  edit-slots: "<yellow>品目を編集"
+  preview: "<aqua>プレビュー"
+  restock: "<green>在庫を編集"
+  coowner: "<light_purple>共同オーナー"
+  transfer: "<gold>PRIMARY 移譲"
+  notifications: "<white>通知設定を切替"
+  notifications-on: "<green>取引通知を有効化しました。"
+  notifications-off: "<yellow>取引通知を無効化しました。"
+  history: "<gray>取引履歴"
+  stats: "<gray>統計"
+  suspend: "<red>一時停止"
+  resume: "<green>再開"
+
+history:
+  empty: "<gray>取引履歴はまだありません。"
+  header: "<aqua>=== 最近の取引 (最大10件) ==="
+
+stats:
+  header: "<aqua>=== <shop_name> 統計 ==="
+  slots: "<gray>出品枠数: <count>"
+  totals: "<gray>SELL: <sell_count> 件 (<sell_total>) / BUY: <buy_count> 件 (<buy_total>)"
+
+player-picker:
+  title: "<white>プレイヤー選択"
+  head-lore: "<gray>クリックで選択"
+  prev: "<white>前のページ"
+  next: "<white>次のページ"
+  cancel: "<red>キャンセル"
+  search: "<yellow>検索"
+  search-active: "<gold>検索 (条件あり)"
+  sort-name: "<white>並び: 名前昇順"
+  sort-recent: "<white>並び: 最新ログイン順"
+  search-title: "<white>プレイヤー検索"
+  search-body: "<gray>名前 (前方一致) で絞り込みます。空欄で解除。"
+  search-submit: "適用"
+  search-label: "クエリ"
+
+coowner-extra:
+  __unused: ""
 
 system:
   prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"

@@ -3,10 +3,13 @@ package me.f0reach.vshop.shop.coowner;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.CoOwner;
 import me.f0reach.vshop.model.CoOwnerRole;
+import me.f0reach.vshop.model.PlayerCacheEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
+import me.f0reach.vshop.shop.cache.PlayerCacheService;
 import me.f0reach.vshop.storage.StorageManager;
+import me.f0reach.vshop.ui.chest.PlayerPickerUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -39,14 +42,19 @@ public final class CoOwnerFlow {
     private final StorageManager storage;
     private final ShopService shopService;
     private final ShopVillagerManager villagerManager;
+    private final PlayerPickerUi playerPicker;
+    private final PlayerCacheService playerCache;
 
     public CoOwnerFlow(DialogService dialogs, MessageManager messages, StorageManager storage,
-                       ShopService shopService, ShopVillagerManager villagerManager) {
+                       ShopService shopService, ShopVillagerManager villagerManager,
+                       PlayerPickerUi playerPicker, PlayerCacheService playerCache) {
         this.dialogs = dialogs;
         this.messages = messages;
         this.storage = storage;
         this.shopService = shopService;
         this.villagerManager = villagerManager;
+        this.playerPicker = playerPicker;
+        this.playerCache = playerCache;
     }
 
     public void openManager(Player primary, Shop shop) {
@@ -76,6 +84,7 @@ public final class CoOwnerFlow {
         showList(primary, shop, coOwners);
     }
 
+    /** Variant used by the command: targetName comes from the CLI argument. */
     public void openTransfer(Player primary, Shop shop, String targetName) {
         if (!primary.hasPermission("modernvillagershop.coowner.transfer")
                 && !primary.hasPermission("modernvillagershop.coowner.transfer.others")) {
@@ -87,9 +96,32 @@ public final class CoOwnerFlow {
             primary.sendMessage(messages.get("coowner.transfer.same-player"));
             return;
         }
+        promptTransferConfirm(primary, shop, target,
+                target.getName() == null ? targetName : target.getName());
+    }
 
+    /** Variant used by the action menu: opens the chest picker first. */
+    public void openTransferWithPicker(Player primary, Shop shop) {
+        if (!primary.hasPermission("modernvillagershop.coowner.transfer")
+                && !primary.hasPermission("modernvillagershop.coowner.transfer.others")) {
+            primary.sendMessage(messages.get("coowner.no-permission"));
+            return;
+        }
+        playerPicker.open(primary,
+                picked -> {
+                    if (picked.playerUuid().equals(primary.getUniqueId())) {
+                        primary.sendMessage(messages.get("coowner.transfer.same-player"));
+                        return;
+                    }
+                    OfflinePlayer target = Bukkit.getOfflinePlayer(picked.playerUuid());
+                    promptTransferConfirm(primary, shop, target, picked.name());
+                },
+                /*onCancel*/ () -> {});
+    }
+
+    private void promptTransferConfirm(Player primary, Shop shop, OfflinePlayer target, String displayName) {
         Component body = messages.get("coowner.transfer.body",
-                Placeholder.parsed("player", targetName),
+                Placeholder.parsed("player", displayName),
                 Placeholder.parsed("shop_name", shop.name()));
         dialogs.confirmOnce(primary,
                 messages.get("coowner.transfer.title"), body,
@@ -119,11 +151,23 @@ public final class CoOwnerFlow {
     }
 
     private void showAdd(Player primary, Shop shop) {
+        playerPicker.open(primary,
+                picked -> {
+                    if (picked.playerUuid().equals(primary.getUniqueId())) {
+                        primary.sendMessage(messages.get("coowner.add.invalid-name"));
+                        return;
+                    }
+                    showAddRoleAndShare(primary, shop, picked);
+                },
+                /*onCancel*/ () -> {});
+    }
+
+    private void showAddRoleAndShare(Player primary, Shop shop, PlayerCacheEntry picked) {
         dialogs.input(primary,
                         messages.get("coowner.add.title"),
-                        messages.get("coowner.add.body"),
+                        messages.get("coowner.add.body-for",
+                                Placeholder.parsed("player", picked.name())),
                         messages.get("coowner.add.submit"))
-                .text("name", messages.get("coowner.add.name-label"), "")
                 .dropdown("role", messages.get("coowner.add.role-label"),
                         List.of(
                                 new DialogService.InputBuilder.Option("MANAGER", Component.text("MANAGER")),
@@ -131,20 +175,10 @@ public final class CoOwnerFlow {
                         ), 0)
                 .text("share", messages.get("coowner.add.share-label"), "0.00")
                 .onSubmit(response -> {
-                    String name = response.getText("name").trim();
-                    if (name.isEmpty()) {
-                        primary.sendMessage(messages.get("coowner.add.invalid-name"));
-                        return;
-                    }
-                    OfflinePlayer target = Bukkit.getOfflinePlayer(name);
-                    if (target.getUniqueId().equals(primary.getUniqueId())) {
-                        primary.sendMessage(messages.get("coowner.add.invalid-name"));
-                        return;
-                    }
                     CoOwnerRole role = CoOwnerRole.valueOf(response.getDropdownOptionId("role"));
                     BigDecimal share = role == CoOwnerRole.STAFF
                             ? BigDecimal.ZERO : parseShare(response.getText("share"));
-                    persistAndRebalance(primary, shop, new CoOwner(shop.id(), target.getUniqueId(),
+                    persistAndRebalance(primary, shop, new CoOwner(shop.id(), picked.playerUuid(),
                             role, share, Instant.now(), primary.getUniqueId()), /*remove*/ false);
                 });
     }

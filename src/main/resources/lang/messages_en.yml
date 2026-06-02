@@ -92,6 +92,7 @@ coowner:
   add:
     title: "<white>Add co-owner"
     body: "<gray>Enter player name, role, and share."
+    body-for: "<gray>Adding <player>. Choose role and share."
     submit: "Add"
     name-label: "Player name"
     role-label: "Role"
@@ -146,6 +147,50 @@ edit:
     done: "<green>Slot deleted."
   restock:
     coming-soon: "<gray>Restock UI is not implemented yet."
+    title: "<white>Inventory: <shop_name>"
+    admin-shop: "<gray>Admin shops have no physical stock."
+    saved: "<green>Inventory saved."
+    returned: "<yellow>Returned forbidden items to you."
+
+action:
+  title: "<white>Shop: <shop_name>"
+  body: "<gray>Type: <type> / Suspended: <suspended>\nChoose an action."
+  edit-slots: "<yellow>Edit items"
+  preview: "<aqua>Preview"
+  restock: "<green>Edit inventory"
+  coowner: "<light_purple>Co-owners"
+  transfer: "<gold>Transfer PRIMARY"
+  notifications: "<white>Toggle notifications"
+  notifications-on: "<green>Trade notifications enabled."
+  notifications-off: "<yellow>Trade notifications disabled."
+  history: "<gray>History"
+  stats: "<gray>Stats"
+  suspend: "<red>Suspend"
+  resume: "<green>Resume"
+
+history:
+  empty: "<gray>No trade history yet."
+  header: "<aqua>=== Recent trades (max 10) ==="
+
+stats:
+  header: "<aqua>=== <shop_name> stats ==="
+  slots: "<gray>Slots: <count>"
+  totals: "<gray>SELL: <sell_count> (<sell_total>) / BUY: <buy_count> (<buy_total>)"
+
+player-picker:
+  title: "<white>Pick a player"
+  head-lore: "<gray>Click to choose"
+  prev: "<white>Previous"
+  next: "<white>Next"
+  cancel: "<red>Cancel"
+  search: "<yellow>Search"
+  search-active: "<gold>Search (active)"
+  sort-name: "<white>Sort: name asc"
+  sort-recent: "<white>Sort: recent login"
+  search-title: "<white>Search players"
+  search-body: "<gray>Filter by prefix. Leave blank to clear."
+  search-submit: "Apply"
+  search-label: "Query"
 
 system:
   prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"

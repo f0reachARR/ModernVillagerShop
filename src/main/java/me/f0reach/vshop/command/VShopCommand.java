@@ -204,10 +204,7 @@ public final class VShopCommand {
                     Placeholder.parsed("reason", ex.getMessage())));
             return 0;
         }
-        plugin.editService().beginEditing(match.id());
-        plugin.editUi().open(editor, match, 0);
-        editor.sendMessage(messages.get("shop.edit.editing",
-                Placeholder.parsed("shop_name", match.name())));
+        plugin.actionMenu().open(editor, match);
         return Command.SINGLE_SUCCESS;
     }
 
