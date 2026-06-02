@@ -8,6 +8,7 @@ import me.f0reach.vshop.model.TradeRecord;
 import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
 import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
+import me.f0reach.vshop.ui.text.Displays;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -298,10 +299,12 @@ public final class ShopActionMenu {
             viewer.sendMessage(messages.get("history.header"));
             for (TradeRecord rec : recent) {
                 String counterparty = resolveCounterparty(rec);
-                viewer.sendMessage(Component.text("[" + HISTORY_FORMAT.format(rec.at()) + "] "
-                                + rec.side() + " " + rec.amount() + "× " + rec.itemSnapshot().getType().name()
-                                + " @ " + rec.unitPrice() + " <" + counterparty + ">",
-                        NamedTextColor.GRAY));
+                Component line = Component.text("[" + HISTORY_FORMAT.format(rec.at()) + "] "
+                                + rec.side() + " " + rec.amount() + "× ", NamedTextColor.GRAY)
+                        .append(Displays.item(rec.itemSnapshot()).color(NamedTextColor.WHITE))
+                        .append(Component.text(" @ " + rec.unitPrice() + " <" + counterparty + ">",
+                                NamedTextColor.GRAY));
+                viewer.sendMessage(line);
             }
         } catch (SQLException ex) {
             viewer.sendMessage(messages.get("error.generic",

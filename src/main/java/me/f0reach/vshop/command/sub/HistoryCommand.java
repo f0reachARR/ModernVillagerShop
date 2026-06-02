@@ -12,7 +12,9 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.TradeRecord;
 import me.f0reach.vshop.shop.cache.PlayerCacheService;
 import me.f0reach.vshop.storage.repo.ShopTransactionRepository.HistoryFilter;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import me.f0reach.vshop.ui.text.Displays;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
@@ -122,22 +124,23 @@ public final class HistoryCommand {
                 return Command.SINGLE_SUCCESS;
             }
             EconomyService econ = support.plugin().economyService();
-            MiniMessage mm = support.messages().miniMessage();
             for (TradeRecord rec : records) {
                 String when = TIME_FMT.format(rec.at());
                 String counterparty = resolveCounterparty(rec);
-                String shopName = shopName(rec.shopId());
-                StringBuilder line = new StringBuilder("<gray>")
-                        .append(when)
-                        .append(" <yellow>").append(rec.side())
-                        .append(" <white>").append(rec.itemSnapshot().getType().name())
-                        .append(" <gray>x").append(rec.amount())
-                        .append(" @ <white>").append(econ.format(rec.unitPrice()));
+                Component shopLabel = shopLabel(rec.shopId());
+                Component line = Component.text(when + " ", NamedTextColor.GRAY)
+                        .append(Component.text(rec.side().name() + " ", NamedTextColor.YELLOW))
+                        .append(Displays.item(rec.itemSnapshot()).color(NamedTextColor.WHITE))
+                        .append(Component.text(" x" + rec.amount() + " @ ", NamedTextColor.GRAY))
+                        .append(Component.text(econ.format(rec.unitPrice()), NamedTextColor.WHITE));
                 if (rec.fee() != null && rec.fee().signum() > 0) {
-                    line.append(" <gray>(fee ").append(econ.format(rec.fee())).append(")");
+                    line = line.append(Component.text(" (fee " + econ.format(rec.fee()) + ")",
+                            NamedTextColor.GRAY));
                 }
-                line.append(" <dark_gray>[").append(shopName).append(" / ").append(counterparty).append("]");
-                sender.sendMessage(mm.deserialize(line.toString()));
+                line = line.append(Component.text(" [", NamedTextColor.DARK_GRAY))
+                        .append(shopLabel)
+                        .append(Component.text(" / " + counterparty + "]", NamedTextColor.DARK_GRAY));
+                sender.sendMessage(line);
             }
             int pages = (int) Math.max(1, (total + PER_PAGE - 1) / PER_PAGE);
             if (page < pages) {
@@ -181,10 +184,22 @@ public final class HistoryCommand {
         return op.getName() != null ? op.getName() : other.toString().substring(0, 8);
     }
 
-    private String shopName(UUID shopId) {
-        return support.plugin().registry().byId(shopId)
-                .map(Shop::name)
-                .orElseGet(() -> shopId.toString().substring(0, 8));
+    /**
+     * Shop name component with the full shop UUID and ID in a hover, so the
+     * truncated text never silently drops information.
+     */
+    private Component shopLabel(UUID shopId) {
+        Shop shop = support.plugin().registry().byId(shopId).orElse(null);
+        String visible = shop != null ? Displays.truncate(shop.name(), 24)
+                : shopId.toString().substring(0, 8);
+        Component hover = Component.text("id=" + shopId, NamedTextColor.GRAY);
+        if (shop != null && shop.name().length() > 24) {
+            hover = Component.text(shop.name(), NamedTextColor.WHITE)
+                    .appendNewline()
+                    .append(hover);
+        }
+        return Component.text(visible)
+                .hoverEvent(net.kyori.adventure.text.event.HoverEvent.showText(hover));
     }
 
     private void renderHeader(CommandSender sender, int page, long total, HistoryFilter f) {

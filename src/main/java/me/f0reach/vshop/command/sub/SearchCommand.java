@@ -9,6 +9,9 @@ import io.papermc.paper.command.brigadier.Commands;
 import me.f0reach.vshop.command.CommandSupport;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
+import me.f0reach.vshop.ui.text.Displays;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -44,8 +47,6 @@ public final class SearchCommand {
     private int execute(CommandSender sender, String query, int page) {
         String needle = query.toLowerCase(Locale.ROOT);
         Material material = Material.matchMaterial(query);
-        var mm = support.messages().miniMessage();
-
         List<Hit> hits = new ArrayList<>();
         try {
             for (Shop s : support.plugin().registry().all()) {
@@ -78,9 +79,15 @@ public final class SearchCommand {
         }
         for (int i = from; i < to; i++) {
             Hit h = hits.get(i);
-            sender.sendMessage(mm.deserialize("<yellow>" + h.shop.id().toString().substring(0, 8)
-                    + " <gray>" + h.shop.name() + " <dark_gray>[" + h.slot.side()
-                    + " @ " + h.slot.unitPrice() + "]"));
+            Component line = Displays.shortId(h.shop.id()).color(NamedTextColor.YELLOW)
+                    .append(Component.text(" ", NamedTextColor.GRAY))
+                    .append(Displays.nameWithHover(Displays.truncate(h.shop.name(), 24), h.shop.name())
+                            .color(NamedTextColor.GRAY))
+                    .append(Component.text(" ", NamedTextColor.DARK_GRAY))
+                    .append(Displays.item(h.slot.itemTemplate()).color(NamedTextColor.WHITE))
+                    .append(Component.text(" [" + h.slot.side() + " @ " + h.slot.unitPrice() + "]",
+                            NamedTextColor.DARK_GRAY));
+            sender.sendMessage(line);
         }
         if (p < pages) {
             sender.sendMessage(support.messages().get("command.search.next-hint",
