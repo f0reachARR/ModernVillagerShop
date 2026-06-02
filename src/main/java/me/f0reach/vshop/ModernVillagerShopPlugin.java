@@ -9,6 +9,9 @@ import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
+import me.f0reach.vshop.shop.edit.ShopEditListener;
+import me.f0reach.vshop.shop.edit.ShopEditService;
+import me.f0reach.vshop.shop.edit.SlotEditFlow;
 import me.f0reach.vshop.shop.egg.SpawnEggFactory;
 import me.f0reach.vshop.shop.listener.NotificationFlushListener;
 import me.f0reach.vshop.shop.listener.ShopEggListener;
@@ -20,6 +23,7 @@ import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.chest.IconConfig;
 import me.f0reach.vshop.ui.chest.ShopBrowseListener;
 import me.f0reach.vshop.ui.chest.ShopBrowseUi;
+import me.f0reach.vshop.ui.chest.ShopEditUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -43,6 +47,9 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private TradeService tradeService;
     private TradeNotifier tradeNotifier;
     private TradeFlow tradeFlow;
+    private ShopEditService editService;
+    private ShopEditUi editUi;
+    private SlotEditFlow slotEditFlow;
 
     @Override
     public void onEnable() {
@@ -75,8 +82,11 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.browseUi = new ShopBrowseUi(storage, iconConfig, messages);
         this.openService = new ShopOpenService(browseUi, messages, config);
         this.tradeNotifier = new TradeNotifier(this, messages, storage, economyService);
-        this.tradeService = new TradeService(storage, economyService, config, tradeNotifier);
+        this.editService = new ShopEditService(storage);
+        this.tradeService = new TradeService(storage, economyService, config, tradeNotifier, editService);
         this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config);
+        this.editUi = new ShopEditUi(storage, iconConfig, messages);
+        this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
 
         try {
             shopService.loadAll();
@@ -89,6 +99,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, openService, config), this);
         pm.registerEvents(new ShopBrowseListener(registry, browseUi, storage, tradeFlow, messages), this);
         pm.registerEvents(new NotificationFlushListener(this, tradeNotifier), this);
+        pm.registerEvents(new ShopEditListener(registry, editUi, editService, slotEditFlow, storage, messages), this);
 
         VShopCommand cmd = new VShopCommand(this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
@@ -131,4 +142,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public TradeService tradeService() { return tradeService; }
     public TradeFlow tradeFlow() { return tradeFlow; }
     public TradeNotifier tradeNotifier() { return tradeNotifier; }
+    public ShopEditService editService() { return editService; }
+    public ShopEditUi editUi() { return editUi; }
+    public SlotEditFlow slotEditFlow() { return slotEditFlow; }
 }

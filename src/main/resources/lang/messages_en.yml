@@ -39,6 +39,7 @@ shop:
   edit:
     no-permission: "<red>You do not have permission to edit this shop."
     editing: "<yellow>Editing: <shop_name>"
+    busy: "<red>This shop is being edited. Try again shortly."
 
 trade:
   sold: "<green>Bought: <item> x<amount> = <price> <gray>(fee <fee>)"
@@ -79,6 +80,32 @@ error:
   invalid-price: "<red>Invalid price."
   blacklisted-item: "<red>This item is not tradable."
   generic: "<red>An error occurred: <reason>"
+
+edit:
+  slot:
+    create-title: "<white>Create slot"
+    edit-title: "<white>Edit slot"
+    body: "<gray>Item: <item>"
+    submit: "Save"
+    side: "Side"
+    unit-price: "Sell unit price"
+    unit-amount: "Items per pack"
+    buy-unit-price: "Buy unit price (BUY only)"
+    buy-capacity: "Buy capacity (items)"
+    trade-limit: "Trade limit (blank = none)"
+    limit-scope: "Limit scope"
+    reset-seconds: "Limit reset (seconds; blank = none)"
+    created: "<green>Slot created."
+    updated: "<green>Slot updated."
+    place-prompt: "<gray>Click an empty slot while holding an item to create a new slot."
+  delete:
+    title: "<white>Delete slot"
+    body: "<gray>Delete the slot for <item>?"
+    yes: "Delete"
+    no: "Cancel"
+    done: "<green>Slot deleted."
+  restock:
+    coming-soon: "<gray>Restock UI is not implemented yet."
 
 system:
   prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"

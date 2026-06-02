@@ -53,6 +53,13 @@ public final class VShopCommand {
                         .then(Commands.argument("shopId", StringArgumentType.word())
                                 .executes(ctx -> open(ctx.getSource().getSender(),
                                         StringArgumentType.getString(ctx, "shopId")))))
+                .then(Commands.literal("edit")
+                        .requires(s -> s.getSender().hasPermission("modernvillagershop.edit")
+                                || s.getSender().hasPermission("modernvillagershop.edit.others")
+                                || s.getSender().hasPermission("modernvillagershop.admin.edit"))
+                        .then(Commands.argument("shopId", StringArgumentType.word())
+                                .executes(ctx -> edit(ctx.getSource().getSender(),
+                                        StringArgumentType.getString(ctx, "shopId")))))
                 .then(Commands.literal("egg")
                         .requires(s -> s.getSender().hasPermission("modernvillagershop.egg")
                                 || s.getSender().hasPermission("modernvillagershop.admin.egg"))
@@ -128,6 +135,34 @@ public final class VShopCommand {
             return 0;
         }
         plugin.openService().open(viewer, match);
+        return Command.SINGLE_SUCCESS;
+    }
+
+    private int edit(CommandSender sender, String shopIdPrefix) {
+        Shop match = findShopByPrefix(shopIdPrefix);
+        if (match == null) {
+            sender.sendMessage(messages.get("command.shop-not-found",
+                    Placeholder.parsed("shop_id", shopIdPrefix)));
+            return 0;
+        }
+        if (!(sender instanceof Player editor)) {
+            sender.sendMessage(messages.get("command.player-only"));
+            return 0;
+        }
+        try {
+            if (!plugin.editService().canEdit(editor, match)) {
+                editor.sendMessage(messages.get("shop.edit.no-permission"));
+                return 0;
+            }
+        } catch (java.sql.SQLException ex) {
+            editor.sendMessage(messages.get("error.generic",
+                    Placeholder.parsed("reason", ex.getMessage())));
+            return 0;
+        }
+        plugin.editService().beginEditing(match.id());
+        plugin.editUi().open(editor, match, 0);
+        editor.sendMessage(messages.get("shop.edit.editing",
+                Placeholder.parsed("shop_name", match.name())));
         return Command.SINGLE_SUCCESS;
     }
 

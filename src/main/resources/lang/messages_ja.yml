@@ -39,6 +39,7 @@ shop:
   edit:
     no-permission: "<red>このショップを編集する権限がありません。"
     editing: "<yellow>編集モード中: <shop_name>"
+    busy: "<red>このショップは編集中です。少し待ってから再度お試しください。"
 
 trade:
   sold: "<green>購入しました: <item> x<amount> = <price> <gray>(手数料 <fee>)"
@@ -79,6 +80,32 @@ error:
   invalid-price: "<red>価格の入力が不正です。"
   blacklisted-item: "<red>このアイテムは取引できません。"
   generic: "<red>エラーが発生しました: <reason>"
+
+edit:
+  slot:
+    create-title: "<white>出品枠の作成"
+    edit-title: "<white>出品枠の編集"
+    body: "<gray>対象アイテム: <item>"
+    submit: "保存"
+    side: "種別"
+    unit-price: "販売単価"
+    unit-amount: "1パックあたりの個数"
+    buy-unit-price: "買取単価 (BUYのみ)"
+    buy-capacity: "買取受入残 (アイテム数)"
+    trade-limit: "取引上限 (空欄=無制限)"
+    limit-scope: "上限のスコープ"
+    reset-seconds: "上限リセット秒数 (空欄=なし)"
+    created: "<green>出品枠を作成しました。"
+    updated: "<green>出品枠を更新しました。"
+    place-prompt: "<gray>カーソルにアイテムを持って空きスロットをクリックすると新規出品枠を作成できます。"
+  delete:
+    title: "<white>出品枠の削除"
+    body: "<gray><item> の出品枠を削除します。よろしいですか？"
+    yes: "削除する"
+    no: "キャンセル"
+    done: "<green>出品枠を削除しました。"
+  restock:
+    coming-soon: "<gray>在庫補充UIは未実装です。"
 
 system:
   prefix: "<dark_gray>[<aqua>VShop<dark_gray>] <reset>"

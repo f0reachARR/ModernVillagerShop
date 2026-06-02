@@ -49,15 +49,21 @@ public final class TradeService {
     private final EconomyService economy;
     private final PluginConfig config;
     private final TradeNotifier notifier;
+    private final me.f0reach.vshop.shop.edit.ShopEditService editService;
 
-    public TradeService(StorageManager storage, EconomyService economy, PluginConfig config, TradeNotifier notifier) {
+    public TradeService(StorageManager storage, EconomyService economy, PluginConfig config, TradeNotifier notifier,
+                        me.f0reach.vshop.shop.edit.ShopEditService editService) {
         this.storage = storage;
         this.economy = economy;
         this.config = config;
         this.notifier = notifier;
+        this.editService = editService;
     }
 
     public TradeResult execute(TradeRequest req) {
+        if (editService != null && editService.isEditing(req.shop().id())) {
+            return new TradeResult.Failure("shop.edit.busy");
+        }
         if (req.side() == TradeSide.SELL) return executeSell(req);
         if (req.side() == TradeSide.BUY) return executeBuy(req);
         return new TradeResult.Failure("error.generic");
