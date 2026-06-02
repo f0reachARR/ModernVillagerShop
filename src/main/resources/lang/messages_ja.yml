@@ -41,14 +41,38 @@ shop:
     editing: "<yellow>編集モード中: <shop_name>"
 
 trade:
-  sold: "<green>販売しました: <item> x<amount> = <price>"
-  bought: "<green>買い取りました: <item> x<amount> = <price>"
+  sold: "<green>購入しました: <item> x<amount> = <price> <gray>(手数料 <fee>)"
+  bought: "<green>納品しました: <item> x<amount> = <price> <gray>(手数料 <fee>)"
   out-of-stock: "<red>在庫が不足しています。"
   buy-full: "<red>受入枠が満杯です。"
   not-enough-money-buyer: "<red>所持金が足りません。"
   not-enough-money-owner: "<red>店主の残高が不足しているため取引できません。"
   limit-reached: "<red>取引上限に達しています。"
   price-drift: "<red>価格が変動したため取引をキャンセルしました。再度開いてください。"
+  amount-prompt:
+    title: "<white>数量入力"
+    body: "<gray><item> を取引する数量 (パック数) を入力してください。"
+    submit: "次へ"
+    label: "パック数 (1パック=<unit>個)"
+  confirm-sell:
+    title: "<white>購入確認"
+    body: "<gray><item> を <amount> 個 (<packs> パック)\n単価 <unit_price> / 合計 <price>\n手数料 <fee>"
+    yes: "購入する"
+    no: "やめる"
+  confirm-buy:
+    title: "<white>納品確認"
+    body: "<gray><item> を <amount> 個 (<packs> パック) 納品\n買取単価 <unit_price> / 受取額 <payout>\n手数料 <fee>"
+    yes: "納品する"
+    no: "やめる"
+  side-pick:
+    title: "<white>取引種別"
+    body: "<gray>このアイテムに対する操作を選択してください。"
+    sell: "<yellow>購入する"
+    buy: "<aqua>納品する"
+  not-tradable: "<red>このスロットは現在取引できません。"
+  notify-sell: "<aqua>あなたのショップ <shop_name> で <item> が <amount> 個売れました (+<price>)"
+  notify-buy: "<aqua>あなたのショップ <shop_name> が <item> を <amount> 個買い取りました (-<price>)"
+  notify-summary: "<aqua>不在中にあなたのショップで <count> 件の取引がありました (合計 <price>)。詳細は /vshop history で確認できます。"
 
 error:
   invalid-amount: "<red>数量の入力が不正です。"

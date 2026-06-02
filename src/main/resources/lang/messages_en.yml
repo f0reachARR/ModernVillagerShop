@@ -41,14 +41,38 @@ shop:
     editing: "<yellow>Editing: <shop_name>"
 
 trade:
-  sold: "<green>Sold: <item> x<amount> = <price>"
-  bought: "<green>Bought: <item> x<amount> = <price>"
+  sold: "<green>Bought: <item> x<amount> = <price> <gray>(fee <fee>)"
+  bought: "<green>Delivered: <item> x<amount> = <price> <gray>(fee <fee>)"
   out-of-stock: "<red>Out of stock."
   buy-full: "<red>Buy slot is full."
   not-enough-money-buyer: "<red>You don't have enough money."
   not-enough-money-owner: "<red>The shop owner does not have enough funds."
   limit-reached: "<red>Trade limit reached."
   price-drift: "<red>Price changed; transaction canceled. Please reopen."
+  amount-prompt:
+    title: "<white>Enter amount"
+    body: "<gray>How many packs of <item> would you like to trade?"
+    submit: "Next"
+    label: "Packs (1 pack = <unit>)"
+  confirm-sell:
+    title: "<white>Confirm purchase"
+    body: "<gray><item> x <amount> (<packs> packs)\nUnit <unit_price> / Total <price>\nFee <fee>"
+    yes: "Buy"
+    no: "Cancel"
+  confirm-buy:
+    title: "<white>Confirm delivery"
+    body: "<gray>Deliver <item> x <amount> (<packs> packs)\nBuy unit <unit_price> / Payout <payout>\nFee <fee>"
+    yes: "Deliver"
+    no: "Cancel"
+  side-pick:
+    title: "<white>Choose action"
+    body: "<gray>Pick how you want to trade this item."
+    sell: "<yellow>Buy from shop"
+    buy: "<aqua>Sell to shop"
+  not-tradable: "<red>This slot is not currently tradable."
+  notify-sell: "<aqua>Your shop <shop_name> sold <item> x <amount> (+<price>)"
+  notify-buy: "<aqua>Your shop <shop_name> bought <item> x <amount> (-<price>)"
+  notify-summary: "<aqua>While you were away, your shops had <count> trades (total <price>). See /vshop history for details."
 
 error:
   invalid-amount: "<red>Invalid amount."
