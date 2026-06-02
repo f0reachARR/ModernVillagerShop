@@ -237,29 +237,104 @@ public final class HistoryCommand {
         return true;
     }
 
+    private static final List<String> ALL_FLAGS = List.of(
+            "--shop", "--side", "--from", "--to", "--player", "--page");
+
     private java.util.concurrent.CompletableFuture<com.mojang.brigadier.suggestion.Suggestions> suggestFlags(
             CommandContext<CommandSourceStack> ctx,
             com.mojang.brigadier.suggestion.SuggestionsBuilder builder) {
         String remaining = builder.getRemaining();
-        int lastSpace = remaining.lastIndexOf(' ');
-        String head = lastSpace < 0 ? "" : remaining.substring(0, lastSpace + 1);
-        String tail = lastSpace < 0 ? remaining : remaining.substring(lastSpace + 1);
-        for (String flag : List.of("--shop", "--side", "--from", "--to", "--player", "--page")) {
-            if (flag.startsWith(tail)) builder.suggest(head + flag);
+        boolean endsOnSpace = !remaining.isEmpty() && Character.isWhitespace(remaining.charAt(remaining.length() - 1));
+        String[] tokens = remaining.isBlank() ? new String[0] : remaining.trim().split("\\s+");
+
+        // Head = everything up to (but not including) the token under the cursor.
+        // tail = the token currently being typed (empty if the user just typed a space).
+        String head;
+        String tail;
+        if (endsOnSpace || tokens.length == 0) {
+            head = remaining;
+            tail = "";
+        } else {
+            tail = tokens[tokens.length - 1];
+            head = remaining.substring(0, remaining.length() - tail.length());
         }
-        if ("--side".equals(prevToken(remaining))) {
-            builder.suggest(head + "SELL");
-            builder.suggest(head + "BUY");
+
+        // Determine which flag (if any) is awaiting a value at the cursor.
+        // That's "the previous token is a value-taking flag AND the cursor is
+        // sitting on either an empty tail (just after the flag+space) or the
+        // start of the value".
+        String prev = previousToken(tokens, endsOnSpace);
+
+        if ("--side".equals(prev)) {
+            suggestStarting(builder, head, tail, List.of("SELL", "BUY"));
+            return builder.buildFuture();
+        }
+        if ("--shop".equals(prev)) {
+            for (Shop s : support.plugin().registry().all()) {
+                suggestOne(builder, head, tail, s.id().toString().substring(0, 8));
+            }
+            return builder.buildFuture();
+        }
+        if ("--player".equals(prev)) {
+            // Pull the most-recently-seen 32 cache entries; filter by prefix.
+            var entries = support.plugin().playerCacheService().page(0, 32, false);
+            for (var e : entries) suggestOne(builder, head, tail, e.name());
+            return builder.buildFuture();
+        }
+        if ("--from".equals(prev) || "--to".equals(prev)) {
+            // Just hint the format — don't pre-fill noisy timestamps.
+            if (tail.isEmpty()) {
+                builder.suggest(head + "YYYY-MM-DD");
+            }
+            return builder.buildFuture();
+        }
+        if ("--page".equals(prev)) {
+            if (tail.isEmpty()) builder.suggest(head + "1");
+            return builder.buildFuture();
+        }
+
+        // Otherwise: we're at the start, or just after a complete flag+value, or
+        // mid-typing a new flag. Suggest the flags we haven't used yet.
+        java.util.Set<String> used = collectUsedFlags(tokens);
+        for (String flag : ALL_FLAGS) {
+            if (used.contains(flag)) continue;
+            if (flag.startsWith(tail)) builder.suggest(head + flag);
         }
         return builder.buildFuture();
     }
 
-    private static String prevToken(String raw) {
-        String trimmed = raw.trim();
-        int last = trimmed.lastIndexOf(' ');
-        if (last < 0) return "";
-        String before = trimmed.substring(0, last).trim();
-        int prev = before.lastIndexOf(' ');
-        return prev < 0 ? before : before.substring(prev + 1);
+    private static void suggestStarting(com.mojang.brigadier.suggestion.SuggestionsBuilder builder,
+                                        String head, String tail, List<String> values) {
+        for (String v : values) {
+            if (v.toLowerCase(java.util.Locale.ROOT).startsWith(tail.toLowerCase(java.util.Locale.ROOT))) {
+                builder.suggest(head + v);
+            }
+        }
+    }
+
+    private static void suggestOne(com.mojang.brigadier.suggestion.SuggestionsBuilder builder,
+                                   String head, String tail, String value) {
+        if (value == null) return;
+        if (tail.isEmpty() || value.toLowerCase(java.util.Locale.ROOT)
+                .startsWith(tail.toLowerCase(java.util.Locale.ROOT))) {
+            builder.suggest(head + value);
+        }
+    }
+
+    /**
+     * The token immediately before the cursor — used to detect "we're typing a
+     * value for this flag". If the cursor is mid-token, the "previous token" is
+     * tokens[len-2]; if the cursor is just after a space, it's tokens[len-1].
+     */
+    private static String previousToken(String[] tokens, boolean endsOnSpace) {
+        if (tokens.length == 0) return "";
+        if (endsOnSpace) return tokens[tokens.length - 1];
+        return tokens.length >= 2 ? tokens[tokens.length - 2] : "";
+    }
+
+    private static java.util.Set<String> collectUsedFlags(String[] tokens) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        for (String t : tokens) if (t.startsWith("--")) out.add(t);
+        return out;
     }
 }

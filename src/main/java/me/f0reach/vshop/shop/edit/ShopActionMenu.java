@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 import java.util.Optional;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -296,15 +297,28 @@ public final class ShopActionMenu {
             }
             viewer.sendMessage(messages.get("history.header"));
             for (TradeRecord rec : recent) {
+                String counterparty = resolveCounterparty(rec);
                 viewer.sendMessage(Component.text("[" + HISTORY_FORMAT.format(rec.at()) + "] "
                                 + rec.side() + " " + rec.amount() + "× " + rec.itemSnapshot().getType().name()
-                                + " @ " + rec.unitPrice(),
+                                + " @ " + rec.unitPrice() + " <" + counterparty + ">",
                         NamedTextColor.GRAY));
             }
         } catch (SQLException ex) {
             viewer.sendMessage(messages.get("error.generic",
                     Placeholder.parsed("reason", ex.getMessage())));
         }
+    }
+
+    private String resolveCounterparty(TradeRecord rec) {
+        // SELL = ショップが売却 → buyer がカウンタパーティ (取引した相手)
+        // BUY = ショップが買取 → seller がカウンタパーティ
+        UUID other = rec.side() == me.f0reach.vshop.model.TradeSide.SELL
+                ? rec.buyerUuid() : rec.sellerUuid();
+        if (other == null) return "-";
+        var entry = plugin.playerCacheService().findByUuid(other).orElse(null);
+        if (entry != null) return entry.name();
+        var op = org.bukkit.Bukkit.getOfflinePlayer(other);
+        return op.getName() != null ? op.getName() : other.toString().substring(0, 8);
     }
 
     private void showStats(Player viewer, Shop shop) {
