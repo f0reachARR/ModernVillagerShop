@@ -163,6 +163,30 @@ public final class CoOwnerFlow {
     }
 
     private void showAddRoleAndShare(Player primary, Shop shop, PlayerCacheEntry picked) {
+        // If the picked player is ALREADY a co-owner, treat this as an edit:
+        // pre-populate the role/share so the add dialog doesn't silently
+        // overwrite existing settings with the form defaults.
+        CoOwner existing = null;
+        try {
+            for (CoOwner co : storage.coOwners().findByShop(shop.id())) {
+                if (co.playerUuid().equals(picked.playerUuid())) {
+                    if (co.role() == CoOwnerRole.PRIMARY) {
+                        primary.sendMessage(messages.get("coowner.primary-immutable"));
+                        return;
+                    }
+                    existing = co;
+                    break;
+                }
+            }
+        } catch (SQLException ex) {
+            primary.sendMessage(messages.get("error.generic",
+                    Placeholder.parsed("reason", ex.getMessage())));
+            return;
+        }
+
+        int roleIdx = (existing != null && existing.role() == CoOwnerRole.STAFF) ? 1 : 0;
+        String shareDefault = existing == null ? "0.00" : existing.share().toPlainString();
+
         dialogs.input(primary,
                         messages.get("coowner.add.title"),
                         messages.get("coowner.add.body-for",
@@ -172,8 +196,8 @@ public final class CoOwnerFlow {
                         List.of(
                                 new DialogService.InputBuilder.Option("MANAGER", Component.text("MANAGER")),
                                 new DialogService.InputBuilder.Option("STAFF", Component.text("STAFF"))
-                        ), 0)
-                .text("share", messages.get("coowner.add.share-label"), "0.00")
+                        ), roleIdx)
+                .text("share", messages.get("coowner.add.share-label"), shareDefault)
                 .onSubmit(response -> {
                     CoOwnerRole role = CoOwnerRole.valueOf(response.getDropdownOptionId("role"));
                     BigDecimal share = role == CoOwnerRole.STAFF
