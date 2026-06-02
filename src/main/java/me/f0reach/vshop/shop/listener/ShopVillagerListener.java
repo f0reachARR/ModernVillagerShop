@@ -1,11 +1,14 @@
 package me.f0reach.vshop.shop.listener;
 
 import me.f0reach.vshop.config.PluginConfig;
+import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -30,13 +33,15 @@ public final class ShopVillagerListener implements Listener {
 
     private final ShopRegistry registry;
     private final ShopService shops;
+    private final ShopOpenService openService;
     private final NamespacedKey villagerKey;
     private final PluginConfig config;
 
     public ShopVillagerListener(ShopRegistry registry, ShopService shops, ShopVillagerManager villagers,
-                                PluginConfig config) {
+                                ShopOpenService openService, PluginConfig config) {
         this.registry = registry;
         this.shops = shops;
+        this.openService = openService;
         this.villagerKey = villagers.villagerKey();
         this.config = config;
     }
@@ -75,9 +80,12 @@ public final class ShopVillagerListener implements Listener {
     public void onInteract(PlayerInteractEntityEvent event) {
         Entity entity = event.getRightClicked();
         if (!isShopVillager(entity)) return;
-        // Suppress the vanilla trade UI; the actual shop UI is opened by the
-        // separate ShopOpenListener after permission checks.
+        // Suppress the vanilla trade UI — we open our own browse view instead.
         event.setCancelled(true);
+        Shop shop = registry.byVillager(entity.getUniqueId()).orElse(null);
+        if (shop == null) return;
+        if (!(event.getPlayer() instanceof Player viewer)) return;
+        openService.open(viewer, shop);
     }
 
     @EventHandler

@@ -123,12 +123,11 @@ public final class VShopCommand {
                     Placeholder.parsed("shop_id", shopIdPrefix)));
             return 0;
         }
-        if (!(sender instanceof Player)) {
+        if (!(sender instanceof Player viewer)) {
             sender.sendMessage(messages.get("command.player-only"));
             return 0;
         }
-        // UI not yet implemented; tell the user how it'll work for now.
-        sender.sendMessage(Component.text("[stub] open shop " + match.id()));
+        plugin.openService().open(viewer, match);
         return Command.SINGLE_SUCCESS;
     }
 

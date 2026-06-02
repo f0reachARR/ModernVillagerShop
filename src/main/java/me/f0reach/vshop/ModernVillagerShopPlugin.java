@@ -4,6 +4,7 @@ import io.papermc.paper.plugin.lifecycle.event.types.LifecycleEvents;
 import me.f0reach.vshop.command.VShopCommand;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.locale.MessageManager;
+import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
@@ -11,6 +12,10 @@ import me.f0reach.vshop.shop.egg.SpawnEggFactory;
 import me.f0reach.vshop.shop.listener.ShopEggListener;
 import me.f0reach.vshop.shop.listener.ShopVillagerListener;
 import me.f0reach.vshop.storage.StorageManager;
+import me.f0reach.vshop.ui.chest.IconConfig;
+import me.f0reach.vshop.ui.chest.ShopBrowseListener;
+import me.f0reach.vshop.ui.chest.ShopBrowseUi;
+import me.f0reach.vshop.ui.dialog.DialogService;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
@@ -25,6 +30,10 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopService shopService;
     private SpawnEggFactory eggFactory;
     private ShopVillagerManager villagerManager;
+    private DialogService dialogService;
+    private IconConfig iconConfig;
+    private ShopBrowseUi browseUi;
+    private ShopOpenService openService;
 
     @Override
     public void onEnable() {
@@ -45,6 +54,10 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.villagerManager = new ShopVillagerManager(this, messages, storage.coOwners());
         this.shopService = new ShopService(storage, registry, villagerManager, config);
         this.eggFactory = new SpawnEggFactory(this, messages);
+        this.dialogService = new DialogService(this);
+        this.iconConfig = new IconConfig(messages, config.uiSection());
+        this.browseUi = new ShopBrowseUi(storage, iconConfig, messages);
+        this.openService = new ShopOpenService(browseUi, messages, config);
 
         try {
             shopService.loadAll();
@@ -54,7 +67,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new ShopEggListener(this, eggFactory, shopService, messages), this);
-        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, config), this);
+        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, openService, config), this);
+        pm.registerEvents(new ShopBrowseListener(registry, browseUi), this);
 
         VShopCommand cmd = new VShopCommand(this);
         getLifecycleManager().registerEventHandler(LifecycleEvents.COMMANDS,
@@ -90,4 +104,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public ShopService shopService() { return shopService; }
     public SpawnEggFactory eggFactory() { return eggFactory; }
     public ShopVillagerManager villagerManager() { return villagerManager; }
+    public DialogService dialogService() { return dialogService; }
+    public ShopBrowseUi browseUi() { return browseUi; }
+    public ShopOpenService openService() { return openService; }
 }
