@@ -150,6 +150,9 @@ edit:
     admin-shop: "<gray>Admin shops have no physical stock."
     saved: "<green>Inventory saved."
     returned: "<yellow>Returned forbidden items to you."
+    prev: "<white>Previous page"
+    next: "<white>Next page"
+    close: "<red>Close"
 
 action:
   title: "<white>Shop: <shop_name>"

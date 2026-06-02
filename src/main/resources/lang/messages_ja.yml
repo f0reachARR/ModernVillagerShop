@@ -150,6 +150,9 @@ edit:
     admin-shop: "<gray>管理者ショップに在庫はありません。"
     saved: "<green>在庫を保存しました。"
     returned: "<yellow>取引禁止アイテムを返却しました。"
+    prev: "<white>前のページ"
+    next: "<white>次のページ"
+    close: "<red>閉じる"
 
 action:
   title: "<white>ショップ操作: <shop_name>"
