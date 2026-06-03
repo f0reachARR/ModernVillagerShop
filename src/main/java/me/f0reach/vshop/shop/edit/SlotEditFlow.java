@@ -81,9 +81,11 @@ public final class SlotEditFlow {
 
     private void showSlotForm(Player editor, Shop shop, ShopSlot existing, int slotIndex,
                               ItemStack template, Runnable afterRefresh) {
+        int unitMax = Math.max(1, template.getMaxStackSize());
         Component title = messages.get(existing == null ? "edit.slot.create-title" : "edit.slot.edit-title");
         Component body = messages.get("edit.slot.body",
-                Placeholder.parsed("item", template.getType().name()));
+                Placeholder.parsed("item", template.getType().name()),
+                Placeholder.parsed("unit_max", Integer.toString(unitMax)));
         Component submit = messages.get("edit.slot.submit");
 
         String defaultSide = existing == null ? "SELL" : existing.side().name();
@@ -107,7 +109,8 @@ public final class SlotEditFlow {
                                 new DialogService.InputBuilder.Option("BOTH", Component.text("双方向 BOTH"))
                         ), indexOfSide(defaultSide))
                 .text("unitPrice", messages.get("edit.slot.unit-price"), defaultUnitPrice)
-                .text("unitAmount", messages.get("edit.slot.unit-amount"), defaultUnitAmount)
+                .text("unitAmount", messages.get("edit.slot.unit-amount",
+                        Placeholder.parsed("max", Integer.toString(unitMax))), defaultUnitAmount)
                 .text("buyUnitPrice", messages.get("edit.slot.buy-unit-price"), defaultBuyUnitPrice)
                 .text("buyCapacity", messages.get("edit.slot.buy-capacity"), defaultBuyCapacity)
                 .text("tradeLimit", messages.get("edit.slot.trade-limit"), defaultLimit)
@@ -136,8 +139,9 @@ public final class SlotEditFlow {
                     editor.sendMessage(messages.get("error.invalid-price"));
                     return;
                 }
-                if (unitAmount <= 0 || unitAmount > config.economy().amountMax()) {
-                    editor.sendMessage(messages.get("error.invalid-amount"));
+                if (unitAmount <= 0 || unitAmount > unitMax) {
+                    editor.sendMessage(messages.get("error.unit-amount-too-large",
+                            Placeholder.parsed("max", Integer.toString(unitMax))));
                     return;
                 }
 

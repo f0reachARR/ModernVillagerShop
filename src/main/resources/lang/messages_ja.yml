@@ -82,6 +82,7 @@ trade:
 
 error:
   invalid-amount: "<red>数量の入力が不正です。"
+  unit-amount-too-large: "<red>1パックあたりの個数は <max> 以下にしてください。"
   invalid-price: "<red>価格の入力が不正です。"
   blacklisted-item: "<red>このアイテムは取引できません。"
   generic: "<red>エラーが発生しました: <reason>"
@@ -129,11 +130,11 @@ edit:
   slot:
     create-title: "<white>出品枠の作成"
     edit-title: "<white>出品枠の編集"
-    body: "<gray>対象アイテム: <item>"
+    body: "<gray>対象アイテム: <item> (1パック上限: <unit_max>個)"
     submit: "保存"
     side: "種別"
     unit-price: "販売単価"
-    unit-amount: "1パックあたりの個数"
+    unit-amount: "1パックあたりの個数 (上限 <max>)"
     buy-unit-price: "買取単価 (BUYのみ)"
     buy-capacity: "買取受入残 (アイテム数)"
     trade-limit: "取引上限 (空欄=無制限)"

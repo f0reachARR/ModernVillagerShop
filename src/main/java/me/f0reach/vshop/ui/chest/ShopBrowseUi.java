@@ -1,6 +1,8 @@
 package me.f0reach.vshop.ui.chest;
 
+import me.f0reach.vshop.item.ItemIdentity;
 import me.f0reach.vshop.locale.MessageManager;
+import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeSide;
@@ -82,6 +84,13 @@ public final class ShopBrowseUi {
             slots = List.of();
         }
 
+        List<InventoryEntry> inventoryEntries = List.of();
+        if (shop.isPlayerShop()) {
+            try {
+                inventoryEntries = storage.inventory().findByShop(shop.id());
+            } catch (SQLException ignored) {}
+        }
+
         // Group slots by page (= slot_index / CONTENT_SLOTS).
         TreeMap<Integer, Map<Integer, ShopSlot>> byPage = new TreeMap<>();
         for (ShopSlot s : slots) {
@@ -92,7 +101,7 @@ public final class ShopBrowseUi {
 
         Map<Integer, ShopSlot> pageSlots = byPage.getOrDefault(holder.page(), Map.of());
         for (var e : pageSlots.entrySet()) {
-            inv.setItem(e.getKey(), renderSlot(shop, e.getValue()));
+            inv.setItem(e.getKey(), renderSlot(shop, e.getValue(), inventoryEntries));
         }
 
         // Navigation row. Prev/next only render when there's somewhere to go —
@@ -109,7 +118,7 @@ public final class ShopBrowseUi {
         inv.setItem(SLOT_CLOSE, icons.icon("close", Material.BARRIER, "<red>Close"));
     }
 
-    private ItemStack renderSlot(Shop shop, ShopSlot slot) {
+    private ItemStack renderSlot(Shop shop, ShopSlot slot, List<InventoryEntry> inventoryEntries) {
         ItemStack stack = slot.itemTemplate().clone();
         stack.setAmount(Math.max(1, Math.min(stack.getMaxStackSize(), slot.unitAmount())));
         ItemMeta meta = stack.getItemMeta();
@@ -135,6 +144,10 @@ public final class ShopBrowseUi {
                     NamedTextColor.GOLD));
             buyReason = buy.reason();
         }
+        if (shop.isPlayerShop()) {
+            int stock = sumStock(inventoryEntries, slot.itemTemplate());
+            lore.add(Component.text("在庫: " + stock + "個", NamedTextColor.GREEN));
+        }
         if (slot.tradeLimit() != null) {
             lore.add(Component.text("取引上限: " + slot.tradeLimit() + " (" + slot.limitScope() + ")",
                     NamedTextColor.GRAY));
@@ -144,6 +157,14 @@ public final class ShopBrowseUi {
         meta.lore(lore);
         stack.setItemMeta(meta);
         return stack;
+    }
+
+    private static int sumStock(List<InventoryEntry> entries, ItemStack template) {
+        int total = 0;
+        for (InventoryEntry e : entries) {
+            if (ItemIdentity.sameItem(e.item(), template)) total += e.amount();
+        }
+        return total;
     }
 
     private ItemStack pageIndicator(int page) {

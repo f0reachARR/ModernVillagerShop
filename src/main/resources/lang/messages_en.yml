@@ -82,6 +82,7 @@ trade:
 
 error:
   invalid-amount: "<red>Invalid amount."
+  unit-amount-too-large: "<red>Items per pack must be at most <max>."
   invalid-price: "<red>Invalid price."
   blacklisted-item: "<red>This item is not tradable."
   generic: "<red>An error occurred: <reason>"
@@ -129,11 +130,11 @@ edit:
   slot:
     create-title: "<white>Create slot"
     edit-title: "<white>Edit slot"
-    body: "<gray>Item: <item>"
+    body: "<gray>Item: <item> (max per pack: <unit_max>)"
     submit: "Save"
     side: "Side"
     unit-price: "Sell unit price"
-    unit-amount: "Items per pack"
+    unit-amount: "Items per pack (max <max>)"
     buy-unit-price: "Buy unit price (BUY only)"
     buy-capacity: "Buy capacity (items)"
     trade-limit: "Trade limit (blank = none)"

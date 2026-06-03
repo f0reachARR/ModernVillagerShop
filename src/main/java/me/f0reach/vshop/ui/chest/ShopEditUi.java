@@ -1,6 +1,8 @@
 package me.f0reach.vshop.ui.chest;
 
+import me.f0reach.vshop.item.ItemIdentity;
 import me.f0reach.vshop.locale.MessageManager;
+import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeSide;
@@ -77,6 +79,13 @@ public final class ShopEditUi {
             slots = List.of();
         }
 
+        List<InventoryEntry> inventoryEntries = List.of();
+        if (shop.isPlayerShop()) {
+            try {
+                inventoryEntries = storage.inventory().findByShop(shop.id());
+            } catch (SQLException ignored) {}
+        }
+
         Map<Integer, Map<Integer, ShopSlot>> byPage = new TreeMap<>();
         for (ShopSlot s : slots) {
             int p = s.slotIndex() / CONTENT_SLOTS;
@@ -90,7 +99,7 @@ public final class ShopEditUi {
             if (s == null) {
                 inv.setItem(i, emptyMarker());
             } else {
-                inv.setItem(i, renderSlot(s));
+                inv.setItem(i, renderSlot(shop, s, inventoryEntries));
             }
         }
 
@@ -102,7 +111,7 @@ public final class ShopEditUi {
         inv.setItem(SLOT_PAGE_INDICATOR, pageIndicator(holder.page()));
     }
 
-    private ItemStack renderSlot(ShopSlot slot) {
+    private ItemStack renderSlot(Shop shop, ShopSlot slot, List<InventoryEntry> inventoryEntries) {
         ItemStack stack = slot.itemTemplate().clone();
         stack.setAmount(Math.max(1, Math.min(stack.getMaxStackSize(), slot.unitAmount())));
         ItemMeta meta = stack.getItemMeta();
@@ -118,6 +127,10 @@ public final class ShopEditUi {
                         + (slot.buyUnitPrice() == null ? slot.unitPrice() : slot.buyUnitPrice())
                         + " / 受入残: " + slot.buyCapacity(), NamedTextColor.GOLD));
             }
+            if (shop.isPlayerShop()) {
+                int stock = sumStock(inventoryEntries, slot.itemTemplate());
+                lore.add(Component.text("在庫: " + stock + "個", NamedTextColor.GREEN));
+            }
             if (slot.tradeLimit() != null) {
                 lore.add(Component.text("取引上限: " + slot.tradeLimit() + " (" + slot.limitScope() + ")",
                         NamedTextColor.GRAY));
@@ -128,6 +141,14 @@ public final class ShopEditUi {
             stack.setItemMeta(meta);
         }
         return stack;
+    }
+
+    private static int sumStock(List<InventoryEntry> entries, ItemStack template) {
+        int total = 0;
+        for (InventoryEntry e : entries) {
+            if (ItemIdentity.sameItem(e.item(), template)) total += e.amount();
+        }
+        return total;
     }
 
     private ItemStack emptyMarker() {
