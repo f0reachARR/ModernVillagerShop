@@ -37,7 +37,7 @@ dependencies {
     compileOnly("com.github.MilkBowl:VaultAPI:1.7.1")
     compileOnly("me.clip:placeholderapi:2.11.6")
     // BedrockDialog (Modrinth Maven). Version slug pinned to the latest available 1.21.8+ compatible build.
-    compileOnly("maven.modrinth:bedrockdialog:1.0.0")
+    compileOnly("maven.modrinth:bedrockdialog:1.0.3")
     implementation("com.zaxxer:HikariCP:5.1.0")
     runtimeOnly("org.xerial:sqlite-jdbc:3.49.1.0")
     runtimeOnly("com.mysql:mysql-connector-j:9.1.0")
