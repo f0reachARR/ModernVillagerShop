@@ -20,13 +20,13 @@ import java.util.List;
 import java.util.logging.Logger;
 
 /**
- * Opens a 6-row chest mirroring the shop's dedicated inventory. The chest
- * is paginated so capacity is effectively unbounded — page {@code p} maps
- * chest slot {@code i} to {@code shop_inventory.slot_index = p*45 + i}.
+ * Opens a chest mirroring the shop's dedicated inventory. Dimensions follow
+ * the shop's {@code rowCount}: finite shops (1-6) get a single page sized to
+ * rowCount rows; infinite shops paginate with 45 slots per page mapping chest
+ * slot {@code i} on page {@code p} to {@code shop_inventory.slot_index = p*45 + i}.
  *
  * The player may freely move stacks between their inventory and the chest's
- * content area (rows 1-5). The bottom row holds prev/page/close/next nav.
- * Admin shops have no physical stock and never open this view.
+ * content area. Admin shops have no physical stock and never open this view.
  */
 public final class ShopRestockUi {
 
@@ -47,10 +47,10 @@ public final class ShopRestockUi {
             viewer.sendMessage(messages.get("edit.restock.admin-shop"));
             return;
         }
-        ShopRestockHolder holder = new ShopRestockHolder(viewer, shop.id());
+        ShopRestockHolder holder = new ShopRestockHolder(viewer, shop);
         Component title = messages.get("edit.restock.title",
                 Placeholder.parsed("shop_name", shop.name()));
-        holder.createInventory(ShopRestockHolder.INVENTORY_SIZE, title);
+        holder.createInventory(title);
         paint(holder, shop);
         editService.beginEditing(shop.id());
         viewer.openInventory(holder.getInventory());
@@ -62,8 +62,9 @@ public final class ShopRestockUi {
         inv.clear();
         holder.snapshotClear();
 
-        int pageStart = holder.page() * ShopRestockHolder.PAGE_SIZE;
-        int pageEnd = pageStart + ShopRestockHolder.PAGE_SIZE;
+        int stride = holder.contentSlots();
+        int pageStart = holder.page() * stride;
+        int pageEnd = pageStart + stride;
         int maxSlotSeen = -1;
         try {
             List<InventoryEntry> entries = storage.inventory().findByShop(shop.id());
@@ -82,23 +83,32 @@ public final class ShopRestockUi {
             LOG.warning("Failed to load shop inventory for restock UI: " + ex.getMessage());
         }
 
-        int maxOccupiedPage = maxSlotSeen < 0 ? 0 : maxSlotSeen / ShopRestockHolder.PAGE_SIZE;
+        if (!holder.paginated()) return;
+
+        // Fill out-of-bounds slots on the last page of a finite paginated shop.
+        for (int i = 0; i < stride; i++) {
+            if (!holder.isContentSlotInBounds(i) && inv.getItem(i) == null) {
+                inv.setItem(i, ChestFiller.neutralPane());
+            }
+        }
+
+        int maxOccupiedPage = maxSlotSeen < 0 ? 0 : maxSlotSeen / stride;
         paintNav(inv, holder, maxOccupiedPage);
     }
 
     private void paintNav(Inventory inv, ShopRestockHolder holder, int maxOccupiedPage) {
         // Fill the nav row with a neutral pane so the nav area looks distinct.
-        ItemStack pane = filler();
-        for (int i = ShopRestockHolder.PAGE_SIZE; i < ShopRestockHolder.INVENTORY_SIZE; i++) {
+        ItemStack pane = ChestFiller.neutralPane();
+        for (int i = holder.contentSlots(); i < holder.inventorySize(); i++) {
             inv.setItem(i, pane);
         }
         if (holder.page() > 0) {
-            inv.setItem(ShopRestockHolder.SLOT_PREV, navIcon(Material.ARROW, "edit.restock.prev"));
+            inv.setItem(holder.slotPrev(), navIcon(Material.ARROW, "edit.restock.prev"));
         }
-        // Always allow advancing — capacity is unbounded, the next page may be empty but usable.
-        inv.setItem(ShopRestockHolder.SLOT_NEXT, navIcon(Material.ARROW, "edit.restock.next"));
-        inv.setItem(ShopRestockHolder.SLOT_CLOSE, navIcon(Material.BARRIER, "edit.restock.close"));
-        inv.setItem(ShopRestockHolder.SLOT_PAGE_INDICATOR, pageIndicator(holder.page(), maxOccupiedPage));
+        // Always allow advancing — infinite capacity, the next page may be empty but usable.
+        inv.setItem(holder.slotNext(), navIcon(Material.ARROW, "edit.restock.next"));
+        inv.setItem(holder.slotClose(), navIcon(Material.BARRIER, "edit.restock.close"));
+        inv.setItem(holder.slotPageIndicator(), pageIndicator(holder.page(), maxOccupiedPage));
     }
 
     private ItemStack navIcon(Material material, String key) {
@@ -123,13 +133,4 @@ public final class ShopRestockUi {
         return stack;
     }
 
-    private ItemStack filler() {
-        ItemStack stack = new ItemStack(Material.GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text(" "));
-            stack.setItemMeta(meta);
-        }
-        return stack;
-    }
 }

@@ -60,7 +60,7 @@ public final class ShopEditListener implements Listener {
         // empty slot to create a new entry. Block only actions that would spill
         // into the chest grid: shift-click move, double-click collect, hotbar
         // swap.
-        if (raw >= ShopEditUi.INVENTORY_SIZE) {
+        if (raw >= editHolder.inventorySize()) {
             InventoryAction action = event.getAction();
             if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY
                     || action == InventoryAction.COLLECT_TO_CURSOR
@@ -73,23 +73,25 @@ public final class ShopEditListener implements Listener {
         // Inside the chest grid — we own the interaction.
         event.setCancelled(true);
 
-        if (raw == ShopEditUi.SLOT_PREV_PAGE) {
-            if (editHolder.page() > 0) {
-                editHolder.setPage(editHolder.page() - 1);
-                editUi.repaint(editor, editHolder);
+        if (editHolder.paginated()) {
+            if (raw == editHolder.slotPrev()) {
+                if (editHolder.page() > 0) {
+                    editHolder.setPage(editHolder.page() - 1);
+                    editUi.repaint(editor, editHolder);
+                }
+                return;
             }
-            return;
+            if (raw == editHolder.slotNext()) {
+                editHolder.setPage(editHolder.page() + 1);
+                editUi.repaint(editor, editHolder);
+                return;
+            }
+            if (raw == editHolder.slotClose()) {
+                editor.closeInventory();
+                return;
+            }
         }
-        if (raw == ShopEditUi.SLOT_NEXT_PAGE) {
-            editHolder.setPage(editHolder.page() + 1);
-            editUi.repaint(editor, editHolder);
-            return;
-        }
-        if (raw == ShopEditUi.SLOT_CLOSE) {
-            editor.closeInventory();
-            return;
-        }
-        if (raw < 0 || raw >= ShopEditUi.CONTENT_SLOTS) {
+        if (raw < 0 || raw >= editHolder.contentSlots()) {
             return;
         }
 
@@ -99,7 +101,7 @@ public final class ShopEditListener implements Listener {
             return;
         }
 
-        int flatIndex = editHolder.page() * ShopEditUi.CONTENT_SLOTS + raw;
+        int flatIndex = editHolder.page() * editHolder.contentSlots() + raw;
         ShopSlot existing = findSlot(shop, flatIndex);
         ItemStack cursor = event.getCursor();
         boolean hasCursor = cursor != null && !cursor.getType().isAir();
@@ -116,7 +118,10 @@ public final class ShopEditListener implements Listener {
             return;
         }
 
-        // Empty slot.
+        // Empty slot — block creation on out-of-bounds slots (last-page filler).
+        if (!editHolder.isContentSlotInBounds(raw)) {
+            return;
+        }
         if (!hasCursor) {
             editor.sendMessage(messages.get("edit.slot.place-prompt"));
             return;

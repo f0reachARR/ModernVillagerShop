@@ -25,20 +25,11 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Opens and re-paints the read-only shop browse view. A view contains 27
- * tradable slots (matching {@code slot_index = page * 27 + slot}) and a
- * navigation row at the bottom of the chest.
+ * Opens and re-paints the read-only shop browse view. Chest dimensions are
+ * derived from the shop's {@code rowCount} — finite shops show all slots in
+ * one page; infinite shops paginate with 45 slots per page.
  */
 public final class ShopBrowseUi {
-
-    public static final int CONTENT_SLOTS = 27;     // 3 rows
-    public static final int NAV_ROW_START = 27;     // 4th row = nav
-    public static final int INVENTORY_SIZE = 54;    // 6 rows total (3 content + 3 buffer/nav)
-
-    public static final int SLOT_PREV_PAGE = 45;
-    public static final int SLOT_PAGE_INDICATOR = 49;
-    public static final int SLOT_NEXT_PAGE = 53;
-    public static final int SLOT_CLOSE = 53 - 3;    // 50
 
     private final StorageManager storage;
     private final IconConfig icons;
@@ -56,9 +47,9 @@ public final class ShopBrowseUi {
     }
 
     public void open(Player viewer, Shop shop, int page) {
-        ShopBrowseHolder holder = new ShopBrowseHolder(viewer, shop.id(), page);
+        ShopBrowseHolder holder = new ShopBrowseHolder(viewer, shop, page);
         Component title = mm.deserialize("<dark_gray>" + shop.name());
-        Inventory inv = holder.createInventory(INVENTORY_SIZE, title);
+        Inventory inv = holder.createInventory(title);
         paint(inv, holder, shop);
         viewer.openInventory(inv);
     }
@@ -91,11 +82,11 @@ public final class ShopBrowseUi {
             } catch (SQLException ignored) {}
         }
 
-        // Group slots by page (= slot_index / CONTENT_SLOTS).
+        int stride = holder.contentSlots();
         TreeMap<Integer, Map<Integer, ShopSlot>> byPage = new TreeMap<>();
         for (ShopSlot s : slots) {
-            int p = s.slotIndex() / CONTENT_SLOTS;
-            int inner = s.slotIndex() % CONTENT_SLOTS;
+            int p = s.slotIndex() / stride;
+            int inner = s.slotIndex() % stride;
             byPage.computeIfAbsent(p, k -> new TreeMap<>()).put(inner, s);
         }
 
@@ -104,18 +95,24 @@ public final class ShopBrowseUi {
             inv.setItem(e.getKey(), renderSlot(shop, e.getValue(), inventoryEntries));
         }
 
-        // Navigation row. Prev/next only render when there's somewhere to go —
-        // the browse view is read-only, so hiding them avoids the empty-page click.
+        if (!holder.paginated()) return;
+
+        // Fill out-of-bounds slots on the last page of a finite paginated shop.
+        for (int i = 0; i < holder.contentSlots(); i++) {
+            if (!holder.isContentSlotInBounds(i) && inv.getItem(i) == null) {
+                inv.setItem(i, ChestFiller.neutralPane());
+            }
+        }
+
         int maxPage = byPage.isEmpty() ? 0 : byPage.lastKey();
-        ItemStack pageIcon = pageIndicator(holder.page());
-        inv.setItem(SLOT_PAGE_INDICATOR, pageIcon);
+        inv.setItem(holder.slotPageIndicator(), pageIndicator(holder.page()));
         if (holder.page() > 0) {
-            inv.setItem(SLOT_PREV_PAGE, icons.icon("prevPage", Material.ARROW, "<white>Prev"));
+            inv.setItem(holder.slotPrev(), icons.icon("prevPage", Material.ARROW, "<white>Prev"));
         }
         if (holder.page() < maxPage) {
-            inv.setItem(SLOT_NEXT_PAGE, icons.icon("nextPage", Material.ARROW, "<white>Next"));
+            inv.setItem(holder.slotNext(), icons.icon("nextPage", Material.ARROW, "<white>Next"));
         }
-        inv.setItem(SLOT_CLOSE, icons.icon("close", Material.BARRIER, "<red>Close"));
+        inv.setItem(holder.slotClose(), icons.icon("close", Material.BARRIER, "<red>Close"));
     }
 
     private ItemStack renderSlot(Shop shop, ShopSlot slot, List<InventoryEntry> inventoryEntries) {

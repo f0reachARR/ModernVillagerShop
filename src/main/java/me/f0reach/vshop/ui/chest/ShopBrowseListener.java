@@ -48,23 +48,25 @@ public final class ShopBrowseListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player viewer)) return;
         int raw = event.getRawSlot();
 
-        if (raw == ShopBrowseUi.SLOT_PREV_PAGE) {
-            if (browseHolder.page() > 0) {
-                browseHolder.setPage(browseHolder.page() - 1);
-                browseUi.repaint(viewer, browseHolder);
+        if (browseHolder.paginated()) {
+            if (raw == browseHolder.slotPrev()) {
+                if (browseHolder.page() > 0) {
+                    browseHolder.setPage(browseHolder.page() - 1);
+                    browseUi.repaint(viewer, browseHolder);
+                }
+                return;
             }
-            return;
+            if (raw == browseHolder.slotNext()) {
+                browseHolder.setPage(browseHolder.page() + 1);
+                browseUi.repaint(viewer, browseHolder);
+                return;
+            }
+            if (raw == browseHolder.slotClose()) {
+                viewer.closeInventory();
+                return;
+            }
         }
-        if (raw == ShopBrowseUi.SLOT_NEXT_PAGE) {
-            browseHolder.setPage(browseHolder.page() + 1);
-            browseUi.repaint(viewer, browseHolder);
-            return;
-        }
-        if (raw == ShopBrowseUi.SLOT_CLOSE) {
-            viewer.closeInventory();
-            return;
-        }
-        if (raw < 0 || raw >= ShopBrowseUi.CONTENT_SLOTS) {
+        if (raw < 0 || raw >= browseHolder.contentSlots()) {
             return;
         }
 
@@ -74,15 +76,15 @@ public final class ShopBrowseListener implements Listener {
             return;
         }
 
-        ShopSlot slot = findSlot(shop, browseHolder.page(), raw);
+        ShopSlot slot = findSlot(shop, browseHolder.page(), raw, browseHolder.contentSlots());
         if (slot == null) return;
 
         viewer.closeInventory();
         tradeFlow.start(viewer, shop, slot);
     }
 
-    private ShopSlot findSlot(Shop shop, int page, int innerSlot) {
-        int target = page * ShopBrowseUi.CONTENT_SLOTS + innerSlot;
+    private ShopSlot findSlot(Shop shop, int page, int innerSlot, int stride) {
+        int target = page * stride + innerSlot;
         List<ShopSlot> slots;
         try {
             slots = storage.slots().findByShop(shop.id());

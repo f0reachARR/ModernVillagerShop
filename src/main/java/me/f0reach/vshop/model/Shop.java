@@ -54,6 +54,39 @@ public final class Shop {
     public boolean isPlayerShop() { return type == ShopType.PLAYER; }
     public boolean isAdminShop() { return type == ShopType.ADMIN; }
 
+    /**
+     * Number of 9-slot content rows shown on a single chest page.
+     * Finite shops with rowCount ≤ 6 fit in one page (rowCount rows, no nav row).
+     * Finite shops with rowCount > 6 and infinite shops paginate with 5 rows per page.
+     */
+    public int chestContentRows() {
+        if (isInfiniteRows()) return 5;
+        int rows = Math.max(rowCount, 1);
+        return rows <= 6 ? rows : 5;
+    }
+
+    public int chestContentSlots() { return chestContentRows() * 9; }
+
+    /** Total chest size including the nav row when paginated. */
+    public int chestInventorySize() {
+        return isPaginated() ? 54 : chestContentSlots();
+    }
+
+    /** True when the chest needs prev/next navigation (rowCount > 6 or infinite). */
+    public boolean isPaginated() {
+        return isInfiniteRows() || rowCount > 6;
+    }
+
+    /**
+     * Exclusive upper bound on valid global {@code slot_index}. Infinite shops
+     * return {@link Integer#MAX_VALUE}; finite shops return {@code rowCount * 9}.
+     * Used by chest UIs to filler/block out-of-bounds slots on the last page of
+     * paginated-finite shops.
+     */
+    public int slotIndexLimit() {
+        return isInfiniteRows() ? Integer.MAX_VALUE : Math.max(rowCount, 1) * 9;
+    }
+
     public void setOwnerUuid(UUID ownerUuid) { this.ownerUuid = ownerUuid; }
     public void setLocation(ShopLocation location) { this.location = location; }
     public void setVillagerEntityId(UUID villagerEntityId) { this.villagerEntityId = villagerEntityId; }

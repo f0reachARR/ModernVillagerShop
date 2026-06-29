@@ -71,7 +71,7 @@ public final class ShopRestockListener implements Listener {
         // and double-click collect (pulls matching items from chest too).
         // HOTBAR_SWAP from player-inv hovers stays within the player's own
         // inventory so we leave it alone.
-        if (raw >= ShopRestockHolder.INVENTORY_SIZE) {
+        if (raw >= holder.inventorySize()) {
             InventoryAction action = event.getAction();
             if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY
                     || action == InventoryAction.COLLECT_TO_CURSOR) {
@@ -80,23 +80,31 @@ public final class ShopRestockListener implements Listener {
             return;
         }
 
-        // Nav row: cancel and route.
-        if (raw >= ShopRestockHolder.PAGE_SIZE) {
+        // Nav row (only present when paginated): cancel and route.
+        if (holder.paginated() && raw >= holder.contentSlots()) {
             event.setCancelled(true);
             handleNav(viewer, holder, raw);
             return;
         }
 
-        // Content rows: free movement.
+        // Content rows: free movement, except out-of-bounds slots (last-page filler).
+        if (!holder.isContentSlotInBounds(raw)) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onDrag(InventoryDragEvent event) {
         InventoryHolder ih = event.getInventory().getHolder();
-        if (!(ih instanceof ShopRestockHolder)) return;
-        // Disallow drags into the nav row.
+        if (!(ih instanceof ShopRestockHolder holder)) return;
+        // Disallow drags into the nav row or out-of-bounds content slots.
         for (int slot : event.getRawSlots()) {
-            if (slot >= ShopRestockHolder.PAGE_SIZE && slot < ShopRestockHolder.INVENTORY_SIZE) {
+            if (slot >= holder.inventorySize()) continue;
+            if (holder.paginated() && slot >= holder.contentSlots()) {
+                event.setCancelled(true);
+                return;
+            }
+            if (slot < holder.contentSlots() && !holder.isContentSlotInBounds(slot)) {
                 event.setCancelled(true);
                 return;
             }
@@ -104,7 +112,7 @@ public final class ShopRestockListener implements Listener {
     }
 
     private void handleNav(Player viewer, ShopRestockHolder holder, int raw) {
-        if (raw == ShopRestockHolder.SLOT_CLOSE) {
+        if (raw == holder.slotClose()) {
             viewer.closeInventory();
             return;
         }
@@ -113,14 +121,14 @@ public final class ShopRestockListener implements Listener {
             viewer.closeInventory();
             return;
         }
-        if (raw == ShopRestockHolder.SLOT_PREV) {
+        if (raw == holder.slotPrev()) {
             if (holder.page() <= 0) return;
             if (!persistCurrentPage(viewer, holder)) return;
             holder.setPage(holder.page() - 1);
             restockUi.paint(holder, shop);
             return;
         }
-        if (raw == ShopRestockHolder.SLOT_NEXT) {
+        if (raw == holder.slotNext()) {
             if (!persistCurrentPage(viewer, holder)) return;
             holder.setPage(holder.page() + 1);
             restockUi.paint(holder, shop);
@@ -136,7 +144,8 @@ public final class ShopRestockListener implements Listener {
         Inventory inv = holder.getInventory();
         Map<Integer, ItemStack> survivors = new HashMap<>();
         int returned = 0;
-        for (int i = 0; i < ShopRestockHolder.PAGE_SIZE; i++) {
+        for (int i = 0; i < holder.contentSlots(); i++) {
+            if (!holder.isContentSlotInBounds(i)) continue;
             ItemStack stack = inv.getItem(i);
             if (stack == null || stack.getType().isAir()) continue;
             if (ItemIdentity.isBlacklisted(config, stack)) {
@@ -188,7 +197,8 @@ public final class ShopRestockListener implements Listener {
 
     private void persistDiff(ShopRestockHolder holder, Map<Integer, ItemStack> survivors) throws SQLException {
         var repo = storage.inventory();
-        for (int i = 0; i < ShopRestockHolder.PAGE_SIZE; i++) {
+        for (int i = 0; i < holder.contentSlots(); i++) {
+            if (!holder.isContentSlotInBounds(i)) continue;
             ItemStack current = survivors.get(i);
             ShopRestockHolder.SnapshotEntry snap = holder.snapshotOf(i);
             int globalSlot = holder.toGlobalSlot(i);

@@ -28,13 +28,6 @@ import java.util.TreeMap;
  */
 public final class ShopEditUi {
 
-    public static final int CONTENT_SLOTS = 27;
-    public static final int INVENTORY_SIZE = 54;
-    public static final int SLOT_PREV_PAGE = 45;
-    public static final int SLOT_PAGE_INDICATOR = 49;
-    public static final int SLOT_CLOSE = 50;
-    public static final int SLOT_NEXT_PAGE = 53;
-
     private final StorageManager storage;
     private final IconConfig icons;
     private final MessageManager messages;
@@ -48,9 +41,9 @@ public final class ShopEditUi {
     }
 
     public void open(Player editor, Shop shop, int page) {
-        ShopEditHolder holder = new ShopEditHolder(editor, shop.id(), page);
+        ShopEditHolder holder = new ShopEditHolder(editor, shop, page);
         Component title = mm.deserialize("<dark_red>編集: " + shop.name());
-        Inventory inv = holder.createInventory(INVENTORY_SIZE, title);
+        Inventory inv = holder.createInventory(title);
         paint(inv, holder, shop);
         editor.openInventory(inv);
     }
@@ -86,29 +79,37 @@ public final class ShopEditUi {
             } catch (SQLException ignored) {}
         }
 
+        int stride = holder.contentSlots();
         Map<Integer, Map<Integer, ShopSlot>> byPage = new TreeMap<>();
         for (ShopSlot s : slots) {
-            int p = s.slotIndex() / CONTENT_SLOTS;
-            int inner = s.slotIndex() % CONTENT_SLOTS;
+            int p = s.slotIndex() / stride;
+            int inner = s.slotIndex() % stride;
             byPage.computeIfAbsent(p, k -> new TreeMap<>()).put(inner, s);
         }
 
         Map<Integer, ShopSlot> pageSlots = byPage.getOrDefault(holder.page(), Map.of());
-        for (int i = 0; i < CONTENT_SLOTS; i++) {
+        for (int i = 0; i < stride; i++) {
             ShopSlot s = pageSlots.get(i);
-            if (s == null) {
-                inv.setItem(i, emptyMarker());
-            } else {
+            if (s != null) {
                 inv.setItem(i, renderSlot(shop, s, inventoryEntries));
+            }
+        }
+
+        if (!holder.paginated()) return;
+
+        // Fill out-of-bounds slots on the last page of a finite paginated shop.
+        for (int i = 0; i < stride; i++) {
+            if (!holder.isContentSlotInBounds(i) && inv.getItem(i) == null) {
+                inv.setItem(i, ChestFiller.neutralPane());
             }
         }
 
         // Navigation row — always show prev/next here; the editor may want to
         // create a new slot on an as-yet-empty page.
-        inv.setItem(SLOT_PREV_PAGE, icons.icon("prevPage", Material.ARROW, "<white>Prev"));
-        inv.setItem(SLOT_NEXT_PAGE, icons.icon("nextPage", Material.ARROW, "<white>Next"));
-        inv.setItem(SLOT_CLOSE, icons.icon("close", Material.BARRIER, "<red>Close"));
-        inv.setItem(SLOT_PAGE_INDICATOR, pageIndicator(holder.page()));
+        inv.setItem(holder.slotPrev(), icons.icon("prevPage", Material.ARROW, "<white>Prev"));
+        inv.setItem(holder.slotNext(), icons.icon("nextPage", Material.ARROW, "<white>Next"));
+        inv.setItem(holder.slotClose(), icons.icon("close", Material.BARRIER, "<red>Close"));
+        inv.setItem(holder.slotPageIndicator(), pageIndicator(holder.page()));
     }
 
     private ItemStack renderSlot(Shop shop, ShopSlot slot, List<InventoryEntry> inventoryEntries) {
@@ -149,20 +150,6 @@ public final class ShopEditUi {
             if (ItemIdentity.sameItem(e.item(), template)) total += e.amount();
         }
         return total;
-    }
-
-    private ItemStack emptyMarker() {
-        ItemStack stack = new ItemStack(Material.LIGHT_GRAY_STAINED_GLASS_PANE);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(Component.text("空きスロット", NamedTextColor.DARK_GRAY));
-            meta.lore(List.of(
-                    Component.text("アイテムをドロップして", NamedTextColor.GRAY),
-                    Component.text("新しい出品枠を作成します。", NamedTextColor.GRAY)
-            ));
-            stack.setItemMeta(meta);
-        }
-        return stack;
     }
 
     private ItemStack pageIndicator(int page) {
