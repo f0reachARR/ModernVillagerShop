@@ -55,7 +55,7 @@ public final class PluginConfig {
                 BigDecimal.valueOf(cfg.getDouble("economy.feeRate", 0.05)),
                 BigDecimal.valueOf(cfg.getDouble("economy.priceMin", 1)),
                 BigDecimal.valueOf(cfg.getDouble("economy.priceMax", 1_000_000)),
-                cfg.getInt("economy.amountMax", 64),
+                cfg.getInt("economy.amountMax", 2304),
                 cfg.getInt("economy.fractionDigits", 2),
                 RoundingMode.valueOf(cfg.getString("economy.roundingMode", "HALF_UP").toUpperCase(Locale.ROOT)),
                 BigDecimal.valueOf(cfg.getDouble("economy.priceDriftTolerance", 0.01)),
