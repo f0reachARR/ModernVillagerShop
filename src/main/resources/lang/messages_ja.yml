@@ -82,6 +82,7 @@ trade:
 
 error:
     invalid-amount: "<red>数量の入力が不正です。"
+    amount-too-large: "<red>1回の取引で扱える数量は <max> 個までです。(入力: <requested> 個)"
     unit-amount-too-large: "<red>1パックあたりの個数は <max> 以下にしてください。"
     invalid-price: "<red>価格の入力が不正です。"
     blacklisted-item: "<red>このアイテムは取引できません。"

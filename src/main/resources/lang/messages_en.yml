@@ -82,6 +82,7 @@ trade:
 
 error:
   invalid-amount: "<red>Invalid amount."
+  amount-too-large: "<red>Trades are limited to <max> items at a time (requested: <requested>)."
   unit-amount-too-large: "<red>Items per pack must be at most <max>."
   invalid-price: "<red>Invalid price."
   blacklisted-item: "<red>This item is not tradable."

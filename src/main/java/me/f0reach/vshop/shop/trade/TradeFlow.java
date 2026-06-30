@@ -149,11 +149,18 @@ public final class TradeFlow {
                         viewer.sendMessage(messages.get("error.invalid-amount"));
                         return;
                     }
-                    if (packs <= 0 || packs * slot.unitAmount() > config.economy().amountMax()) {
+                    if (packs <= 0) {
                         viewer.sendMessage(messages.get("error.invalid-amount"));
                         return;
                     }
                     int totalItems = packs * slot.unitAmount();
+                    int amountMax = config.economy().amountMax();
+                    if (totalItems > amountMax) {
+                        viewer.sendMessage(messages.get("error.amount-too-large",
+                                Placeholder.parsed("max", Integer.toString(amountMax)),
+                                Placeholder.parsed("requested", Integer.toString(totalItems))));
+                        return;
+                    }
                     // Bound the requested amount against current stock / capacity /
                     // trade-limit so we don't show a confirm dialog that's
                     // guaranteed to fail.
