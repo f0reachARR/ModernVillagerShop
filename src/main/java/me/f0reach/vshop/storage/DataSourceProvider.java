@@ -31,10 +31,15 @@ public final class DataSourceProvider {
             }
             hk.setDriverClassName("org.sqlite.JDBC");
             hk.setJdbcUrl("jdbc:sqlite:" + db.getAbsolutePath());
-            // SQLite has very limited concurrent writers. Single connection ensures
-            // writer serialization without distributed locking complexity.
-            hk.setMaximumPoolSize(1);
+            // SQLite has limited concurrent writers, but a single-connection pool
+            // deadlocks the main thread whenever a code path that holds a trade
+            // connection needs a second one (e.g. nested repository reads). WAL
+            // lets readers run alongside the writer; busy_timeout lets the JDBC
+            // layer wait for the writer lock instead of throwing SQLITE_BUSY.
+            hk.setMaximumPoolSize(4);
             hk.addDataSourceProperty("foreign_keys", "true");
+            hk.addDataSourceProperty("journal_mode", "WAL");
+            hk.addDataSourceProperty("busy_timeout", "5000");
         } else {
             PluginConfig.MySqlConfig my = config.mysql();
             hk.setDriverClassName("com.mysql.cj.jdbc.Driver");

@@ -25,6 +25,7 @@ import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -106,12 +107,28 @@ public final class TradeService {
         BigDecimal fee = economy.computeFee(gross);
         BigDecimal net = gross.subtract(fee);
 
+        // Read-only data we'll need inside the transaction. SQLite's pool may be
+        // tight; opening a second connection while the trade holds one would
+        // stall the main thread. Pre-load here while no transaction is open.
+        List<CoOwner> coOwners;
+        Map<UUID, Boolean> notifyPrefs;
+        try {
+            coOwners = shop.isPlayerShop() ? storage.coOwners().findByShop(shop.id()) : List.of();
+            notifyPrefs = preloadNotifyPrefs(coOwners);
+        } catch (SQLException ex) {
+            LOG.severe("SELL trade pre-load failed: " + ex.getMessage());
+            return new TradeResult.Failure("error.generic");
+        }
+        Map<UUID, BigDecimal> shares = shop.isPlayerShop()
+                ? ShareDistribution.distribute(coOwners, net, config.economy().fractionDigits(),
+                        config.economy().roundingMode())
+                : Map.of();
+
         Connection c = null;
         boolean buyerWithdrew = false;
         List<Deposit> deposits = new ArrayList<>();
         TradeRecord recForEvent = null;
         long txId = -1;
-        List<CoOwner> coOwners = List.of();
         try {
             c = storage.dataSource().getConnection();
             c.setAutoCommit(false);
@@ -138,15 +155,6 @@ public final class TradeService {
                 return new TradeResult.Failure("trade.not-enough-money-buyer");
             }
 
-            // 4. Co-owner shares (player shops only)
-            coOwners = shop.isPlayerShop()
-                    ? storage.coOwners().findByShop(shop.id())
-                    : List.of();
-            Map<UUID, BigDecimal> shares = shop.isPlayerShop()
-                    ? ShareDistribution.distribute(coOwners, net, config.economy().fractionDigits(),
-                            config.economy().roundingMode())
-                    : Map.of();
-
             // 5. Apply ALL SQL mutations BEFORE any Vault transfer. Any SQL
             //    failure here rolls back cleanly with no money moved.
             if (shop.isPlayerShop()) {
@@ -167,7 +175,7 @@ public final class TradeService {
                     rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
 
             if (shop.isPlayerShop()) {
-                queueOfflineNotifications(c, coOwners, shop.id(), txId, net);
+                queueOfflineNotifications(c, coOwners, notifyPrefs, shop.id(), txId, net);
             }
 
             // 6. Vault: withdraw buyer (last validation against the live wallet)
@@ -244,6 +252,19 @@ public final class TradeService {
             return new TradeResult.Failure("trade.out-of-stock");
         }
 
+        // Read-only data we'll need inside the transaction. SQLite's pool may be
+        // tight; opening a second connection while the trade holds one would
+        // stall the main thread. Pre-load here while no transaction is open.
+        List<CoOwner> coOwners;
+        Map<UUID, Boolean> notifyPrefs;
+        try {
+            coOwners = shop.isPlayerShop() ? storage.coOwners().findByShop(shop.id()) : List.of();
+            notifyPrefs = preloadNotifyPrefs(coOwners);
+        } catch (SQLException ex) {
+            LOG.severe("BUY trade pre-load failed: " + ex.getMessage());
+            return new TradeResult.Failure("error.generic");
+        }
+
         Connection c = null;
         boolean ownerWithdrew = false;
         BigDecimal ownerCharged = BigDecimal.ZERO;
@@ -310,11 +331,8 @@ public final class TradeService {
                     rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),
                     rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
 
-            List<CoOwner> coOwners = shop.isPlayerShop()
-                    ? storage.coOwners().findByShop(shop.id())
-                    : List.of();
             if (shop.isPlayerShop()) {
-                queueOfflineNotifications(c, coOwners, shop.id(), txId, gross);
+                queueOfflineNotifications(c, coOwners, notifyPrefs, shop.id(), txId, gross);
             }
 
             // 6. Vault: withdraw owner (player shop) / nothing (admin)
@@ -402,15 +420,35 @@ public final class TradeService {
         return true;
     }
 
-    private void queueOfflineNotifications(Connection c, List<CoOwner> coOwners, UUID shopId,
+    private void queueOfflineNotifications(Connection c, List<CoOwner> coOwners,
+                                           Map<UUID, Boolean> notifyPrefs, UUID shopId,
                                            long txId, BigDecimal amount) throws SQLException {
         for (CoOwner co : coOwners) {
             if (co.role() == CoOwnerRole.STAFF) continue;
             OfflinePlayer p = Bukkit.getOfflinePlayer(co.playerUuid());
             if (p.isOnline()) continue;
-            if (!storage.playerPreferences().wantsNotifications(co.playerUuid())) continue;
+            if (!notifyPrefs.getOrDefault(co.playerUuid(), true)) continue;
             storage.notifications().queueTx(c, co.playerUuid(), shopId, txId, 1, amount);
         }
+    }
+
+    /**
+     * Resolve {@code player_preferences.notifications} for the offline non-STAFF
+     * co-owners up front, on the calling thread but without holding a trade
+     * connection. We cache the snapshot so {@link #queueOfflineNotifications}
+     * can stay inside the trade's single connection (vital on SQLite, where the
+     * pool is small).
+     */
+    private Map<UUID, Boolean> preloadNotifyPrefs(List<CoOwner> coOwners) throws SQLException {
+        if (coOwners.isEmpty()) return Map.of();
+        Map<UUID, Boolean> out = new HashMap<>();
+        for (CoOwner co : coOwners) {
+            if (co.role() == CoOwnerRole.STAFF) continue;
+            OfflinePlayer p = Bukkit.getOfflinePlayer(co.playerUuid());
+            if (p.isOnline()) continue;
+            out.put(co.playerUuid(), storage.playerPreferences().wantsNotifications(co.playerUuid()));
+        }
+        return out;
     }
 
     private int lockAndReadCapacity(Connection c, UUID slotId) throws SQLException {
