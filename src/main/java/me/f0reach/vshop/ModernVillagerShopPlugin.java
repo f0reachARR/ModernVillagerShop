@@ -101,7 +101,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.dialogService = new DialogService(this);
         this.iconConfig = new IconConfig(messages, config.uiSection());
         this.priceRegistry = new PriceRegistry();
-        this.priceResolver = new PriceResolver(priceRegistry, config);
+        this.priceResolver = new PriceResolver(priceRegistry, config, storage);
         this.browseUi = new ShopBrowseUi(storage, iconConfig, messages, priceResolver);
         this.openService = new ShopOpenService(browseUi, messages, config);
         this.tradeNotifier = new TradeNotifier(this, messages, storage, economyService);
@@ -112,10 +112,10 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.editUi = new ShopEditUi(storage, iconConfig, messages);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
         this.playerCacheService = new PlayerCacheService(this);
-        this.playerPickerUi = new PlayerPickerUi(playerCacheService, messages, dialogService);
+        this.playerPickerUi = new PlayerPickerUi(playerCacheService, messages, dialogService, iconConfig);
         this.coOwnerFlow = new CoOwnerFlow(dialogService, messages, storage, shopService, villagerManager,
                 playerPickerUi, playerCacheService);
-        this.restockUi = new ShopRestockUi(storage, messages, editService);
+        this.restockUi = new ShopRestockUi(storage, messages, editService, iconConfig);
         this.actionMenu = new ShopActionMenu(this, dialogService, messages, editService, restockUi, coOwnerFlow);
         this.api = new ModernVillagerShopAPI(registry, storage, priceRegistry);
         getServer().getServicesManager().register(ModernVillagerShopAPI.class, api, this,

@@ -27,6 +27,15 @@ public interface ShopTransactionRepository {
     /** Recent activity (last `days` days), bucketed by day epoch. */
     List<DailyBucket> recentByDay(UUID shopId, int days, TradeSide side) throws SQLException;
 
+    /**
+     * Slot-scoped aggregate used by {@link me.f0reach.vshop.api.price.TransactionHistoryView}.
+     * Null bounds = unbounded. Null side = both. Returns
+     * {@code (count, sum(amount), sum(unit_price*amount))}.
+     */
+    SlotAggregate slotAggregate(UUID shopId, UUID slotId, TradeSide side, Instant from, Instant to) throws SQLException;
+
+    record SlotAggregate(long count, long totalAmount, java.math.BigDecimal totalValue) {}
+
     record AggregateStats(
             long sellCount,
             long buyCount,

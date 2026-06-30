@@ -46,4 +46,45 @@ public final class ModernVillagerShopAPI {
     public me.f0reach.vshop.storage.repo.ShopTransactionRepository.AggregateStats statsFor(UUID shopId) throws SQLException {
         return storage.transactions().aggregate(shopId);
     }
+
+    /**
+     * Find a shop by case-insensitive substring of its display name.
+     * Returns an empty list when no shop matches. The lookup is O(N) over the
+     * in-memory registry — callers iterating over many queries should cache.
+     */
+    public List<Shop> findShopsByName(String query) {
+        if (query == null || query.isBlank()) return List.of();
+        String needle = query.toLowerCase(java.util.Locale.ROOT);
+        List<Shop> out = new java.util.ArrayList<>();
+        for (Shop s : shopRegistry.all()) {
+            if (s.name() != null && s.name().toLowerCase(java.util.Locale.ROOT).contains(needle)) {
+                out.add(s);
+            }
+        }
+        return out;
+    }
+
+    /** All shops owned (as PRIMARY) by the given player. */
+    public List<Shop> findShopsByOwner(UUID ownerUuid) {
+        List<Shop> out = new java.util.ArrayList<>();
+        for (Shop s : shopRegistry.all()) {
+            if (s.isPlayerShop() && ownerUuid.equals(s.ownerUuid())) out.add(s);
+        }
+        return out;
+    }
+
+    /**
+     * Find a shop by a prefix of its UUID. Useful for third-party tools that
+     * receive a truncated id from chat/log output.
+     */
+    public Optional<Shop> findShopByIdPrefix(String prefix) {
+        if (prefix == null || prefix.isBlank()) return Optional.empty();
+        String needle = prefix.toLowerCase(java.util.Locale.ROOT);
+        for (Shop s : shopRegistry.all()) {
+            if (s.id().toString().toLowerCase(java.util.Locale.ROOT).startsWith(needle)) {
+                return Optional.of(s);
+            }
+        }
+        return Optional.empty();
+    }
 }

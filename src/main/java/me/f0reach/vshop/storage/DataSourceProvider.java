@@ -42,6 +42,10 @@ public final class DataSourceProvider {
             hk.setUsername(my.username());
             hk.setPassword(my.password());
             hk.setMaximumPoolSize(Math.max(2, my.poolSize()));
+            // Spec §8.1: trades run with READ COMMITTED + row locks. Pinning the
+            // session isolation here avoids InnoDB's REPEATABLE READ default,
+            // which would let one trade's snapshot starve concurrent ones.
+            hk.setTransactionIsolation("TRANSACTION_READ_COMMITTED");
         }
         return new HikariDataSource(hk);
     }

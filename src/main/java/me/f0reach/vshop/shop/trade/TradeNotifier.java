@@ -43,6 +43,7 @@ public final class TradeNotifier {
             if (!co.role().receivesNotifications()) continue;
             Player p = Bukkit.getPlayer(co.playerUuid());
             if (p == null) continue;
+            if (!wantsNotifications(co.playerUuid())) continue;
             Component msg = messages.get(
                     side == TradeSide.SELL ? "trade.notify-sell" : "trade.notify-buy",
                     Placeholder.parsed("shop_name", shop.name()),
@@ -51,6 +52,20 @@ public final class TradeNotifier {
                     Placeholder.parsed("item", itemName(item))
             );
             p.sendMessage(msg);
+        }
+    }
+
+    /**
+     * Reads the player_preferences row for {@code uuid}. Defaults to {@code true}
+     * if the row is missing or the lookup fails — better to over-notify than to
+     * silently drop trade events.
+     */
+    private boolean wantsNotifications(java.util.UUID uuid) {
+        if (storage == null) return true;
+        try {
+            return storage.playerPreferences().wantsNotifications(uuid);
+        } catch (SQLException ex) {
+            return true;
         }
     }
 

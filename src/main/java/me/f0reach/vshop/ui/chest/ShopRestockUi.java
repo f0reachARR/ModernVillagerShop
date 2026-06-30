@@ -35,11 +35,14 @@ public final class ShopRestockUi {
     private final StorageManager storage;
     private final MessageManager messages;
     private final ShopEditService editService;
+    private final IconConfig icons;
 
-    public ShopRestockUi(StorageManager storage, MessageManager messages, ShopEditService editService) {
+    public ShopRestockUi(StorageManager storage, MessageManager messages, ShopEditService editService,
+                         IconConfig icons) {
         this.storage = storage;
         this.messages = messages;
         this.editService = editService;
+        this.icons = icons;
     }
 
     public void open(Player viewer, Shop shop) {
@@ -103,22 +106,22 @@ public final class ShopRestockUi {
             inv.setItem(i, pane);
         }
         if (holder.page() > 0) {
-            inv.setItem(holder.slotPrev(), navIcon(Material.ARROW, "edit.restock.prev"));
+            inv.setItem(holder.slotPrev(), iconWithFallback("prevPage", Material.ARROW, "edit.restock.prev"));
         }
         // Always allow advancing — infinite capacity, the next page may be empty but usable.
-        inv.setItem(holder.slotNext(), navIcon(Material.ARROW, "edit.restock.next"));
-        inv.setItem(holder.slotClose(), navIcon(Material.BARRIER, "edit.restock.close"));
+        inv.setItem(holder.slotNext(), iconWithFallback("nextPage", Material.ARROW, "edit.restock.next"));
+        inv.setItem(holder.slotClose(), iconWithFallback("close", Material.BARRIER, "edit.restock.close"));
         inv.setItem(holder.slotPageIndicator(), pageIndicator(holder.page(), maxOccupiedPage));
     }
 
-    private ItemStack navIcon(Material material, String key) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(messages.get(key));
-            stack.setItemMeta(meta);
-        }
-        return stack;
+    /**
+     * Looks up an {@code ui.chest.icons.<key>} override; falls back to the
+     * provided material + localised display name. Centralising the lookup here
+     * keeps spec §5 "ナビゲーション要素は設定可能" working for the restock view.
+     */
+    private ItemStack iconWithFallback(String key, Material defaultMaterial, String fallbackMessageKey) {
+        String fallbackName = messages.getRaw(fallbackMessageKey);
+        return icons.icon(key, defaultMaterial, fallbackName);
     }
 
     private ItemStack pageIndicator(int page, int maxOccupiedPage) {

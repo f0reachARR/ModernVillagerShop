@@ -6,7 +6,6 @@ import me.f0reach.vshop.shop.cache.PlayerCacheService;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -17,6 +16,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Consumer;
@@ -36,16 +37,20 @@ public final class PlayerPickerUi {
     public static final int SLOT_CANCEL = 51;
     public static final int SLOT_NEXT = 53;
 
+    private static final DateTimeFormatter LAST_SEEN_FMT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+
     private final PlayerCacheService cache;
     private final MessageManager messages;
     private final DialogService dialogs;
-    private final MiniMessage mm;
+    private final IconConfig icons;
 
-    public PlayerPickerUi(PlayerCacheService cache, MessageManager messages, DialogService dialogs) {
+    public PlayerPickerUi(PlayerCacheService cache, MessageManager messages, DialogService dialogs,
+                          IconConfig icons) {
         this.cache = cache;
         this.messages = messages;
         this.dialogs = dialogs;
-        this.mm = messages.miniMessage();
+        this.icons = icons;
     }
 
     public void open(Player viewer, Consumer<PlayerCacheEntry> onPick, Runnable onCancel) {
@@ -69,48 +74,83 @@ public final class PlayerPickerUi {
         } else {
             entries = cache.page(holder.page() * CONTENT_SLOTS, CONTENT_SLOTS, holder.byName());
         }
+        // Pin online players to the top per spec §5; the underlying repo can't
+        // know who's online so we do it here.
+        entries = sortOnlineFirst(entries);
         holder.setCurrentPage(entries);
 
         for (int i = 0; i < entries.size() && i < CONTENT_SLOTS; i++) {
             inv.setItem(i, renderHead(entries.get(i)));
         }
 
-        inv.setItem(SLOT_PREV, navIcon(Material.ARROW, "player-picker.prev"));
-        inv.setItem(SLOT_NEXT, navIcon(Material.ARROW, "player-picker.next"));
-        inv.setItem(SLOT_CANCEL, navIcon(Material.BARRIER, "player-picker.cancel"));
-        inv.setItem(SLOT_SEARCH, navIcon(Material.OAK_SIGN,
-                holder.query() == null || holder.query().isEmpty()
-                        ? "player-picker.search" : "player-picker.search-active"));
-        inv.setItem(SLOT_SORT, navIcon(Material.COMPARATOR,
-                holder.byName() ? "player-picker.sort-name" : "player-picker.sort-recent"));
+        inv.setItem(SLOT_PREV, iconWithFallback("prevPage", Material.ARROW, "player-picker.prev"));
+        inv.setItem(SLOT_NEXT, iconWithFallback("nextPage", Material.ARROW, "player-picker.next"));
+        inv.setItem(SLOT_CANCEL, iconWithFallback("close", Material.BARRIER, "player-picker.cancel"));
+        String searchKey = holder.query() == null || holder.query().isEmpty()
+                ? "player-picker.search" : "player-picker.search-active";
+        inv.setItem(SLOT_SEARCH, iconWithFallback("filter", Material.OAK_SIGN, searchKey));
+        String sortKey = holder.byName() ? "player-picker.sort-name" : "player-picker.sort-recent";
+        inv.setItem(SLOT_SORT, iconWithFallback("sort", Material.COMPARATOR, sortKey));
+    }
+
+    private static List<PlayerCacheEntry> sortOnlineFirst(List<PlayerCacheEntry> entries) {
+        List<PlayerCacheEntry> online = new ArrayList<>();
+        List<PlayerCacheEntry> offline = new ArrayList<>();
+        for (PlayerCacheEntry e : entries) {
+            if (Bukkit.getPlayer(e.playerUuid()) != null) online.add(e);
+            else offline.add(e);
+        }
+        online.addAll(offline);
+        return online;
     }
 
     @SuppressWarnings("deprecation")
     private ItemStack renderHead(PlayerCacheEntry entry) {
+        boolean cacheHasSkin = entry.textureValue() != null;
+        boolean playerOnline = Bukkit.getPlayer(entry.playerUuid()) != null;
+        if (!cacheHasSkin && !playerOnline) {
+            // Fully unknown skin — show the configured fallback head so we
+            // don't leak the "untextured Steve" default.
+            ItemStack fallback = icons.icon("unknownPlayer", Material.PLAYER_HEAD,
+                    "<aqua>" + entry.name() + "</aqua>");
+            ItemMeta meta = fallback.getItemMeta();
+            if (meta != null) {
+                meta.lore(loreFor(entry));
+                fallback.setItemMeta(meta);
+            }
+            return fallback;
+        }
         ItemStack stack = new ItemStack(Material.PLAYER_HEAD);
         SkullMeta meta = (SkullMeta) stack.getItemMeta();
         if (meta != null) {
             OfflinePlayer op = Bukkit.getOfflinePlayer(entry.playerUuid());
             meta.setOwningPlayer(op);
             meta.displayName(Component.text(entry.name(), NamedTextColor.AQUA));
-            List<Component> lore = new ArrayList<>();
-            lore.add(Component.text("UUID: " + entry.playerUuid().toString().substring(0, 8),
-                    NamedTextColor.DARK_GRAY));
-            lore.add(messages.get("player-picker.head-lore"));
-            meta.lore(lore);
+            meta.lore(loreFor(entry));
             stack.setItemMeta(meta);
         }
         return stack;
     }
 
-    private ItemStack navIcon(Material material, String key) {
-        ItemStack stack = new ItemStack(material);
-        ItemMeta meta = stack.getItemMeta();
-        if (meta != null) {
-            meta.displayName(messages.get(key));
-            stack.setItemMeta(meta);
+    private List<Component> loreFor(PlayerCacheEntry entry) {
+        List<Component> lore = new ArrayList<>();
+        lore.add(Component.text("UUID: " + entry.playerUuid().toString().substring(0, 8),
+                NamedTextColor.DARK_GRAY));
+        if (entry.lastSeen() != null) {
+            String formatted = entry.lastSeen()
+                    .atZone(ZoneId.systemDefault())
+                    .format(LAST_SEEN_FMT);
+            lore.add(messages.get("player-picker.last-seen",
+                    Placeholder.parsed("last_seen", formatted)));
+        } else {
+            lore.add(messages.get("player-picker.head-lore"));
         }
-        return stack;
+        return lore;
+    }
+
+    private ItemStack iconWithFallback(String key, Material defaultMaterial, String fallbackMessageKey) {
+        String fallbackName = messages.getRaw(fallbackMessageKey);
+        return icons.icon(key, defaultMaterial, fallbackName);
     }
 
     /** Prompts the player for a search query via InputDialog. */

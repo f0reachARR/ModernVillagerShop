@@ -20,8 +20,16 @@ public final class OpenCommand {
     }
 
     public LiteralArgumentBuilder<CommandSourceStack> node() {
+        // ShopOpenService re-checks the open.any / open.<shopId> / open.nearby
+        // priority at execution time; here we hide the command from senders who
+        // have neither a global nor a nearby open permission.
         return Commands.literal("open")
-                .requires(s -> s.getSender().hasPermission("modernvillagershop.use"))
+                .requires(s -> {
+                    var sender = s.getSender();
+                    return sender.hasPermission("modernvillagershop.use")
+                            && (sender.hasPermission("modernvillagershop.open.any")
+                                    || sender.hasPermission("modernvillagershop.open.nearby"));
+                })
                 .then(Commands.argument("shopId", StringArgumentType.word())
                         .executes(ctx -> execute(ctx.getSource().getSender(),
                                 StringArgumentType.getString(ctx, "shopId"))));

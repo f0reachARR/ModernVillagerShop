@@ -19,11 +19,13 @@ public record PriceContext(
         int intendedAmount,
         BigDecimal basePrice,
         Instant at,
+        TransactionHistoryView history,
         Map<String, Object> attrs
 ) {
     public static PriceContext of(Shop shop, ShopSlot slot, TradeSide side, OfflinePlayer viewer,
-                                  int intendedAmount, BigDecimal basePrice) {
+                                  int intendedAmount, BigDecimal basePrice,
+                                  TransactionHistoryView history) {
         return new PriceContext(shop, slot, side, viewer, intendedAmount, basePrice,
-                Instant.now(), new HashMap<>());
+                Instant.now(), history, new HashMap<>());
     }
 }

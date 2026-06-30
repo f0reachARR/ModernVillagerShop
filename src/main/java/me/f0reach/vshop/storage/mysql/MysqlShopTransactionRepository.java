@@ -178,6 +178,31 @@ public final class MysqlShopTransactionRepository implements ShopTransactionRepo
         return out;
     }
 
+    @Override
+    public SlotAggregate slotAggregate(UUID shopId, UUID slotId, TradeSide side, Instant from, Instant to)
+            throws SQLException {
+        StringBuilder sb = new StringBuilder(
+                "SELECT COUNT(*), COALESCE(SUM(amount),0), COALESCE(SUM(unit_price * amount),0) " +
+                        "FROM shop_transactions WHERE shop_id = ? AND slot_id = ?");
+        if (side != null) sb.append(" AND side = ?");
+        if (from != null) sb.append(" AND occurred_at > ?");
+        if (to != null) sb.append(" AND occurred_at <= ?");
+        try (Connection c = dataSource.getConnection();
+             PreparedStatement ps = c.prepareStatement(sb.toString())) {
+            int i = 1;
+            ps.setString(i++, shopId.toString());
+            ps.setString(i++, slotId.toString());
+            if (side != null) ps.setString(i++, side.name());
+            if (from != null) ps.setLong(i++, from.toEpochMilli());
+            if (to != null) ps.setLong(i, to.toEpochMilli());
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return new SlotAggregate(0L, 0L, BigDecimal.ZERO);
+                return new SlotAggregate(rs.getLong(1), rs.getLong(2),
+                        rs.getBigDecimal(3) != null ? rs.getBigDecimal(3) : BigDecimal.ZERO);
+            }
+        }
+    }
+
     private static TradeRecord map(ResultSet rs) throws SQLException {
         long id = rs.getLong("id");
         Instant at = Instant.ofEpochMilli(rs.getLong("occurred_at"));

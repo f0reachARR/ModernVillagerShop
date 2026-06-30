@@ -121,29 +121,39 @@ public final class ShopBrowseUi {
         ItemMeta meta = stack.getItemMeta();
         if (meta == null) return stack;
 
+        boolean sellEnabled = slot.side() == TradeSide.SELL || slot.side() == TradeSide.BOTH;
+        boolean buyEnabled = slot.side() == TradeSide.BUY || slot.side() == TradeSide.BOTH;
+        int stock = shop.isPlayerShop() ? sumStock(inventoryEntries, slot.itemTemplate()) : Integer.MAX_VALUE;
+        boolean sellOutOfStock = sellEnabled && shop.isPlayerShop() && stock < slot.unitAmount();
+        boolean buyFull = buyEnabled && slot.buyCapacity() <= 0;
+
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("種別: " + slot.side(), NamedTextColor.AQUA));
         Component sellReason = null;
         Component buyReason = null;
-        if (slot.side() == TradeSide.SELL || slot.side() == TradeSide.BOTH) {
+        if (sellEnabled) {
             PriceResolver.Resolution sell = priceResolver.resolve(shop, slot, TradeSide.SELL, null,
                     slot.unitAmount());
             BigDecimal sellPrice = sell.finalPrice();
-            lore.add(Component.text("販売単価: " + sellPrice + " / " + slot.unitAmount() + "個",
-                    NamedTextColor.YELLOW));
+            Component line = Component.text("販売単価: " + sellPrice + " / " + slot.unitAmount() + "個",
+                    sellOutOfStock ? NamedTextColor.RED : NamedTextColor.YELLOW);
+            lore.add(line);
+            if (sellOutOfStock) lore.add(Component.text("在庫切れ", NamedTextColor.RED));
             sellReason = sell.reason();
         }
-        if (slot.side() == TradeSide.BUY || slot.side() == TradeSide.BOTH) {
+        if (buyEnabled) {
             PriceResolver.Resolution buy = priceResolver.resolve(shop, slot, TradeSide.BUY, null,
                     slot.unitAmount());
             BigDecimal buyPrice = buy.finalPrice();
-            lore.add(Component.text("買取単価: " + buyPrice + " / 受入残: " + slot.buyCapacity(),
-                    NamedTextColor.GOLD));
+            Component line = Component.text("買取単価: " + buyPrice + " / 受入残: " + slot.buyCapacity(),
+                    buyFull ? NamedTextColor.RED : NamedTextColor.GOLD);
+            lore.add(line);
+            if (buyFull) lore.add(Component.text("受入満杯", NamedTextColor.RED));
             buyReason = buy.reason();
         }
         if (shop.isPlayerShop()) {
-            int stock = sumStock(inventoryEntries, slot.itemTemplate());
-            lore.add(Component.text("在庫: " + stock + "個", NamedTextColor.GREEN));
+            lore.add(Component.text("在庫: " + stock + "個",
+                    sellOutOfStock ? NamedTextColor.RED : NamedTextColor.GREEN));
         }
         if (slot.tradeLimit() != null) {
             lore.add(Component.text("取引上限: " + slot.tradeLimit() + " (" + slot.limitScope() + ")",

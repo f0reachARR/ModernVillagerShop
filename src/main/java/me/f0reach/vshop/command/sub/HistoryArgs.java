@@ -45,16 +45,22 @@ public record HistoryArgs(
         String playerName = null;
 
         int i = 0;
-        // Up to two leading positionals before any flag: shopId, then page.
+        // Per spec §4: `[shopId] [page]`. The first positional is always the
+        // shopId prefix (even if it happens to be all digits — UUID prefixes
+        // can be), the second positional is the page. Page-only callers should
+        // use `--page <n>`.
+        int positionalIdx = 0;
         while (i < tokens.length && !tokens[i].startsWith("--")) {
             String tok = tokens[i];
-            if (page == null && isInteger(tok)) {
-                page = Integer.parseInt(tok);
-            } else if (shopIdPrefix == null) {
+            if (positionalIdx == 0) {
                 shopIdPrefix = tok;
+            } else if (positionalIdx == 1) {
+                if (!isInteger(tok)) return Result.error("page must be an integer: " + tok);
+                page = Integer.parseInt(tok);
             } else {
                 return Result.error("Unexpected positional argument: " + tok);
             }
+            positionalIdx++;
             i++;
         }
 

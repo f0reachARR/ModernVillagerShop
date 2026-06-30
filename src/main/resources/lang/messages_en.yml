@@ -209,6 +209,7 @@ stats:
 player-picker:
   title: "<white>Pick a player"
   head-lore: "<gray>Click to choose"
+  last-seen: "<gray>Last seen: <last_seen>"
   prev: "<white>Previous"
   next: "<white>Next"
   cancel: "<red>Cancel"
@@ -220,4 +221,24 @@ player-picker:
   search-body: "<gray>Filter by prefix. Leave blank to clear."
   search-submit: "Apply"
   search-label: "Query"
+
+# Generic Dialog buttons / hints reused across MultiButton/Confirm/Input flows.
+# Spec §9.3 calls out `dialog.*` as a top-level message namespace.
+dialog:
+  ok: "OK"
+  cancel: "Cancel"
+  yes: "Yes"
+  no: "No"
+  back: "Back"
+  next: "Next"
+  save: "Save"
+  invalid-number: "<red>Please enter a number."
+  required: "<red>Required."
+
+# Co-owner listing line — uses <primary>/<role>/<share> placeholders.
+shop-info:
+  coowner-line: "<gray>- <player> <yellow>[<role>]</yellow> <gray><share>%</gray>"
+  primary-line: "<gold>PRIMARY:</gold> <primary>"
+  # Shop location line — uses <world>/<x>/<y>/<z>.
+  location: "<gray>Location: <world> (<x>, <y>, <z>)"
 

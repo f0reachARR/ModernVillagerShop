@@ -33,15 +33,17 @@ import java.util.logging.Logger;
 /**
  * Settles a single SELL or BUY trade. Runs on the main thread.
  *
- * The fund/inventory paths intentionally hold a DB transaction open while
- * doing Vault calls — Vault writes are not atomic with the DB, so the order is:
+ * Vault and the DB cannot be made atomic, so we minimise the risky window by
+ * ordering operations:
  *   1. open tx, lock + re-read state
- *   2. validate everything
- *   3. do Vault transfers (with best-effort refund on partial failure)
- *   4. apply DB mutations
+ *   2. validate everything (stock, limit, balance pre-check)
+ *   3. apply ALL DB mutations (inventory, tx row, offline notifications)
+ *   4. do Vault transfers last; on any Vault failure, reverse the Vault legs
+ *      that already succeeded and roll back the DB
  *   5. commit
- * A post-Vault SQL failure leaves the money moved but the DB un-updated — we
- * log loudly and roll back, hoping a follow-up audit can catch it.
+ * Putting SQL before Vault means a SQL exception can never leave money moved
+ * without a matching DB record. The only failure mode that needs Vault
+ * reversal is a partial Vault failure mid-transfer.
  */
 public final class TradeService {
 
@@ -107,6 +109,9 @@ public final class TradeService {
         Connection c = null;
         boolean buyerWithdrew = false;
         List<Deposit> deposits = new ArrayList<>();
+        TradeRecord recForEvent = null;
+        long txId = -1;
+        List<CoOwner> coOwners = List.of();
         try {
             c = storage.dataSource().getConnection();
             c.setAutoCommit(false);
@@ -127,14 +132,14 @@ public final class TradeService {
                 return new TradeResult.Failure("trade.limit-reached");
             }
 
-            // 3. Buyer balance
+            // 3. Buyer balance pre-check (Vault has() is read-only)
             if (!economy.has(buyer, gross)) {
                 c.rollback();
                 return new TradeResult.Failure("trade.not-enough-money-buyer");
             }
 
             // 4. Co-owner shares (player shops only)
-            List<CoOwner> coOwners = shop.isPlayerShop()
+            coOwners = shop.isPlayerShop()
                     ? storage.coOwners().findByShop(shop.id())
                     : List.of();
             Map<UUID, BigDecimal> shares = shop.isPlayerShop()
@@ -142,27 +147,8 @@ public final class TradeService {
                             config.economy().roundingMode())
                     : Map.of();
 
-            // 5. Vault: withdraw buyer
-            EconomyResponse withdraw = economy.withdraw(buyer, gross);
-            if (!withdraw.transactionSuccess()) {
-                c.rollback();
-                return new TradeResult.Failure("trade.not-enough-money-buyer");
-            }
-            buyerWithdrew = true;
-
-            // 6. Vault: deposit each share recipient
-            for (var e : shares.entrySet()) {
-                OfflinePlayer recipient = Bukkit.getOfflinePlayer(e.getKey());
-                EconomyResponse resp = economy.deposit(recipient, e.getValue());
-                if (!resp.transactionSuccess()) {
-                    refundAll(buyer, gross, deposits);
-                    c.rollback();
-                    return new TradeResult.Failure("error.generic");
-                }
-                deposits.add(new Deposit(recipient, e.getValue()));
-            }
-
-            // 7. DB: inventory + tx record + offline notifications
+            // 5. Apply ALL SQL mutations BEFORE any Vault transfer. Any SQL
+            //    failure here rolls back cleanly with no money moved.
             if (shop.isPlayerShop()) {
                 storage.inventory().removeMatchingTx(c, shop.id(), slot.itemTemplate(), totalItems);
             }
@@ -175,8 +161,8 @@ public final class TradeService {
                     req.basePrice() != null ? req.basePrice() : slot.unitPrice(),
                     req.unitPriceSnapshot(),
                     req.resolvedBy());
-            long txId = storage.transactions().insertTx(c, rec);
-            final TradeRecord recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
+            txId = storage.transactions().insertTx(c, rec);
+            recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
                     rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),
                     rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
 
@@ -184,10 +170,32 @@ public final class TradeService {
                 queueOfflineNotifications(c, coOwners, shop.id(), txId, net);
             }
 
+            // 6. Vault: withdraw buyer (last validation against the live wallet)
+            EconomyResponse withdraw = economy.withdraw(buyer, gross);
+            if (!withdraw.transactionSuccess()) {
+                c.rollback();
+                return new TradeResult.Failure("trade.not-enough-money-buyer");
+            }
+            buyerWithdrew = true;
+
+            // 7. Vault: deposit each share recipient. On partial failure we
+            //    reverse every leg that succeeded and roll the DB back.
+            for (var e : shares.entrySet()) {
+                OfflinePlayer recipient = Bukkit.getOfflinePlayer(e.getKey());
+                EconomyResponse resp = economy.deposit(recipient, e.getValue());
+                if (!resp.transactionSuccess()) {
+                    refundAll(buyer, gross, deposits);
+                    c.rollback();
+                    return new TradeResult.Failure("error.generic");
+                }
+                deposits.add(new Deposit(recipient, e.getValue()));
+            }
+
+            // 8. Commit. Past this point money and DB are both committed.
             c.commit();
             Bukkit.getPluginManager().callEvent(new ShopTransactionEvent(shop, recForEvent));
 
-            // 8. Post-commit: deliver items + notify online owners
+            // 9. Post-commit: deliver items + notify online owners
             giveItems(buyer, slot.itemTemplate(), totalItems);
             if (shop.isPlayerShop()) {
                 notifier.notifyOnline(coOwners, shop, TradeSide.SELL, totalItems, net, slot.itemTemplate());
@@ -199,7 +207,8 @@ public final class TradeService {
             LOG.severe("SELL trade failed: " + ex.getMessage());
             ex.printStackTrace();
             if (c != null) try { c.rollback(); } catch (SQLException ignored) {}
-            // Best-effort refund if we already moved money but the DB failed afterwards.
+            // If we already moved money, reverse it. Reachable only if a SQL
+            // mutation past step 5 throws (DB connection drops mid-commit, etc.).
             if (buyerWithdrew) {
                 for (Deposit d : deposits) {
                     economy.withdraw(d.recipient(), d.amount());
@@ -257,7 +266,7 @@ public final class TradeService {
                 return new TradeResult.Failure("trade.buy-full");
             }
 
-            // 3. PRIMARY balance check (player shop)
+            // 3. PRIMARY balance pre-check (player shop)
             OfflinePlayer primary = null;
             if (shop.isPlayerShop()) {
                 if (shop.ownerUuid() == null) {
@@ -271,39 +280,23 @@ public final class TradeService {
                 }
             }
 
-            // 4. Vault: withdraw owner (player shop) / nothing (admin)
-            if (primary != null) {
-                EconomyResponse r = economy.withdraw(primary, gross);
-                if (!r.transactionSuccess()) {
-                    c.rollback();
-                    return new TradeResult.Failure("trade.not-enough-money-owner");
-                }
-                ownerWithdrew = true;
-                ownerCharged = gross;
-            }
-
-            // 5. Vault: deposit deliverer
-            EconomyResponse dr = economy.deposit(deliverer, payoutToDeliverer);
-            if (!dr.transactionSuccess()) {
-                if (ownerWithdrew) economy.deposit(primary, ownerCharged);
+            // 4. Pre-check: deliverer still holds the items (also verified at
+            //    the entry point above; redundant but cheap and lets us bail
+            //    without partial mutations).
+            if (!playerHasItems(deliverer, slot.itemTemplate(), totalItems)) {
                 c.rollback();
-                return new TradeResult.Failure("error.generic");
+                return new TradeResult.Failure("trade.out-of-stock");
             }
-            delivererPaid = true;
 
-            // 6. Move items from deliverer to shop inventory (if player shop)
-            removeItemsFromPlayer(deliverer, slot.itemTemplate(), totalItems);
+            // 5. Apply ALL SQL mutations BEFORE any Vault transfer.
             if (shop.isPlayerShop()) {
                 storage.inventory().addAmountTx(c, shop.id(), slot.slotIndex(),
                         cloneAs(slot.itemTemplate(), 1), totalItems);
             }
 
-            // 7. Decrement buyCapacity (slot + DB)
             int newCapacity = currentCapacity - totalItems;
-            slot.setBuyCapacity(newCapacity);
             updateBuyCapacity(c, slot.id(), newCapacity);
 
-            // 8. Insert tx record + notifications
             BigDecimal baseForRec = req.basePrice() != null
                     ? req.basePrice()
                     : (slot.buyUnitPrice() != null ? slot.buyUnitPrice() : slot.unitPrice());
@@ -323,6 +316,37 @@ public final class TradeService {
             if (shop.isPlayerShop()) {
                 queueOfflineNotifications(c, coOwners, shop.id(), txId, gross);
             }
+
+            // 6. Vault: withdraw owner (player shop) / nothing (admin)
+            if (primary != null) {
+                EconomyResponse r = economy.withdraw(primary, gross);
+                if (!r.transactionSuccess()) {
+                    c.rollback();
+                    return new TradeResult.Failure("trade.not-enough-money-owner");
+                }
+                ownerWithdrew = true;
+                ownerCharged = gross;
+            }
+
+            // 7. Vault: deposit deliverer
+            EconomyResponse dr = economy.deposit(deliverer, payoutToDeliverer);
+            if (!dr.transactionSuccess()) {
+                if (ownerWithdrew) economy.deposit(primary, ownerCharged);
+                c.rollback();
+                return new TradeResult.Failure("error.generic");
+            }
+            delivererPaid = true;
+
+            // 8. Apply the in-memory slot mutation only after we're committed
+            //    to going through (it's a process-local cache; the DB row was
+            //    updated above).
+            slot.setBuyCapacity(newCapacity);
+
+            // 9. Remove items from the deliverer last — past this point we own
+            //    the trade and only the Vault legs above need reversing on
+            //    abort, but the deliverer's inventory needs the items removed
+            //    before commit so a crash doesn't double-pay them.
+            removeItemsFromPlayer(deliverer, slot.itemTemplate(), totalItems);
 
             c.commit();
             Bukkit.getPluginManager().callEvent(new ShopTransactionEvent(shop, recForEvent));
@@ -384,6 +408,7 @@ public final class TradeService {
             if (co.role() == CoOwnerRole.STAFF) continue;
             OfflinePlayer p = Bukkit.getOfflinePlayer(co.playerUuid());
             if (p.isOnline()) continue;
+            if (!storage.playerPreferences().wantsNotifications(co.playerUuid())) continue;
             storage.notifications().queueTx(c, co.playerUuid(), shopId, txId, 1, amount);
         }
     }

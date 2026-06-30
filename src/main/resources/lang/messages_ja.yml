@@ -209,6 +209,7 @@ stats:
 player-picker:
   title: "<white>プレイヤー選択"
   head-lore: "<gray>クリックで選択"
+  last-seen: "<gray>最終ログイン: <last_seen>"
   prev: "<white>前のページ"
   next: "<white>次のページ"
   cancel: "<red>キャンセル"
@@ -220,4 +221,24 @@ player-picker:
   search-body: "<gray>名前 (前方一致) で絞り込みます。空欄で解除。"
   search-submit: "適用"
   search-label: "クエリ"
+
+# Generic Dialog buttons / hints reused across MultiButton/Confirm/Input flows.
+# Spec §9.3 calls out `dialog.*` as a top-level message namespace.
+dialog:
+  ok: "OK"
+  cancel: "キャンセル"
+  yes: "はい"
+  no: "いいえ"
+  back: "戻る"
+  next: "次へ"
+  save: "保存"
+  invalid-number: "<red>数値を入力してください。"
+  required: "<red>入力が必要です。"
+
+# Co-owner listing line — uses <primary>/<role>/<share> placeholders.
+shop-info:
+  coowner-line: "<gray>- <player> <yellow>[<role>]</yellow> <gray><share>%</gray>"
+  primary-line: "<gold>PRIMARY:</gold> <primary>"
+  # Shop location line — uses <world>/<x>/<y>/<z>.
+  location: "<gray>位置: <world> (<x>, <y>, <z>)"
 

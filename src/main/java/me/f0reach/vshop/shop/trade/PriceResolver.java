@@ -3,10 +3,12 @@ package me.f0reach.vshop.shop.trade;
 import me.f0reach.vshop.api.price.PriceContext;
 import me.f0reach.vshop.api.price.PriceRegistry;
 import me.f0reach.vshop.api.price.PriceResult;
+import me.f0reach.vshop.api.price.TransactionHistoryView;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeSide;
+import me.f0reach.vshop.storage.StorageManager;
 import net.kyori.adventure.text.Component;
 import org.bukkit.OfflinePlayer;
 import org.jetbrains.annotations.Nullable;
@@ -34,11 +36,13 @@ public final class PriceResolver {
 
     private final PriceRegistry registry;
     private final PluginConfig config;
+    private final StorageManager storage;
     private final Map<CacheKey, CachedResolution> cache = new ConcurrentHashMap<>();
 
-    public PriceResolver(PriceRegistry registry, PluginConfig config) {
+    public PriceResolver(PriceRegistry registry, PluginConfig config, StorageManager storage) {
         this.registry = registry;
         this.config = config;
+        this.storage = storage;
     }
 
     /**
@@ -60,7 +64,8 @@ public final class PriceResolver {
             return cached.resolution;
         }
 
-        PriceContext ctx = PriceContext.of(shop, slot, side, viewer, intendedAmount, basePrice);
+        TransactionHistoryView history = new DbTransactionHistoryView(storage, shop.id(), slot.id());
+        PriceContext ctx = PriceContext.of(shop, slot, side, viewer, intendedAmount, basePrice, history);
         PriceResult result;
         try {
             result = registry.resolve(ctx);
