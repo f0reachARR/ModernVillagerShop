@@ -247,9 +247,11 @@ public final class TradeService {
         BigDecimal fee = economy.computeFee(gross);
         BigDecimal payoutToDeliverer = gross.subtract(fee);
 
-        // Pre-validate: deliverer has the items
-        if (!playerHasItems(deliverer, slot.itemTemplate(), totalItems)) {
-            return new TradeResult.Failure("trade.out-of-stock");
+        // Pre-validate: deliverer has the items. We count the full inventory so
+        // the failure message can report exactly how short they are.
+        int heldBeforeTx = countPlayerItems(deliverer, slot.itemTemplate());
+        if (heldBeforeTx < totalItems) {
+            return notEnoughItemsFailure(totalItems, heldBeforeTx);
         }
 
         // Read-only data we'll need inside the transaction. SQLite's pool may be
@@ -308,9 +310,10 @@ public final class TradeService {
             // 4. Pre-check: deliverer still holds the items (also verified at
             //    the entry point above; redundant but cheap and lets us bail
             //    without partial mutations).
-            if (!playerHasItems(deliverer, slot.itemTemplate(), totalItems)) {
+            int held = countPlayerItems(deliverer, slot.itemTemplate());
+            if (held < totalItems) {
                 c.rollback();
-                return new TradeResult.Failure("trade.out-of-stock");
+                return notEnoughItemsFailure(totalItems, held);
             }
 
             // 5. Apply ALL SQL mutations BEFORE any Vault transfer.
@@ -492,16 +495,19 @@ public final class TradeService {
         return copy;
     }
 
-    private boolean playerHasItems(Player player, ItemStack template, int needed) {
+    private int countPlayerItems(Player player, ItemStack template) {
         int found = 0;
         for (ItemStack stack : player.getInventory().getStorageContents()) {
             if (stack == null) continue;
-            if (ItemIdentity.sameItem(stack, template)) {
-                found += stack.getAmount();
-                if (found >= needed) return true;
-            }
+            if (ItemIdentity.sameItem(stack, template)) found += stack.getAmount();
         }
-        return false;
+        return found;
+    }
+
+    private TradeResult.Failure notEnoughItemsFailure(int required, int held) {
+        return new TradeResult.Failure("trade.not-enough-items", Map.of(
+                "required", Integer.toString(required),
+                "held", Integer.toString(held)));
     }
 
     private void removeItemsFromPlayer(Player player, ItemStack template, int amount) {

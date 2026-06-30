@@ -49,6 +49,7 @@ trade:
   sold: "<green>Bought: <item> x<amount> = <price> <gray>(fee <fee>)"
   bought: "<green>Delivered: <item> x<amount> = <price> <gray>(fee <fee>)"
   out-of-stock: "<red>Out of stock."
+  not-enough-items: "<red>You don't have enough items to deliver. (need: <required>, have: <held>)"
   buy-full: "<red>Buy slot is full."
   not-enough-money-buyer: "<red>You don't have enough money."
   not-enough-money-owner: "<red>The shop owner does not have enough funds."

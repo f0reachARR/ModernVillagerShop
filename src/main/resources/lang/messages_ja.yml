@@ -49,6 +49,7 @@ trade:
     sold: "<green>購入しました: <item> x<amount> = <price> <gray>(手数料 <fee>)"
     bought: "<green>納品しました: <item> x<amount> = <price> <gray>(手数料 <fee>)"
     out-of-stock: "<red>在庫が不足しています。"
+    not-enough-items: "<red>納品するアイテムが手持ちに足りません。(必要: <required> 個 / 所持: <held> 個)"
     buy-full: "<red>受入枠が満杯です。"
     not-enough-money-buyer: "<red>所持金が足りません。"
     not-enough-money-owner: "<red>店主の残高が不足しているため取引できません。"

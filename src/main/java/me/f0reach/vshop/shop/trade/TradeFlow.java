@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -108,16 +109,25 @@ public final class TradeFlow {
             viewer.sendMessage(messages.get("trade.limit-reached"));
             return;
         }
-        promptAmount(viewer, shop, slot, TradeSide.SELL, stock, remaining);
+        promptAmount(viewer, shop, slot, TradeSide.SELL, stock, remaining, Integer.MAX_VALUE);
     }
 
     /**
-     * Pre-check BUY capacity and trade-limit. Unlimited (-1) capacity slots
-     * always pass capacity; finite slots need at least one full pack of headroom.
+     * Pre-check BUY capacity, trade-limit, and the deliverer's own inventory
+     * so we never walk a player who cannot deliver a single pack through the
+     * amount dialog. Unlimited (-1) capacity slots always pass capacity;
+     * finite slots need at least one full pack of headroom.
      */
     private void startBuy(Player viewer, Shop shop, ShopSlot slot) {
         if (!slot.hasBuyCapacityFor(slot.unitAmount())) {
             viewer.sendMessage(messages.get("trade.buy-full"));
+            return;
+        }
+        int held = playerStock(viewer, slot.itemTemplate());
+        if (held < slot.unitAmount()) {
+            viewer.sendMessage(messages.get("trade.not-enough-items", Map.of(
+                    "required", Integer.toString(slot.unitAmount()),
+                    "held", Integer.toString(held))));
             return;
         }
         int remaining = remainingTradeLimit(slot, viewer.getUniqueId());
@@ -125,11 +135,12 @@ public final class TradeFlow {
             viewer.sendMessage(messages.get("trade.limit-reached"));
             return;
         }
-        promptAmount(viewer, shop, slot, TradeSide.BUY, Integer.MAX_VALUE, remaining);
+        promptAmount(viewer, shop, slot, TradeSide.BUY, Integer.MAX_VALUE, remaining, held);
     }
 
     private void promptAmount(Player viewer, Shop shop, ShopSlot slot, TradeSide side,
-                              int sellStockSnapshot, int limitRemainingSnapshot) {
+                              int sellStockSnapshot, int limitRemainingSnapshot,
+                              int buyHeldSnapshot) {
         Component itemName = displayName(slot);
         Component title = messages.get("trade.amount-prompt.title");
         Component body = messages.get("trade.amount-prompt.body",
@@ -172,6 +183,12 @@ public final class TradeFlow {
                         viewer.sendMessage(messages.get("trade.buy-full"));
                         return;
                     }
+                    if (side == TradeSide.BUY && buyHeldSnapshot < totalItems) {
+                        viewer.sendMessage(messages.get("trade.not-enough-items", Map.of(
+                                "required", Integer.toString(totalItems),
+                                "held", Integer.toString(buyHeldSnapshot))));
+                        return;
+                    }
                     if (limitRemainingSnapshot < totalItems) {
                         viewer.sendMessage(messages.get("trade.limit-reached"));
                         return;
@@ -207,6 +224,20 @@ public final class TradeFlow {
             LOG.warning("Trade-limit pre-check failed for slot " + slot.id() + ": " + ex.getMessage());
             return Integer.MAX_VALUE;
         }
+    }
+
+    /**
+     * Counts how many items the player currently holds that match the slot's
+     * template. Used to pre-check BUY (deliverer) availability so we don't walk
+     * an empty-handed player through the amount + confirm dialogs.
+     */
+    private int playerStock(Player player, ItemStack template) {
+        int total = 0;
+        for (ItemStack stack : player.getInventory().getStorageContents()) {
+            if (stack == null) continue;
+            if (ItemIdentity.sameItem(stack, template)) total += stack.getAmount();
+        }
+        return total;
     }
 
     /**
@@ -282,7 +313,7 @@ public final class TradeFlow {
                     Placeholder.parsed("price", economy.format(ok.gross())),
                     Placeholder.parsed("fee", economy.format(ok.fee()))));
         } else if (result instanceof TradeResult.Failure fail) {
-            viewer.sendMessage(messages.get(fail.messageKey()));
+            viewer.sendMessage(messages.get(fail.messageKey(), fail.placeholders()));
         }
     }
 
