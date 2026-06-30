@@ -68,7 +68,8 @@ public final class PluginConfig {
                 cfg.getDouble("shop.openDistance", 6.0),
                 cfg.getDouble("shop.minDistance", 0.5),
                 LimitScope.valueOf(cfg.getString("shop.defaultLimitScope", "PER_PLAYER").toUpperCase(Locale.ROOT)),
-                cfg.getString("shop.villagerNameFormat", "<shop_name> <gray>[<primary>]</gray>")
+                cfg.getString("shop.villagerNameFormat", "<shop_name> <gray>[<primary>]</gray>"),
+                cfg.getString("shop.villagerNameFormatAdmin", "<shop_name>")
         );
 
         this.playerCache = new PlayerCacheConfig(
@@ -151,7 +152,8 @@ public final class PluginConfig {
             double openDistance,
             double minDistance,
             LimitScope defaultLimitScope,
-            String villagerNameFormat
+            String villagerNameFormat,
+            String villagerNameFormatAdmin
     ) {}
 
     public record PlayerCacheConfig(int maxEntries, PlayerCacheSort defaultSort, Duration textureTtl) {}

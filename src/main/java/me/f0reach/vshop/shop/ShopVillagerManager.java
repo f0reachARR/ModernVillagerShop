@@ -85,7 +85,9 @@ public final class ShopVillagerManager {
 
     public Component buildName(Shop shop, PluginConfig config) {
         String primaryName = shop.isAdminShop() ? "" : resolvePrimaryName(shop);
-        String format = config.shop().villagerNameFormat();
+        String format = shop.isAdminShop()
+                ? config.shop().villagerNameFormatAdmin()
+                : config.shop().villagerNameFormat();
         return messages.miniMessage().deserialize(format,
                 Placeholder.parsed("shop_name", shop.name() == null ? "" : shop.name()),
                 Placeholder.parsed("primary", primaryName));

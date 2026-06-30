@@ -34,6 +34,8 @@ shop:
   minDistance: 0.5
   defaultLimitScope: PER_PLAYER # PER_PLAYER | GLOBAL
   villagerNameFormat: "<shop_name> <gray>[<primary>]</gray>"
+  # 管理者ショップ用のVillager名フォーマット（所有者名がないため別形式）
+  villagerNameFormatAdmin: "<shop_name>"
 
 playerCache:
   maxEntries: 5000
