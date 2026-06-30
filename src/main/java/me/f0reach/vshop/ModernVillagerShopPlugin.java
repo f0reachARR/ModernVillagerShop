@@ -108,7 +108,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.editService = new ShopEditService(storage, registry);
         this.tradeService = new TradeService(storage, economyService, config, tradeNotifier,
                 editService, priceResolver);
-        this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config, priceResolver);
+        this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config,
+                priceResolver, storage);
         this.editUi = new ShopEditUi(storage, iconConfig, messages);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
         this.playerCacheService = new PlayerCacheService(this);

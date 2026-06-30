@@ -280,9 +280,13 @@ public final class TradeService {
                 return new TradeResult.Failure("trade.limit-reached");
             }
 
-            // 2. Capacity check (lock the slot row)
+            // 2. Capacity check (lock the slot row). Negative capacity is the
+            //    unlimited sentinel — we still lock so a concurrent edit that
+            //    flips it back to a finite value sees a consistent view, but
+            //    we skip the decrement below.
             int currentCapacity = lockAndReadCapacity(c, slot.id());
-            if (currentCapacity < totalItems) {
+            boolean unlimitedCapacity = currentCapacity < 0;
+            if (!unlimitedCapacity && currentCapacity < totalItems) {
                 c.rollback();
                 return new TradeResult.Failure("trade.buy-full");
             }
@@ -315,8 +319,10 @@ public final class TradeService {
                         cloneAs(slot.itemTemplate(), 1), totalItems);
             }
 
-            int newCapacity = currentCapacity - totalItems;
-            updateBuyCapacity(c, slot.id(), newCapacity);
+            int newCapacity = unlimitedCapacity ? currentCapacity : currentCapacity - totalItems;
+            if (!unlimitedCapacity) {
+                updateBuyCapacity(c, slot.id(), newCapacity);
+            }
 
             BigDecimal baseForRec = req.basePrice() != null
                     ? req.basePrice()
@@ -357,8 +363,10 @@ public final class TradeService {
 
             // 8. Apply the in-memory slot mutation only after we're committed
             //    to going through (it's a process-local cache; the DB row was
-            //    updated above).
-            slot.setBuyCapacity(newCapacity);
+            //    updated above). Unlimited slots stay unlimited.
+            if (!unlimitedCapacity) {
+                slot.setBuyCapacity(newCapacity);
+            }
 
             // 9. Remove items from the deliverer last — past this point we own
             //    the trade and only the Vault legs above need reversing on

@@ -124,9 +124,10 @@ public final class ShopEditUi {
                         NamedTextColor.YELLOW));
             }
             if (slot.side() == TradeSide.BUY || slot.side() == TradeSide.BOTH) {
+                String capacityLabel = slot.isBuyCapacityUnlimited() ? "∞" : Integer.toString(slot.buyCapacity());
                 lore.add(Component.text("買取単価: "
                         + (slot.buyUnitPrice() == null ? slot.unitPrice() : slot.buyUnitPrice())
-                        + " / 受入残: " + slot.buyCapacity(), NamedTextColor.GOLD));
+                        + " / 受入残: " + capacityLabel, NamedTextColor.GOLD));
             }
             if (shop.isPlayerShop()) {
                 int stock = sumStock(inventoryEntries, slot.itemTemplate());

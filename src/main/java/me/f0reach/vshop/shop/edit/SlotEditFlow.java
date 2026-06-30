@@ -129,7 +129,7 @@ public final class SlotEditFlow {
                 BigDecimal buyUnitPrice = side != TradeSide.SELL
                         ? parsePositive(response.getText("buyUnitPrice")) : null;
                 int buyCapacity = side != TradeSide.SELL
-                        ? Math.max(0, parseInt(response.getText("buyCapacity"))) : 0;
+                        ? parseBuyCapacity(response.getText("buyCapacity")) : 0;
                 Integer tradeLimit = optionalInt(response.getText("tradeLimit"));
                 LimitScope scope = LimitScope.valueOf(response.getDropdownOptionId("limitScope"));
                 Duration resetPeriod = optionalSeconds(response.getText("resetSeconds"));
@@ -202,6 +202,16 @@ public final class SlotEditFlow {
     private static int parseInt(String raw) {
         if (raw == null || raw.isBlank()) return 0;
         return Integer.parseInt(raw.trim());
+    }
+
+    /**
+     * Buy-side capacity input: blank → 0 (no capacity), -1 → unlimited sentinel,
+     * any other negative is clamped to -1 so partial typos can't sneak through.
+     */
+    private static int parseBuyCapacity(String raw) {
+        if (raw == null || raw.isBlank()) return 0;
+        int v = Integer.parseInt(raw.trim());
+        return v < 0 ? -1 : v;
     }
 
     private static Integer optionalInt(String raw) {

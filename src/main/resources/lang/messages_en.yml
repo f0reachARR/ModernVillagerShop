@@ -136,7 +136,7 @@ edit:
     unit-price: "Sell unit price"
     unit-amount: "Items per pack (max <max>)"
     buy-unit-price: "Buy unit price (BUY only)"
-    buy-capacity: "Buy capacity (items)"
+    buy-capacity: "Buy capacity (-1 = unlimited, items)"
     trade-limit: "Trade limit (blank = none)"
     limit-scope: "Limit scope"
     reset-seconds: "Limit reset (seconds; blank = none)"

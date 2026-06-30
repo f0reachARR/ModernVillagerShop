@@ -59,6 +59,14 @@ public final class ShopSlot {
     public boolean allowsSell() { return side == TradeSide.SELL || side == TradeSide.BOTH; }
     public boolean allowsBuy() { return side == TradeSide.BUY || side == TradeSide.BOTH; }
 
+    /** True when {@link #buyCapacity()} is the unlimited sentinel ({@code -1}). */
+    public boolean isBuyCapacityUnlimited() { return buyCapacity < 0; }
+
+    /** True when the slot can accept {@code amount} more items into BUY. */
+    public boolean hasBuyCapacityFor(int amount) {
+        return isBuyCapacityUnlimited() || buyCapacity >= amount;
+    }
+
     public void setSlotIndex(int slotIndex) { this.slotIndex = slotIndex; }
     public void setSide(TradeSide side) { this.side = side; }
     public void setItemTemplate(ItemStack itemTemplate) { this.itemTemplate = itemTemplate; }

@@ -2,20 +2,26 @@ package me.f0reach.vshop.shop.trade;
 
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.economy.EconomyService;
+import me.f0reach.vshop.item.ItemIdentity;
 import me.f0reach.vshop.locale.MessageManager;
+import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeSide;
+import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.logging.Logger;
 
 /**
  * Drives the SELL/BUY dialog sequence: side picker (only for BOTH slots) →
@@ -29,21 +35,26 @@ public final class TradeFlow {
             .ofPattern("HH:mm:ss")
             .withZone(ZoneId.systemDefault());
 
+    private static final Logger LOG = Logger.getLogger(TradeFlow.class.getName());
+
     private final DialogService dialogs;
     private final TradeService tradeService;
     private final MessageManager messages;
     private final EconomyService economy;
     private final PluginConfig config;
     private final PriceResolver priceResolver;
+    private final StorageManager storage;
 
     public TradeFlow(DialogService dialogs, TradeService tradeService, MessageManager messages,
-                     EconomyService economy, PluginConfig config, PriceResolver priceResolver) {
+                     EconomyService economy, PluginConfig config, PriceResolver priceResolver,
+                     StorageManager storage) {
         this.dialogs = dialogs;
         this.tradeService = tradeService;
         this.messages = messages;
         this.economy = economy;
         this.config = config;
         this.priceResolver = priceResolver;
+        this.storage = storage;
     }
 
     public void start(Player viewer, Shop shop, ShopSlot slot) {
@@ -54,9 +65,9 @@ public final class TradeFlow {
         if (slot.side() == TradeSide.BOTH) {
             showSidePicker(viewer, shop, slot);
         } else if (slot.allowsSell()) {
-            promptAmount(viewer, shop, slot, TradeSide.SELL);
+            startSell(viewer, shop, slot);
         } else if (slot.allowsBuy()) {
-            promptAmount(viewer, shop, slot, TradeSide.BUY);
+            startBuy(viewer, shop, slot);
         } else {
             viewer.sendMessage(messages.get("trade.not-tradable"));
         }
@@ -68,13 +79,40 @@ public final class TradeFlow {
                 messages.get("trade.side-pick.body"),
                 List.of(
                         new DialogService.ButtonSpec(messages.get("trade.side-pick.sell"),
-                                () -> promptAmount(viewer, shop, slot, TradeSide.SELL)),
+                                () -> startSell(viewer, shop, slot)),
                         new DialogService.ButtonSpec(messages.get("trade.side-pick.buy"),
-                                () -> promptAmount(viewer, shop, slot, TradeSide.BUY))
+                                () -> startBuy(viewer, shop, slot))
                 ));
     }
 
-    private void promptAmount(Player viewer, Shop shop, ShopSlot slot, TradeSide side) {
+    /**
+     * Pre-check stock so we never walk the player through the amount + confirm
+     * dialogs only to fail at execute(). The stock snapshot taken here is also
+     * fed into {@link #promptAmount} so the amount input can bound-check
+     * without a second DB round-trip.
+     */
+    private void startSell(Player viewer, Shop shop, ShopSlot slot) {
+        int stock = sellStock(shop, slot);
+        if (shop.isPlayerShop() && stock < slot.unitAmount()) {
+            viewer.sendMessage(messages.get("trade.out-of-stock"));
+            return;
+        }
+        promptAmount(viewer, shop, slot, TradeSide.SELL, stock);
+    }
+
+    /**
+     * Pre-check BUY capacity. Unlimited (-1) slots always pass; finite slots
+     * need at least one full pack of headroom.
+     */
+    private void startBuy(Player viewer, Shop shop, ShopSlot slot) {
+        if (!slot.hasBuyCapacityFor(slot.unitAmount())) {
+            viewer.sendMessage(messages.get("trade.buy-full"));
+            return;
+        }
+        promptAmount(viewer, shop, slot, TradeSide.BUY, Integer.MAX_VALUE);
+    }
+
+    private void promptAmount(Player viewer, Shop shop, ShopSlot slot, TradeSide side, int sellStockSnapshot) {
         Component itemName = displayName(slot);
         Component title = messages.get("trade.amount-prompt.title");
         Component body = messages.get("trade.amount-prompt.body",
@@ -98,8 +136,40 @@ public final class TradeFlow {
                         viewer.sendMessage(messages.get("error.invalid-amount"));
                         return;
                     }
+                    int totalItems = packs * slot.unitAmount();
+                    // Bound the requested amount against current stock / capacity
+                    // so we don't show a confirm dialog that's guaranteed to fail.
+                    if (side == TradeSide.SELL && shop.isPlayerShop() && sellStockSnapshot < totalItems) {
+                        viewer.sendMessage(messages.get("trade.out-of-stock"));
+                        return;
+                    }
+                    if (side == TradeSide.BUY && !slot.hasBuyCapacityFor(totalItems)) {
+                        viewer.sendMessage(messages.get("trade.buy-full"));
+                        return;
+                    }
                     showConfirm(viewer, shop, slot, side, packs);
                 });
+    }
+
+    /**
+     * Best-effort stock total for SELL pre-check. Admin shops are infinite;
+     * player shops sum the inventory rows that match the slot's template. On
+     * SQL failure we err on the side of letting the trade through — the
+     * authoritative check happens inside the trade transaction.
+     */
+    private int sellStock(Shop shop, ShopSlot slot) {
+        if (!shop.isPlayerShop()) return Integer.MAX_VALUE;
+        ItemStack template = slot.itemTemplate();
+        try {
+            int total = 0;
+            for (InventoryEntry e : storage.inventory().findByShop(shop.id())) {
+                if (ItemIdentity.sameItem(e.item(), template)) total += e.amount();
+            }
+            return total;
+        } catch (SQLException ex) {
+            LOG.warning("Stock pre-check failed for shop " + shop.id() + ": " + ex.getMessage());
+            return Integer.MAX_VALUE;
+        }
     }
 
     private void showConfirm(Player viewer, Shop shop, ShopSlot slot, TradeSide side, int packs) {

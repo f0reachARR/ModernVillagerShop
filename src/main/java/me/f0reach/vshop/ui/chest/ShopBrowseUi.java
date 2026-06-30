@@ -125,7 +125,7 @@ public final class ShopBrowseUi {
         boolean buyEnabled = slot.side() == TradeSide.BUY || slot.side() == TradeSide.BOTH;
         int stock = shop.isPlayerShop() ? sumStock(inventoryEntries, slot.itemTemplate()) : Integer.MAX_VALUE;
         boolean sellOutOfStock = sellEnabled && shop.isPlayerShop() && stock < slot.unitAmount();
-        boolean buyFull = buyEnabled && slot.buyCapacity() <= 0;
+        boolean buyFull = buyEnabled && !slot.isBuyCapacityUnlimited() && slot.buyCapacity() <= 0;
 
         List<Component> lore = new ArrayList<>();
         lore.add(Component.text("種別: " + slot.side(), NamedTextColor.AQUA));
@@ -145,7 +145,8 @@ public final class ShopBrowseUi {
             PriceResolver.Resolution buy = priceResolver.resolve(shop, slot, TradeSide.BUY, null,
                     slot.unitAmount());
             BigDecimal buyPrice = buy.finalPrice();
-            Component line = Component.text("買取単価: " + buyPrice + " / 受入残: " + slot.buyCapacity(),
+            String capacityLabel = slot.isBuyCapacityUnlimited() ? "∞" : Integer.toString(slot.buyCapacity());
+            Component line = Component.text("買取単価: " + buyPrice + " / 受入残: " + capacityLabel,
                     buyFull ? NamedTextColor.RED : NamedTextColor.GOLD);
             lore.add(line);
             if (buyFull) lore.add(Component.text("受入満杯", NamedTextColor.RED));
