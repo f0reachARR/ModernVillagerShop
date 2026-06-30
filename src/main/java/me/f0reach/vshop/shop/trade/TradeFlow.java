@@ -5,10 +5,13 @@ import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.InventoryEntry;
+import me.f0reach.vshop.model.LimitScope;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
+import me.f0reach.vshop.model.TradeLimitUsage;
 import me.f0reach.vshop.model.TradeSide;
 import me.f0reach.vshop.storage.StorageManager;
+import me.f0reach.vshop.storage.repo.ShopLimitRepository;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -16,11 +19,14 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
 import java.util.logging.Logger;
 
 /**
@@ -86,10 +92,10 @@ public final class TradeFlow {
     }
 
     /**
-     * Pre-check stock so we never walk the player through the amount + confirm
-     * dialogs only to fail at execute(). The stock snapshot taken here is also
-     * fed into {@link #promptAmount} so the amount input can bound-check
-     * without a second DB round-trip.
+     * Pre-check stock and trade-limit so we never walk the player through the
+     * amount + confirm dialogs only to fail at execute(). The stock snapshot
+     * taken here is also fed into {@link #promptAmount} so the amount input
+     * can bound-check without a second DB round-trip.
      */
     private void startSell(Player viewer, Shop shop, ShopSlot slot) {
         int stock = sellStock(shop, slot);
@@ -97,22 +103,33 @@ public final class TradeFlow {
             viewer.sendMessage(messages.get("trade.out-of-stock"));
             return;
         }
-        promptAmount(viewer, shop, slot, TradeSide.SELL, stock);
+        int remaining = remainingTradeLimit(slot, viewer.getUniqueId());
+        if (remaining < slot.unitAmount()) {
+            viewer.sendMessage(messages.get("trade.limit-reached"));
+            return;
+        }
+        promptAmount(viewer, shop, slot, TradeSide.SELL, stock, remaining);
     }
 
     /**
-     * Pre-check BUY capacity. Unlimited (-1) slots always pass; finite slots
-     * need at least one full pack of headroom.
+     * Pre-check BUY capacity and trade-limit. Unlimited (-1) capacity slots
+     * always pass capacity; finite slots need at least one full pack of headroom.
      */
     private void startBuy(Player viewer, Shop shop, ShopSlot slot) {
         if (!slot.hasBuyCapacityFor(slot.unitAmount())) {
             viewer.sendMessage(messages.get("trade.buy-full"));
             return;
         }
-        promptAmount(viewer, shop, slot, TradeSide.BUY, Integer.MAX_VALUE);
+        int remaining = remainingTradeLimit(slot, viewer.getUniqueId());
+        if (remaining < slot.unitAmount()) {
+            viewer.sendMessage(messages.get("trade.limit-reached"));
+            return;
+        }
+        promptAmount(viewer, shop, slot, TradeSide.BUY, Integer.MAX_VALUE, remaining);
     }
 
-    private void promptAmount(Player viewer, Shop shop, ShopSlot slot, TradeSide side, int sellStockSnapshot) {
+    private void promptAmount(Player viewer, Shop shop, ShopSlot slot, TradeSide side,
+                              int sellStockSnapshot, int limitRemainingSnapshot) {
         Component itemName = displayName(slot);
         Component title = messages.get("trade.amount-prompt.title");
         Component body = messages.get("trade.amount-prompt.body",
@@ -137,8 +154,9 @@ public final class TradeFlow {
                         return;
                     }
                     int totalItems = packs * slot.unitAmount();
-                    // Bound the requested amount against current stock / capacity
-                    // so we don't show a confirm dialog that's guaranteed to fail.
+                    // Bound the requested amount against current stock / capacity /
+                    // trade-limit so we don't show a confirm dialog that's
+                    // guaranteed to fail.
                     if (side == TradeSide.SELL && shop.isPlayerShop() && sellStockSnapshot < totalItems) {
                         viewer.sendMessage(messages.get("trade.out-of-stock"));
                         return;
@@ -147,8 +165,41 @@ public final class TradeFlow {
                         viewer.sendMessage(messages.get("trade.buy-full"));
                         return;
                     }
+                    if (limitRemainingSnapshot < totalItems) {
+                        viewer.sendMessage(messages.get("trade.limit-reached"));
+                        return;
+                    }
                     showConfirm(viewer, shop, slot, side, packs);
                 });
+    }
+
+    /**
+     * Returns how many more items the player can still trade through this slot
+     * before the configured limit kicks in. {@link Integer#MAX_VALUE} when no
+     * limit is set or on read failure (the authoritative check happens inside
+     * the trade transaction).
+     *
+     * <p>The reset-window logic here mirrors
+     * {@link TradeService#checkAndReserveLimit} — keep them in sync.</p>
+     */
+    private int remainingTradeLimit(ShopSlot slot, UUID player) {
+        if (slot.tradeLimit() == null) return Integer.MAX_VALUE;
+        UUID key = slot.limitScope() == LimitScope.GLOBAL
+                ? ShopLimitRepository.GLOBAL_KEY : player;
+        try (Connection c = storage.dataSource().getConnection()) {
+            Optional<TradeLimitUsage> found = storage.limits().findTx(c, slot.id(), key);
+            if (found.isEmpty()) return slot.tradeLimit();
+            int current = found.get().amount();
+            Instant windowStart = found.get().windowStart();
+            if (slot.resetPeriod() != null && windowStart != null) {
+                long deadline = windowStart.toEpochMilli() + slot.resetPeriod().toMillis();
+                if (Instant.now().toEpochMilli() >= deadline) current = 0;
+            }
+            return Math.max(0, slot.tradeLimit() - current);
+        } catch (SQLException ex) {
+            LOG.warning("Trade-limit pre-check failed for slot " + slot.id() + ": " + ex.getMessage());
+            return Integer.MAX_VALUE;
+        }
     }
 
     /**
