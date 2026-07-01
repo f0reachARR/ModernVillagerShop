@@ -69,7 +69,6 @@ public final class ShopActionMenu {
     }
 
     public void open(Player viewer, Shop shop) {
-        boolean notifyOn = readNotifyPref(viewer);
         boolean isPrimary = isPrimary(viewer, shop);
 
         Component title = messages.get("action.title",
@@ -89,16 +88,41 @@ public final class ShopActionMenu {
             buttons.add(new DialogService.ButtonSpec(messages.get("action.restock"),
                     () -> restockUi.open(viewer, shop)));
         }
-        if (shop.isPlayerShop() && hasAnyPerm(viewer,
-                "modernvillagershop.coowner.manage", "modernvillagershop.coowner.manage.others")) {
-            buttons.add(new DialogService.ButtonSpec(messages.get("action.coowner"),
-                    () -> coOwnerFlow.openManager(viewer, shop)));
+        buttons.add(new DialogService.ButtonSpec(messages.get("action.info-menu"),
+                () -> openInfoSubmenu(viewer, shop)));
+        buttons.add(new DialogService.ButtonSpec(messages.get("action.settings-menu"),
+                () -> openSettingsSubmenu(viewer, shop)));
+        if (canShowOwnerMenu(viewer, shop, isPrimary)) {
+            buttons.add(new DialogService.ButtonSpec(messages.get("action.owner-menu"),
+                    () -> openOwnerSubmenu(viewer, shop)));
         }
-        if (shop.isPlayerShop() && hasAnyPerm(viewer,
-                "modernvillagershop.coowner.transfer", "modernvillagershop.coowner.transfer.others")) {
-            buttons.add(new DialogService.ButtonSpec(messages.get("action.transfer"),
-                    () -> coOwnerFlow.openTransferWithPicker(viewer, shop)));
-        }
+
+        dialogs.multiButton(viewer, title, body, buttons);
+    }
+
+    private void openInfoSubmenu(Player viewer, Shop shop) {
+        Component title = messages.get("action.info.title",
+                Placeholder.parsed("shop_name", shop.name()));
+        Component body = messages.get("action.info.body");
+
+        List<DialogService.ButtonSpec> buttons = new ArrayList<>();
+        buttons.add(new DialogService.ButtonSpec(messages.get("action.history"),
+                () -> showRecentHistory(viewer, shop)));
+        buttons.add(new DialogService.ButtonSpec(messages.get("action.stats"),
+                () -> showStats(viewer, shop)));
+        buttons.add(new DialogService.ButtonSpec(messages.get("dialog.back"),
+                () -> open(viewer, shop)));
+
+        dialogs.multiButton(viewer, title, body, buttons);
+    }
+
+    private void openSettingsSubmenu(Player viewer, Shop shop) {
+        boolean notifyOn = readNotifyPref(viewer);
+        Component title = messages.get("action.settings.title",
+                Placeholder.parsed("shop_name", shop.name()));
+        Component body = messages.get("action.settings.body");
+
+        List<DialogService.ButtonSpec> buttons = new ArrayList<>();
         if (hasAnyPerm(viewer, "modernvillagershop.edit.rename",
                 "modernvillagershop.edit.others", "modernvillagershop.admin.edit")) {
             buttons.add(new DialogService.ButtonSpec(
@@ -118,26 +142,63 @@ public final class ShopActionMenu {
                         Placeholder.parsed("current",
                                 messages.getRaw(notifyOn ? "action.state-on" : "action.state-off"))),
                 () -> toggleNotifications(viewer, shop)));
-        buttons.add(new DialogService.ButtonSpec(messages.get("action.history"),
-                () -> showRecentHistory(viewer, shop)));
-        buttons.add(new DialogService.ButtonSpec(messages.get("action.stats"),
-                () -> showStats(viewer, shop)));
         if (hasAnyPerm(viewer, "modernvillagershop.edit.suspend",
                 "modernvillagershop.edit.others", "modernvillagershop.admin.edit")) {
             buttons.add(new DialogService.ButtonSpec(
                     shop.suspended() ? messages.get("action.resume") : messages.get("action.suspend"),
                     () -> toggleSuspended(viewer, shop)));
         }
-        // Delete is dangerous — gate on permission AND PRIMARY role (or override).
-        if (hasAnyPerm(viewer, "modernvillagershop.edit.delete", "modernvillagershop.edit.others",
-                "modernvillagershop.admin.edit") && (isPrimary || shop.isAdminShop()
-                        || viewer.hasPermission("modernvillagershop.edit.others")
-                        || viewer.hasPermission("modernvillagershop.admin.edit"))) {
+        buttons.add(new DialogService.ButtonSpec(messages.get("dialog.back"),
+                () -> open(viewer, shop)));
+
+        dialogs.multiButton(viewer, title, body, buttons);
+    }
+
+    private void openOwnerSubmenu(Player viewer, Shop shop) {
+        boolean isPrimary = isPrimary(viewer, shop);
+        Component title = messages.get("action.owner.title",
+                Placeholder.parsed("shop_name", shop.name()));
+        Component body = messages.get("action.owner.body");
+
+        List<DialogService.ButtonSpec> buttons = new ArrayList<>();
+        if (shop.isPlayerShop() && hasAnyPerm(viewer,
+                "modernvillagershop.coowner.manage", "modernvillagershop.coowner.manage.others")) {
+            buttons.add(new DialogService.ButtonSpec(messages.get("action.coowner"),
+                    () -> coOwnerFlow.openManager(viewer, shop)));
+        }
+        if (shop.isPlayerShop() && hasAnyPerm(viewer,
+                "modernvillagershop.coowner.transfer", "modernvillagershop.coowner.transfer.others")) {
+            buttons.add(new DialogService.ButtonSpec(messages.get("action.transfer"),
+                    () -> coOwnerFlow.openTransferWithPicker(viewer, shop)));
+        }
+        if (canShowDelete(viewer, shop, isPrimary)) {
             buttons.add(new DialogService.ButtonSpec(messages.get("action.delete.button"),
                     () -> openDelete(viewer, shop)));
         }
+        buttons.add(new DialogService.ButtonSpec(messages.get("dialog.back"),
+                () -> open(viewer, shop)));
 
         dialogs.multiButton(viewer, title, body, buttons);
+    }
+
+    private boolean canShowOwnerMenu(Player viewer, Shop shop, boolean isPrimary) {
+        if (shop.isPlayerShop() && hasAnyPerm(viewer,
+                "modernvillagershop.coowner.manage", "modernvillagershop.coowner.manage.others")) {
+            return true;
+        }
+        if (shop.isPlayerShop() && hasAnyPerm(viewer,
+                "modernvillagershop.coowner.transfer", "modernvillagershop.coowner.transfer.others")) {
+            return true;
+        }
+        return canShowDelete(viewer, shop, isPrimary);
+    }
+
+    // Delete is dangerous — gate on permission AND PRIMARY role (or override).
+    private boolean canShowDelete(Player viewer, Shop shop, boolean isPrimary) {
+        return hasAnyPerm(viewer, "modernvillagershop.edit.delete", "modernvillagershop.edit.others",
+                "modernvillagershop.admin.edit") && (isPrimary || shop.isAdminShop()
+                        || viewer.hasPermission("modernvillagershop.edit.others")
+                        || viewer.hasPermission("modernvillagershop.admin.edit"));
     }
 
     private void openSlotEditor(Player viewer, Shop shop) {
@@ -170,8 +231,8 @@ public final class ShopActionMenu {
                     Placeholder.parsed("reason", ex.getMessage())));
             shop.setSuspended(!next); // rollback in-memory
         }
-        // Re-open so the player can keep flipping switches.
-        open(viewer, shop);
+        // Re-open the settings submenu so the player can keep flipping switches.
+        openSettingsSubmenu(viewer, shop);
     }
 
     private void toggleNotifications(Player viewer, Shop shop) {
@@ -185,7 +246,7 @@ public final class ShopActionMenu {
             viewer.sendMessage(messages.get("error.generic",
                     Placeholder.parsed("reason", ex.getMessage())));
         }
-        open(viewer, shop);
+        openSettingsSubmenu(viewer, shop);
     }
 
     private void openRename(Player viewer, Shop shop) {
@@ -199,7 +260,7 @@ public final class ShopActionMenu {
                     String next = response.getText("name").trim();
                     if (next.isEmpty()) {
                         viewer.sendMessage(messages.get("action.rename.invalid"));
-                        open(viewer, shop);
+                        openSettingsSubmenu(viewer, shop);
                         return;
                     }
                     shop.setName(next);
@@ -213,7 +274,7 @@ public final class ShopActionMenu {
                         viewer.sendMessage(messages.get("error.generic",
                                 Placeholder.parsed("reason", ex.getMessage())));
                     }
-                    open(viewer, shop);
+                    openSettingsSubmenu(viewer, shop);
                 });
     }
 
@@ -242,7 +303,7 @@ public final class ShopActionMenu {
                     if (chosen == null) {
                         viewer.sendMessage(messages.get("error.generic",
                                 Placeholder.parsed("reason", "invalid profession")));
-                        open(viewer, shop);
+                        openSettingsSubmenu(viewer, shop);
                         return;
                     }
                     shop.setProfession(chosen);
@@ -257,7 +318,7 @@ public final class ShopActionMenu {
                         viewer.sendMessage(messages.get("error.generic",
                                 Placeholder.parsed("reason", ex.getMessage())));
                     }
-                    open(viewer, shop);
+                    openSettingsSubmenu(viewer, shop);
                 });
     }
 
@@ -282,10 +343,10 @@ public final class ShopActionMenu {
                         LOG.log(Level.SEVERE, "delete failed", ex);
                         viewer.sendMessage(messages.get("error.generic",
                                 Placeholder.parsed("reason", ex.getMessage())));
-                        open(viewer, shop);
+                        openOwnerSubmenu(viewer, shop);
                     }
                 },
-                () -> open(viewer, shop));
+                () -> openOwnerSubmenu(viewer, shop));
     }
 
     private void showRecentHistory(Player viewer, Shop shop) {

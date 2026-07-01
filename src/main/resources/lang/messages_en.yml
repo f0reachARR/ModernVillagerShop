@@ -178,6 +178,9 @@ action:
   edit-slots: "<yellow>Edit items"
   preview: "<aqua>Preview"
   restock: "<green>Edit inventory"
+  info-menu: "<gray>Shop info ..."
+  settings-menu: "<white>Shop settings ..."
+  owner-menu: "<light_purple>Ownership ..."
   coowner: "<light_purple>Co-owners"
   transfer: "<gold>Transfer PRIMARY"
   notifications: "<white>Trade notifications [now: <current>]"
@@ -189,6 +192,15 @@ action:
   stats: "<gray>Stats"
   suspend: "<red>Suspend"
   resume: "<green>Resume"
+  info:
+    title: "<white>Shop info: <shop_name>"
+    body: "<gray>Pick what to view."
+  settings:
+    title: "<white>Shop settings: <shop_name>"
+    body: "<gray>Pick a setting to change."
+  owner:
+    title: "<white>Ownership: <shop_name>"
+    body: "<gray>Pick an ownership action."
   rename:
     button: "<white>Rename [now: <current>]"
     title: "<white>Rename shop"

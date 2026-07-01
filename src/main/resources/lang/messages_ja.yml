@@ -178,6 +178,9 @@ action:
     edit-slots: "<yellow>品目を編集"
     preview: "<aqua>プレビュー"
     restock: "<green>在庫を編集"
+    info-menu: "<gray>店舗情報 ..."
+    settings-menu: "<white>店舗設定 ..."
+    owner-menu: "<light_purple>オーナー管理 ..."
     coowner: "<light_purple>共同オーナー"
     transfer: "<gold>PRIMARY 移譲"
     notifications: "<white>取引通知 [現在: <current>]"
@@ -189,6 +192,15 @@ action:
     stats: "<gray>統計"
     suspend: "<red>一時停止"
     resume: "<green>公開を再開"
+    info:
+        title: "<white>店舗情報: <shop_name>"
+        body: "<gray>閲覧する情報を選択してください。"
+    settings:
+        title: "<white>店舗設定: <shop_name>"
+        body: "<gray>変更する設定を選択してください。"
+    owner:
+        title: "<white>オーナー管理: <shop_name>"
+        body: "<gray>オーナー関連の操作を選択してください。"
     rename:
         button: "<white>ショップ名変更 [現在: <current>]"
         title: "<white>ショップ名変更"
