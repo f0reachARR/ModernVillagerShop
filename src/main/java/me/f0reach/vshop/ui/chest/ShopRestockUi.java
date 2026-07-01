@@ -46,11 +46,15 @@ public final class ShopRestockUi {
     }
 
     public void open(Player viewer, Shop shop) {
+        open(viewer, shop, null);
+    }
+
+    public void open(Player viewer, Shop shop, Runnable onClose) {
         if (shop.isAdminShop()) {
             viewer.sendMessage(messages.get("edit.restock.admin-shop"));
             return;
         }
-        ShopRestockHolder holder = new ShopRestockHolder(viewer, shop);
+        ShopRestockHolder holder = new ShopRestockHolder(viewer, shop, onClose);
         Component title = messages.get("edit.restock.title",
                 Placeholder.parsed("shop_name", shop.name()));
         holder.createInventory(title);

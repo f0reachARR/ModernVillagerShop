@@ -38,8 +38,14 @@ public final class ShopRestockHolder implements InventoryHolder {
     private Inventory inventory;
     private boolean saved;
     private boolean suppressCloseSave;
+    private final Runnable onClose;
+    private boolean suppressReturnOnClose;
 
     public ShopRestockHolder(Player viewer, Shop shop) {
+        this(viewer, shop, null);
+    }
+
+    public ShopRestockHolder(Player viewer, Shop shop, Runnable onClose) {
         this.viewerId = viewer.getUniqueId();
         this.shopId = shop.id();
         this.contentSlots = shop.chestContentSlots();
@@ -58,6 +64,7 @@ public final class ShopRestockHolder implements InventoryHolder {
             this.slotClose = -1;
             this.slotNext = -1;
         }
+        this.onClose = onClose;
     }
 
     public Inventory createInventory(net.kyori.adventure.text.Component title) {
@@ -90,6 +97,10 @@ public final class ShopRestockHolder implements InventoryHolder {
     public int slotPageIndicator() { return slotPageIndicator; }
     public int slotClose() { return slotClose; }
     public int slotNext() { return slotNext; }
+
+    public Runnable onClose() { return onClose; }
+    public boolean suppressReturnOnClose() { return suppressReturnOnClose; }
+    public void setSuppressReturnOnClose(boolean suppress) { this.suppressReturnOnClose = suppress; }
 
     /** Maps a chest slot in the current page to its global {@code shop_inventory.slot_index}. */
     public int toGlobalSlot(int chestSlot) { return page * contentSlots + chestSlot; }

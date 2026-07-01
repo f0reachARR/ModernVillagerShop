@@ -6,12 +6,15 @@ import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.trade.TradeFlow;
 import me.f0reach.vshop.storage.StorageManager;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.InventoryHolder;
+import org.bukkit.plugin.Plugin;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -22,14 +25,16 @@ import java.util.List;
  */
 public final class ShopBrowseListener implements Listener {
 
+    private final Plugin plugin;
     private final ShopRegistry registry;
     private final ShopBrowseUi browseUi;
     private final StorageManager storage;
     private final TradeFlow tradeFlow;
     private final MessageManager messages;
 
-    public ShopBrowseListener(ShopRegistry registry, ShopBrowseUi browseUi, StorageManager storage,
-                              TradeFlow tradeFlow, MessageManager messages) {
+    public ShopBrowseListener(Plugin plugin, ShopRegistry registry, ShopBrowseUi browseUi,
+                              StorageManager storage, TradeFlow tradeFlow, MessageManager messages) {
+        this.plugin = plugin;
         this.registry = registry;
         this.browseUi = browseUi;
         this.storage = storage;
@@ -72,6 +77,7 @@ public final class ShopBrowseListener implements Listener {
 
         Shop shop = registry.byId(browseHolder.shopId()).orElse(null);
         if (shop == null) {
+            browseHolder.setSuppressReturnOnClose(true);
             viewer.closeInventory();
             return;
         }
@@ -79,8 +85,17 @@ public final class ShopBrowseListener implements Listener {
         ShopSlot slot = findSlot(shop, browseHolder.page(), raw, browseHolder.contentSlots());
         if (slot == null) return;
 
+        browseHolder.setSuppressReturnOnClose(true);
         viewer.closeInventory();
         tradeFlow.start(viewer, shop, slot);
+    }
+
+    @EventHandler
+    public void onClose(InventoryCloseEvent event) {
+        if (!(event.getInventory().getHolder() instanceof ShopBrowseHolder holder)) return;
+        if (holder.suppressReturnOnClose()) return;
+        Runnable onClose = holder.onClose();
+        if (onClose != null) Bukkit.getScheduler().runTask(plugin, onClose);
     }
 
     private ShopSlot findSlot(Shop shop, int page, int innerSlot, int stride) {

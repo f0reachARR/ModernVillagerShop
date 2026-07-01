@@ -31,8 +31,14 @@ public final class ShopBrowseHolder implements InventoryHolder {
     private final int slotNext;
     private int page;
     private Inventory inventory;
+    private final Runnable onClose;
+    private boolean suppressReturnOnClose;
 
     public ShopBrowseHolder(Player viewer, Shop shop, int page) {
+        this(viewer, shop, page, null);
+    }
+
+    public ShopBrowseHolder(Player viewer, Shop shop, int page, Runnable onClose) {
         this.viewerId = viewer.getUniqueId();
         this.shopId = shop.id();
         this.contentSlots = shop.chestContentSlots();
@@ -52,6 +58,7 @@ public final class ShopBrowseHolder implements InventoryHolder {
             this.slotNext = -1;
         }
         this.page = page;
+        this.onClose = onClose;
     }
 
     public Inventory createInventory(net.kyori.adventure.text.Component title) {
@@ -76,6 +83,10 @@ public final class ShopBrowseHolder implements InventoryHolder {
     public int slotPageIndicator() { return slotPageIndicator; }
     public int slotClose() { return slotClose; }
     public int slotNext() { return slotNext; }
+
+    public Runnable onClose() { return onClose; }
+    public boolean suppressReturnOnClose() { return suppressReturnOnClose; }
+    public void setSuppressReturnOnClose(boolean suppress) { this.suppressReturnOnClose = suppress; }
 
     /** True when {@code chestSlot} maps to a valid global slot_index for this page. */
     public boolean isContentSlotInBounds(int chestSlot) {

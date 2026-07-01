@@ -41,7 +41,11 @@ public final class ShopEditUi {
     }
 
     public void open(Player editor, Shop shop, int page) {
-        ShopEditHolder holder = new ShopEditHolder(editor, shop, page);
+        open(editor, shop, page, null);
+    }
+
+    public void open(Player editor, Shop shop, int page, Runnable onClose) {
+        ShopEditHolder holder = new ShopEditHolder(editor, shop, page, onClose);
         Component title = mm.deserialize("<dark_red>編集: " + shop.name());
         Inventory inv = holder.createInventory(title);
         paint(inv, holder, shop);

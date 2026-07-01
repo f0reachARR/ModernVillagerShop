@@ -7,6 +7,7 @@ import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.chest.ShopEditHolder;
 import me.f0reach.vshop.ui.chest.ShopEditUi;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -18,6 +19,7 @@ import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
 import org.bukkit.inventory.InventoryHolder;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.plugin.Plugin;
 
 import java.sql.SQLException;
 import java.util.List;
@@ -31,6 +33,7 @@ import java.util.List;
  */
 public final class ShopEditListener implements Listener {
 
+    private final Plugin plugin;
     private final ShopRegistry registry;
     private final ShopEditUi editUi;
     private final ShopEditService editService;
@@ -38,8 +41,10 @@ public final class ShopEditListener implements Listener {
     private final StorageManager storage;
     private final MessageManager messages;
 
-    public ShopEditListener(ShopRegistry registry, ShopEditUi editUi, ShopEditService editService,
-                            SlotEditFlow slotFlow, StorageManager storage, MessageManager messages) {
+    public ShopEditListener(Plugin plugin, ShopRegistry registry, ShopEditUi editUi,
+                            ShopEditService editService, SlotEditFlow slotFlow,
+                            StorageManager storage, MessageManager messages) {
+        this.plugin = plugin;
         this.registry = registry;
         this.editUi = editUi;
         this.editService = editService;
@@ -97,6 +102,7 @@ public final class ShopEditListener implements Listener {
 
         Shop shop = registry.byId(editHolder.shopId()).orElse(null);
         if (shop == null) {
+            editHolder.setSuppressReturnOnClose(true);
             editor.closeInventory();
             return;
         }
@@ -107,13 +113,19 @@ public final class ShopEditListener implements Listener {
         boolean hasCursor = cursor != null && !cursor.getType().isAir();
 
         Runnable refresh = () -> editUi.repaint(editor, editHolder);
+        Runnable onClose = editHolder.onClose();
+        // The chest is already suppress-closed at the caller before this fires,
+        // so the new open() just installs a fresh holder — the OLD holder's
+        // suppress flag has already done its job.
+        Runnable reopenChest = () -> editUi.open(editor, shop, editHolder.page(), onClose);
 
         if (existing != null) {
             if (event.getClick() == ClickType.SHIFT_RIGHT) {
                 slotFlow.openDelete(editor, shop, existing, refresh);
             } else {
+                editHolder.setSuppressReturnOnClose(true);
                 editor.closeInventory();
-                slotFlow.openEdit(editor, shop, existing, () -> editUi.open(editor, shop, editHolder.page()));
+                slotFlow.openEdit(editor, shop, existing, reopenChest);
             }
             return;
         }
@@ -129,8 +141,9 @@ public final class ShopEditListener implements Listener {
         // Take a snapshot — we deliberately do NOT consume the player's stack.
         ItemStack template = cursor.clone();
         template.setAmount(1);
+        editHolder.setSuppressReturnOnClose(true);
         editor.closeInventory();
-        slotFlow.openCreate(editor, shop, flatIndex, template, () -> editUi.open(editor, shop, editHolder.page()));
+        slotFlow.openCreate(editor, shop, flatIndex, template, reopenChest);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
@@ -144,6 +157,9 @@ public final class ShopEditListener implements Listener {
     public void onClose(InventoryCloseEvent event) {
         if (event.getInventory().getHolder() instanceof ShopEditHolder editHolder) {
             editService.endEditing(editHolder.shopId());
+            if (editHolder.suppressReturnOnClose()) return;
+            Runnable onClose = editHolder.onClose();
+            if (onClose != null) Bukkit.getScheduler().runTask(plugin, onClose);
         }
     }
 

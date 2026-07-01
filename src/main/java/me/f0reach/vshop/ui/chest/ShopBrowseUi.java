@@ -47,7 +47,11 @@ public final class ShopBrowseUi {
     }
 
     public void open(Player viewer, Shop shop, int page) {
-        ShopBrowseHolder holder = new ShopBrowseHolder(viewer, shop, page);
+        open(viewer, shop, page, null);
+    }
+
+    public void open(Player viewer, Shop shop, int page, Runnable onClose) {
+        ShopBrowseHolder holder = new ShopBrowseHolder(viewer, shop, page, onClose);
         Component title = mm.deserialize("<dark_gray>" + shop.name());
         Inventory inv = holder.createInventory(title);
         paint(inv, holder, shop);

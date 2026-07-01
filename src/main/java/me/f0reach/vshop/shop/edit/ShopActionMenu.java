@@ -82,11 +82,11 @@ public final class ShopActionMenu {
         buttons.add(new DialogService.ButtonSpec(messages.get("action.edit-slots"),
                 () -> openSlotEditor(viewer, shop)));
         buttons.add(new DialogService.ButtonSpec(messages.get("action.preview"),
-                () -> plugin.browseUi().open(viewer, shop, 0)));
+                () -> plugin.browseUi().open(viewer, shop, 0, () -> open(viewer, shop))));
         if (shop.isPlayerShop() && hasAnyPerm(viewer, "modernvillagershop.edit",
                 "modernvillagershop.edit.others", "modernvillagershop.admin.edit")) {
             buttons.add(new DialogService.ButtonSpec(messages.get("action.restock"),
-                    () -> restockUi.open(viewer, shop)));
+                    () -> restockUi.open(viewer, shop, () -> open(viewer, shop))));
         }
         buttons.add(new DialogService.ButtonSpec(messages.get("action.info-menu"),
                 () -> openInfoSubmenu(viewer, shop)));
@@ -164,12 +164,13 @@ public final class ShopActionMenu {
         if (shop.isPlayerShop() && hasAnyPerm(viewer,
                 "modernvillagershop.coowner.manage", "modernvillagershop.coowner.manage.others")) {
             buttons.add(new DialogService.ButtonSpec(messages.get("action.coowner"),
-                    () -> coOwnerFlow.openManager(viewer, shop)));
+                    () -> coOwnerFlow.openManager(viewer, shop, () -> openOwnerSubmenu(viewer, shop))));
         }
         if (shop.isPlayerShop() && hasAnyPerm(viewer,
                 "modernvillagershop.coowner.transfer", "modernvillagershop.coowner.transfer.others")) {
             buttons.add(new DialogService.ButtonSpec(messages.get("action.transfer"),
-                    () -> coOwnerFlow.openTransferWithPicker(viewer, shop)));
+                    () -> coOwnerFlow.openTransferWithPicker(viewer, shop,
+                            () -> openOwnerSubmenu(viewer, shop))));
         }
         if (canShowDelete(viewer, shop, isPrimary)) {
             buttons.add(new DialogService.ButtonSpec(messages.get("action.delete.button"),
@@ -213,7 +214,7 @@ public final class ShopActionMenu {
             return;
         }
         editService.beginEditing(shop.id());
-        plugin.editUi().open(viewer, shop, 0);
+        plugin.editUi().open(viewer, shop, 0, () -> open(viewer, shop));
         viewer.sendMessage(messages.get("shop.edit.editing",
                 Placeholder.parsed("shop_name", shop.name())));
     }

@@ -8,6 +8,7 @@ import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.shop.edit.ShopEditService;
 import me.f0reach.vshop.storage.StorageManager;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -118,6 +119,7 @@ public final class ShopRestockListener implements Listener {
         }
         Shop shop = plugin.registry().byId(holder.shopId()).orElse(null);
         if (shop == null) {
+            holder.setSuppressReturnOnClose(true);
             viewer.closeInventory();
             return;
         }
@@ -177,21 +179,22 @@ public final class ShopRestockListener implements Listener {
         if (!(ih instanceof ShopRestockHolder holder)) return;
         if (holder.saved()) return;
         holder.markSaved();
-        if (holder.suppressCloseSave()) {
-            editService.endEditing(holder.shopId());
-            return;
-        }
-        if (!(event.getPlayer() instanceof Player viewer)) {
-            editService.endEditing(holder.shopId());
-            return;
-        }
-
         try {
-            if (persistCurrentPage(viewer, holder)) {
-                viewer.sendMessage(messages.get("edit.restock.saved"));
+            if (holder.suppressCloseSave()) return;
+            if (!(event.getPlayer() instanceof Player viewer)) return;
+            try {
+                if (persistCurrentPage(viewer, holder)) {
+                    viewer.sendMessage(messages.get("edit.restock.saved"));
+                }
+            } catch (RuntimeException re) {
+                LOG.severe("Restock close persist failed: " + re.getMessage());
             }
         } finally {
             editService.endEditing(holder.shopId());
+            if (!holder.suppressReturnOnClose()) {
+                Runnable onClose = holder.onClose();
+                if (onClose != null) Bukkit.getScheduler().runTask(plugin, onClose);
+            }
         }
     }
 
