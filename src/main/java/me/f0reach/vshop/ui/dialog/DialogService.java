@@ -48,36 +48,61 @@ public final class DialogService {
     public void confirm(Player player, Component title, Component body,
                         Component yesLabel, Component noLabel,
                         Runnable onYes, Runnable onNo) {
-        var dialog = ConfirmDialog.builder()
+        confirm(player, title, body, yesLabel, noLabel, onYes, onNo, null);
+    }
+
+    // onClose fires on Bedrock Esc/close and on Java InputDialog cancel;
+    // MultiButton/Confirm on Java clients have no server-visible Esc callback.
+    public void confirm(Player player, Component title, Component body,
+                        Component yesLabel, Component noLabel,
+                        Runnable onYes, Runnable onNo, Runnable onClose) {
+        var builder = ConfirmDialog.builder()
                 .title(title)
                 .body(body)
                 .yesLabel(yesLabel == null ? Component.text("Yes") : yesLabel)
                 .noLabel(noLabel == null ? Component.text("No") : noLabel)
                 .onYes(p -> runMain(onYes))
-                .onNo(p -> runMain(onNo))
-                .build();
-        BedrockDialog.get().show(player, dialog);
+                .onNo(p -> runMain(onNo));
+        if (onClose != null) {
+            builder.onClose(p -> runMain(onClose));
+        }
+        BedrockDialog.get().show(player, builder.build());
     }
 
     public void confirmOnce(Player player, Component title, Component body,
                             Component yesLabel, Component noLabel,
                             Runnable onYes, Runnable onNo) {
+        confirmOnce(player, title, body, yesLabel, noLabel, onYes, onNo, null);
+    }
+
+    public void confirmOnce(Player player, Component title, Component body,
+                            Component yesLabel, Component noLabel,
+                            Runnable onYes, Runnable onNo, Runnable onClose) {
         UUID id = player.getUniqueId();
         if (!openConfirms.add(id)) {
             return;
         }
         confirm(player, title, body, yesLabel, noLabel,
                 () -> { openConfirms.remove(id); if (onYes != null) onYes.run(); },
-                () -> { openConfirms.remove(id); if (onNo != null) onNo.run(); });
+                () -> { openConfirms.remove(id); if (onNo != null) onNo.run(); },
+                () -> { openConfirms.remove(id); if (onClose != null) onClose.run(); });
     }
 
     public void multiButton(Player player, Component title, Component body, List<ButtonSpec> buttons) {
+        multiButton(player, title, body, buttons, null);
+    }
+
+    public void multiButton(Player player, Component title, Component body, List<ButtonSpec> buttons,
+                            Runnable onClose) {
         MultiButtonDialog.Builder builder = MultiButtonDialog.builder()
                 .title(title)
                 .body(body);
         for (ButtonSpec b : buttons) {
             Runnable action = b.action();
             builder.button(b.label(), p -> runMain(action));
+        }
+        if (onClose != null) {
+            builder.onClose(p -> runMain(onClose));
         }
         BedrockDialog.get().show(player, builder.build());
     }
@@ -129,6 +154,14 @@ public final class DialogService {
             var b = DropdownInput.builder(key).label(label).defaultIndex(defaultIndex);
             for (Option o : options) b.addOption(o.id(), o.label());
             backing.addInput(b.build());
+            return this;
+        }
+
+        // Cancel button on Java + Esc/close on Bedrock. Java Esc alone
+        // is not deliverable via Paper Dialog API — the cancel button is
+        // the only Java trigger.
+        public InputBuilder onCancel(Runnable handler) {
+            backing.onClose(p -> runMain(handler));
             return this;
         }
 

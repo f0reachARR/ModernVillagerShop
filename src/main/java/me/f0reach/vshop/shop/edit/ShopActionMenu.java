@@ -113,7 +113,7 @@ public final class ShopActionMenu {
         buttons.add(new DialogService.ButtonSpec(messages.get("dialog.back"),
                 () -> open(viewer, shop)));
 
-        dialogs.multiButton(viewer, title, body, buttons);
+        dialogs.multiButton(viewer, title, body, buttons, () -> open(viewer, shop));
     }
 
     private void openSettingsSubmenu(Player viewer, Shop shop) {
@@ -151,7 +151,7 @@ public final class ShopActionMenu {
         buttons.add(new DialogService.ButtonSpec(messages.get("dialog.back"),
                 () -> open(viewer, shop)));
 
-        dialogs.multiButton(viewer, title, body, buttons);
+        dialogs.multiButton(viewer, title, body, buttons, () -> open(viewer, shop));
     }
 
     private void openOwnerSubmenu(Player viewer, Shop shop) {
@@ -178,7 +178,7 @@ public final class ShopActionMenu {
         buttons.add(new DialogService.ButtonSpec(messages.get("dialog.back"),
                 () -> open(viewer, shop)));
 
-        dialogs.multiButton(viewer, title, body, buttons);
+        dialogs.multiButton(viewer, title, body, buttons, () -> open(viewer, shop));
     }
 
     private boolean canShowOwnerMenu(Player viewer, Shop shop, boolean isPrimary) {
@@ -256,6 +256,7 @@ public final class ShopActionMenu {
                                 Placeholder.parsed("current", shop.name())),
                         messages.get("action.rename.submit"))
                 .text("name", messages.get("action.rename.label"), shop.name())
+                .onCancel(() -> openSettingsSubmenu(viewer, shop))
                 .onSubmit(response -> {
                     String next = response.getText("name").trim();
                     if (next.isEmpty()) {
@@ -295,6 +296,7 @@ public final class ShopActionMenu {
                                 Placeholder.parsed("current", professionLabel(shop.profession()))),
                         messages.get("action.profession.submit"))
                 .dropdown("profession", messages.get("action.profession.label"), options, currentIdx)
+                .onCancel(() -> openSettingsSubmenu(viewer, shop))
                 .onSubmit(response -> {
                     NamespacedKey key = NamespacedKey.fromString(
                             response.getDropdownOptionId("profession"));
@@ -346,6 +348,7 @@ public final class ShopActionMenu {
                         openOwnerSubmenu(viewer, shop);
                     }
                 },
+                () -> openOwnerSubmenu(viewer, shop),
                 () -> openOwnerSubmenu(viewer, shop));
     }
 
