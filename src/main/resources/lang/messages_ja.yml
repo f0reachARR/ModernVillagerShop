@@ -117,14 +117,14 @@ coowner:
     remove:
         title: "<white>共同オーナーの削除"
         body: "<gray><player> を共同オーナーから外しますか？"
-        yes: "削除する"
-        no: "やめる"
+        "yes": "削除する"
+        "no": "やめる"
         done: "<green>共同オーナーを削除しました。"
     transfer:
         title: "<white>PRIMARY 移譲"
         body: "<gray>このショップの PRIMARY を <player> へ移譲します。\nあなたは MANAGER に降格します。"
-        yes: "移譲する"
-        no: "やめる"
+        "yes": "移譲する"
+        "no": "やめる"
         same-player: "<red>同じプレイヤーには移譲できません。"
         done: "<green>PRIMARY を <player> に移譲しました。"
 
@@ -160,8 +160,8 @@ edit:
     delete:
         title: "<white>出品枠の削除"
         body: "<gray><item> の出品枠を削除します。よろしいですか？"
-        yes: "削除する"
-        no: "キャンセル"
+        "yes": "削除する"
+        "no": "キャンセル"
         done: "<green>出品枠を削除しました。"
     restock:
         title: "<white>在庫: <shop_name>"
@@ -220,8 +220,8 @@ action:
         button: "<dark_red>ショップを削除"
         title: "<dark_red>ショップ削除"
         body: "<red><shop_name> を削除します。\nこの操作は取り消せません。"
-        yes: "削除する"
-        no: "キャンセル"
+        "yes": "削除する"
+        "no": "キャンセル"
 
 history:
     empty: "<gray>取引履歴はまだありません。"
@@ -253,8 +253,8 @@ player-picker:
 dialog:
     ok: "OK"
     cancel: "キャンセル"
-    yes: "はい"
-    no: "いいえ"
+    "yes": "はい"
+    "no": "いいえ"
     back: "戻る"
     next: "次へ"
     save: "保存"
