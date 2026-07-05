@@ -1,5 +1,6 @@
 package me.f0reach.vshop.ui.chest;
 
+import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.InventoryEntry;
@@ -9,8 +10,7 @@ import me.f0reach.vshop.model.TradeSide;
 import me.f0reach.vshop.shop.trade.PriceResolver;
 import me.f0reach.vshop.storage.StorageManager;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
-import net.kyori.adventure.text.minimessage.MiniMessage;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
@@ -34,16 +34,16 @@ public final class ShopBrowseUi {
     private final StorageManager storage;
     private final IconConfig icons;
     private final MessageManager messages;
-    private final MiniMessage mm;
     private final PriceResolver priceResolver;
+    private final EconomyService economy;
 
     public ShopBrowseUi(StorageManager storage, IconConfig icons, MessageManager messages,
-                        PriceResolver priceResolver) {
+                        PriceResolver priceResolver, EconomyService economy) {
         this.storage = storage;
         this.icons = icons;
         this.messages = messages;
-        this.mm = messages.miniMessage();
         this.priceResolver = priceResolver;
+        this.economy = economy;
     }
 
     public void open(Player viewer, Shop shop, int page) {
@@ -52,7 +52,8 @@ public final class ShopBrowseUi {
 
     public void open(Player viewer, Shop shop, int page, Runnable onClose) {
         ShopBrowseHolder holder = new ShopBrowseHolder(viewer, shop, page, onClose);
-        Component title = mm.deserialize("<dark_gray>" + shop.name());
+        Component title = messages.get("chest.browse-title",
+                Placeholder.parsed("shop_name", shop.name()));
         Inventory inv = holder.createInventory(title);
         paint(inv, holder, shop);
         viewer.openInventory(inv);
@@ -111,12 +112,15 @@ public final class ShopBrowseUi {
         int maxPage = byPage.isEmpty() ? 0 : byPage.lastKey();
         inv.setItem(holder.slotPageIndicator(), pageIndicator(holder.page()));
         if (holder.page() > 0) {
-            inv.setItem(holder.slotPrev(), icons.icon("prevPage", Material.ARROW, "<white>Prev"));
+            inv.setItem(holder.slotPrev(), icons.icon("prevPage", Material.ARROW,
+                    messages.getRaw("chest.prev")));
         }
         if (holder.page() < maxPage) {
-            inv.setItem(holder.slotNext(), icons.icon("nextPage", Material.ARROW, "<white>Next"));
+            inv.setItem(holder.slotNext(), icons.icon("nextPage", Material.ARROW,
+                    messages.getRaw("chest.next")));
         }
-        inv.setItem(holder.slotClose(), icons.icon("close", Material.BARRIER, "<red>Close"));
+        inv.setItem(holder.slotClose(), icons.icon("close", Material.BARRIER,
+                messages.getRaw("chest.close")));
     }
 
     private ItemStack renderSlot(Shop shop, ShopSlot slot, List<InventoryEntry> inventoryEntries) {
@@ -132,37 +136,41 @@ public final class ShopBrowseUi {
         boolean buyFull = buyEnabled && !slot.isBuyCapacityUnlimited() && slot.buyCapacity() <= 0;
 
         List<Component> lore = new ArrayList<>();
-        lore.add(Component.text("種別: " + slot.side(), NamedTextColor.AQUA));
+        lore.add(messages.get("slot.side",
+                Placeholder.parsed("side", slot.side().name())));
         Component sellReason = null;
         Component buyReason = null;
         if (sellEnabled) {
             PriceResolver.Resolution sell = priceResolver.resolve(shop, slot, TradeSide.SELL, null,
                     slot.unitAmount());
             BigDecimal sellPrice = sell.finalPrice();
-            Component line = Component.text("販売単価: " + sellPrice + " / " + slot.unitAmount() + "個",
-                    sellOutOfStock ? NamedTextColor.RED : NamedTextColor.YELLOW);
-            lore.add(line);
-            if (sellOutOfStock) lore.add(Component.text("在庫切れ", NamedTextColor.RED));
+            lore.add(messages.get(sellOutOfStock ? "slot.sell-line-out-of-stock" : "slot.sell-line",
+                    Placeholder.parsed("price", economy.format(sellPrice)),
+                    Placeholder.parsed("amount", Integer.toString(slot.unitAmount()))));
+            if (sellOutOfStock) lore.add(messages.get("slot.out-of-stock"));
             sellReason = sell.reason();
         }
         if (buyEnabled) {
             PriceResolver.Resolution buy = priceResolver.resolve(shop, slot, TradeSide.BUY, null,
                     slot.unitAmount());
             BigDecimal buyPrice = buy.finalPrice();
-            String capacityLabel = slot.isBuyCapacityUnlimited() ? "∞" : Integer.toString(slot.buyCapacity());
-            Component line = Component.text("買取単価: " + buyPrice + " / 受入残: " + capacityLabel,
-                    buyFull ? NamedTextColor.RED : NamedTextColor.GOLD);
-            lore.add(line);
-            if (buyFull) lore.add(Component.text("受入満杯", NamedTextColor.RED));
+            String capacityLabel = slot.isBuyCapacityUnlimited()
+                    ? messages.getRaw("slot.capacity-unlimited")
+                    : Integer.toString(slot.buyCapacity());
+            lore.add(messages.get(buyFull ? "slot.buy-line-full" : "slot.buy-line",
+                    Placeholder.parsed("price", economy.format(buyPrice)),
+                    Placeholder.parsed("capacity", capacityLabel)));
+            if (buyFull) lore.add(messages.get("slot.buy-full"));
             buyReason = buy.reason();
         }
         if (shop.isPlayerShop()) {
-            lore.add(Component.text("在庫: " + stock + "個",
-                    sellOutOfStock ? NamedTextColor.RED : NamedTextColor.GREEN));
+            lore.add(messages.get(sellOutOfStock ? "slot.stock-empty" : "slot.stock",
+                    Placeholder.parsed("stock", Integer.toString(stock))));
         }
         if (slot.tradeLimit() != null) {
-            lore.add(Component.text("取引上限: " + slot.tradeLimit() + " (" + slot.limitScope() + ")",
-                    NamedTextColor.GRAY));
+            lore.add(messages.get("slot.limit-line",
+                    Placeholder.parsed("limit", Integer.toString(slot.tradeLimit())),
+                    Placeholder.parsed("scope", slot.limitScope().name())));
         }
         if (sellReason != null) lore.add(sellReason);
         if (buyReason != null && (sellReason == null || !buyReason.equals(sellReason))) lore.add(buyReason);
@@ -183,7 +191,8 @@ public final class ShopBrowseUi {
         ItemStack stack = new ItemStack(Material.PAPER);
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("Page " + (page + 1), NamedTextColor.WHITE));
+            meta.displayName(messages.get("chest.page-indicator",
+                    Placeholder.parsed("page", Integer.toString(page + 1))));
             stack.setItemMeta(meta);
         }
         return stack;

@@ -10,7 +10,6 @@ import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import me.f0reach.vshop.ui.text.Displays;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
@@ -364,11 +363,13 @@ public final class ShopActionMenu {
             viewer.sendMessage(messages.get("history.header"));
             for (TradeRecord rec : recent) {
                 String counterparty = resolveCounterparty(rec);
-                Component line = Component.text("[" + HISTORY_FORMAT.format(rec.at()) + "] "
-                                + rec.side() + " " + rec.amount() + "× ", NamedTextColor.GRAY)
-                        .append(Displays.item(rec.itemSnapshot()).color(NamedTextColor.WHITE))
-                        .append(Component.text(" @ " + rec.unitPrice() + " <" + counterparty + ">",
-                                NamedTextColor.GRAY));
+                Component line = messages.get("history.line",
+                        Placeholder.parsed("time", HISTORY_FORMAT.format(rec.at())),
+                        Placeholder.parsed("side", rec.side().name()),
+                        Placeholder.parsed("amount", Integer.toString(rec.amount())),
+                        Placeholder.component("item", Displays.item(rec.itemSnapshot())),
+                        Placeholder.parsed("price", plugin.economyService().format(rec.unitPrice())),
+                        Placeholder.parsed("counterparty", counterparty));
                 viewer.sendMessage(line);
             }
         } catch (SQLException ex) {

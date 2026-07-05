@@ -168,9 +168,13 @@ public final class CoOwnerFlow {
         List<DialogService.ButtonSpec> buttons = new ArrayList<>();
         for (CoOwner co : coOwners) {
             OfflinePlayer p = Bukkit.getOfflinePlayer(co.playerUuid());
-            String label = (p.getName() != null ? p.getName() : co.playerUuid().toString().substring(0, 8))
-                    + " [" + co.role() + " " + co.share().toPlainString() + "%]";
-            buttons.add(new DialogService.ButtonSpec(Component.text(label),
+            String playerLabel = p.getName() != null
+                    ? p.getName() : co.playerUuid().toString().substring(0, 8);
+            Component label = messages.get("coowner.list.entry",
+                    Placeholder.parsed("player", playerLabel),
+                    Placeholder.parsed("role", co.role().name()),
+                    Placeholder.parsed("share", co.share().toPlainString()));
+            buttons.add(new DialogService.ButtonSpec(label,
                     () -> showMemberActions(primary, shop, co, onReturn)));
         }
         buttons.add(new DialogService.ButtonSpec(messages.get("coowner.list.add"),

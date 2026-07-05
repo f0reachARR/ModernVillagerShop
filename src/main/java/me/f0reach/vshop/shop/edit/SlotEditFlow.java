@@ -305,8 +305,10 @@ public final class SlotEditFlow {
 
     private List<DialogService.InputBuilder.Option> limitScopeOptions() {
         return List.of(
-                new DialogService.InputBuilder.Option("PER_PLAYER", Component.text("プレイヤー単位")),
-                new DialogService.InputBuilder.Option("GLOBAL", Component.text("全体共有")));
+                new DialogService.InputBuilder.Option("PER_PLAYER",
+                        messages.get("edit.slot.scope.per-player")),
+                new DialogService.InputBuilder.Option("GLOBAL",
+                        messages.get("edit.slot.scope.global")));
     }
 
     private Component sideLabel(TradeSide side) {

@@ -20,10 +20,13 @@ command:
         next-hint: "<gray>Next page: <yellow>/vshop history <args>"
         bad-flag: "<red>Argument error: <reason>"
         player-not-found: "<red>Player not found: <player>"
+        line: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <dark_gray>[<shop> / <counterparty>]"
+        line-with-fee: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <gray>(fee <fee>) <dark_gray>[<shop> / <counterparty>]"
     search:
         header: "<gold>=== Search: <query> (<page>/<pages>, <total> hits) ==="
         empty: "<gray>No matches."
         next-hint: "<gray>Next page: <yellow>/vshop search <query> <page>"
+        line: "<yellow><shop_id></yellow> <gray><shop_name></gray> <white><item></white> <dark_gray>[<side> @ <price>]"
 
 shop:
     deleted: "<green>Shop <shop_id> deleted."
@@ -97,6 +100,7 @@ coowner:
         title: "<white>Co-owners: <shop_name>"
         body: "<gray>Pick a member to edit, or add a new one."
         add: "<green>Add"
+        entry: "<white><player> [<role> <share>%]"
     add:
         title: "<white>Add co-owner"
         body-for: "<gray>Adding <player>. Choose role and share."
@@ -157,6 +161,9 @@ edit:
         created: "<green>Slot created."
         updated: "<green>Slot updated."
         place-prompt: "<gray>Click an empty slot while holding an item to create a new slot."
+        scope:
+            per-player: "Per player"
+            global: "Shared globally"
     delete:
         title: "<white>Delete slot"
         body: "<gray>Delete the slot for <item>?"
@@ -171,6 +178,31 @@ edit:
         prev: "<white>Previous page"
         next: "<white>Next page"
         close: "<red>Close"
+        page-indicator-lore: "<dark_gray>Last used page: <last>"
+
+# Chest UI shared strings (titles, navigation labels).
+chest:
+    edit-title: "<dark_red>Edit: <shop_name>"
+    browse-title: "<dark_gray><shop_name>"
+    page-indicator: "<white>Page <page>"
+    prev: "<white>Previous"
+    next: "<white>Next"
+    close: "<red>Close"
+
+# Slot lore rendering for browse / edit views.
+slot:
+    side: "<aqua>Kind: <side>"
+    sell-line: "<yellow>Sell price: <price> / <amount>"
+    sell-line-out-of-stock: "<red>Sell price: <price> / <amount>"
+    buy-line: "<gold>Buy price: <price> / capacity left: <capacity>"
+    buy-line-full: "<red>Buy price: <price> / capacity left: <capacity>"
+    stock: "<green>Stock: <stock>"
+    stock-empty: "<red>Stock: <stock>"
+    limit-line: "<gray>Trade limit: <limit> (<scope>)"
+    capacity-unlimited: "∞"
+    out-of-stock: "<red>Out of stock"
+    buy-full: "<red>Buy capacity full"
+    click-edit: "<light_purple>[Left-click to edit]"
 
 action:
     title: "<white>Shop: <shop_name>"
@@ -226,6 +258,7 @@ action:
 history:
     empty: "<gray>No trade history yet."
     header: "<aqua>=== Recent trades (max 10) ==="
+    line: "<gray>[<time>] <side> <amount>× <item> @ <price> (<counterparty>)"
 
 stats:
     header: "<aqua>=== <shop_name> stats ==="

@@ -20,10 +20,13 @@ command:
         next-hint: "<gray>次ページ: <yellow>/vshop history <args>"
         bad-flag: "<red>引数エラー: <reason>"
         player-not-found: "<red>プレイヤーが見つかりません: <player>"
+        line: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <dark_gray>[<shop> / <counterparty>]"
+        line-with-fee: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <gray>(手数料 <fee>) <dark_gray>[<shop> / <counterparty>]"
     search:
         header: "<gold>=== 検索: <query> (<page>/<pages>, <total>件) ==="
         empty: "<gray>ヒットなし"
         next-hint: "<gray>次ページ: <yellow>/vshop search <query> <page>"
+        line: "<yellow><shop_id></yellow> <gray><shop_name></gray> <white><item></white> <dark_gray>[<side> @ <price>]"
 
 shop:
     deleted: "<green>ショップ <shop_id> を削除しました。"
@@ -97,6 +100,7 @@ coowner:
         title: "<white>共同オーナー: <shop_name>"
         body: "<gray>編集対象を選択するか、追加してください。"
         add: "<green>追加"
+        entry: "<white><player> [<role> <share>%]"
     add:
         title: "<white>共同オーナー追加"
         body-for: "<gray><player> を共同オーナーに追加します。役割と持分を指定してください。"
@@ -157,6 +161,9 @@ edit:
         created: "<green>出品枠を作成しました。"
         updated: "<green>出品枠を更新しました。"
         place-prompt: "<gray>カーソルにアイテムを持って空きスロットをクリックすると新規出品枠を作成できます。"
+        scope:
+            per-player: "プレイヤー単位"
+            global: "全体共有"
     delete:
         title: "<white>出品枠の削除"
         body: "<gray><item> の出品枠を削除します。よろしいですか？"
@@ -171,6 +178,31 @@ edit:
         prev: "<white>前のページ"
         next: "<white>次のページ"
         close: "<red>閉じる"
+        page-indicator-lore: "<dark_gray>使用中の最終ページ: <last>"
+
+# Chest UI shared strings (titles, navigation labels).
+chest:
+    edit-title: "<dark_red>編集: <shop_name>"
+    browse-title: "<dark_gray><shop_name>"
+    page-indicator: "<white>ページ <page>"
+    prev: "<white>前のページ"
+    next: "<white>次のページ"
+    close: "<red>閉じる"
+
+# Slot lore rendering for browse / edit views.
+slot:
+    side: "<aqua>種別: <side>"
+    sell-line: "<yellow>販売単価: <price> / <amount>個"
+    sell-line-out-of-stock: "<red>販売単価: <price> / <amount>個"
+    buy-line: "<gold>買取単価: <price> / 受入残: <capacity>"
+    buy-line-full: "<red>買取単価: <price> / 受入残: <capacity>"
+    stock: "<green>在庫: <stock>個"
+    stock-empty: "<red>在庫: <stock>個"
+    limit-line: "<gray>取引上限: <limit> (<scope>)"
+    capacity-unlimited: "∞"
+    out-of-stock: "<red>在庫切れ"
+    buy-full: "<red>受入満杯"
+    click-edit: "<light_purple>[左クリックで編集]"
 
 action:
     title: "<white>ショップ操作: <shop_name>"
@@ -226,6 +258,7 @@ action:
 history:
     empty: "<gray>取引履歴はまだありません。"
     header: "<aqua>=== 最近の取引 (最大10件) ==="
+    line: "<gray>[<time>] <side> <amount>× <item> @ <price> (<counterparty>)"
 
 stats:
     header: "<aqua>=== <shop_name> 統計 ==="

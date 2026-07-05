@@ -7,7 +7,6 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.shop.edit.ShopEditService;
 import me.f0reach.vshop.storage.StorageManager;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -132,9 +131,10 @@ public final class ShopRestockUi {
         ItemStack stack = new ItemStack(Material.PAPER);
         ItemMeta meta = stack.getItemMeta();
         if (meta != null) {
-            meta.displayName(Component.text("Page " + (page + 1), NamedTextColor.WHITE));
-            meta.lore(List.of(Component.text("使用中の最終ページ: " + (maxOccupiedPage + 1),
-                    NamedTextColor.DARK_GRAY)));
+            meta.displayName(messages.get("chest.page-indicator",
+                    Placeholder.parsed("page", Integer.toString(page + 1))));
+            meta.lore(List.of(messages.get("edit.restock.page-indicator-lore",
+                    Placeholder.parsed("last", Integer.toString(maxOccupiedPage + 1)))));
             stack.setItemMeta(meta);
         }
         return stack;

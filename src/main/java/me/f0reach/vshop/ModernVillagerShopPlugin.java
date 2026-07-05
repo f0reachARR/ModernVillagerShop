@@ -102,7 +102,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.iconConfig = new IconConfig(messages, config.uiSection());
         this.priceRegistry = new PriceRegistry();
         this.priceResolver = new PriceResolver(priceRegistry, config, storage);
-        this.browseUi = new ShopBrowseUi(storage, iconConfig, messages, priceResolver);
+        this.browseUi = new ShopBrowseUi(storage, iconConfig, messages, priceResolver, economyService);
         this.openService = new ShopOpenService(browseUi, messages, config);
         this.tradeNotifier = new TradeNotifier(this, messages, storage, economyService);
         this.editService = new ShopEditService(storage, registry);
@@ -110,7 +110,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
                 editService, priceResolver);
         this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config,
                 priceResolver, storage);
-        this.editUi = new ShopEditUi(storage, iconConfig, messages);
+        this.editUi = new ShopEditUi(storage, iconConfig, messages, economyService);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
         this.playerCacheService = new PlayerCacheService(this);
         this.playerPickerUi = new PlayerPickerUi(playerCacheService, messages, dialogService, iconConfig);

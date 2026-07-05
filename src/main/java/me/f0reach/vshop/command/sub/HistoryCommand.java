@@ -128,19 +128,21 @@ public final class HistoryCommand {
                 String when = TIME_FMT.format(rec.at());
                 String counterparty = resolveCounterparty(rec);
                 Component shopLabel = shopLabel(rec.shopId());
-                Component line = Component.text(when + " ", NamedTextColor.GRAY)
-                        .append(Component.text(rec.side().name() + " ", NamedTextColor.YELLOW))
-                        .append(Displays.item(rec.itemSnapshot()).color(NamedTextColor.WHITE))
-                        .append(Component.text(" x" + rec.amount() + " @ ", NamedTextColor.GRAY))
-                        .append(Component.text(econ.format(rec.unitPrice()), NamedTextColor.WHITE));
-                if (rec.fee() != null && rec.fee().signum() > 0) {
-                    line = line.append(Component.text(" (fee " + econ.format(rec.fee()) + ")",
-                            NamedTextColor.GRAY));
+                boolean hasFee = rec.fee() != null && rec.fee().signum() > 0;
+                String key = hasFee ? "command.history.line-with-fee" : "command.history.line";
+                java.util.List<net.kyori.adventure.text.minimessage.tag.resolver.TagResolver> tags = new java.util.ArrayList<>();
+                tags.add(Placeholder.parsed("time", when));
+                tags.add(Placeholder.parsed("side", rec.side().name()));
+                tags.add(Placeholder.component("item", Displays.item(rec.itemSnapshot())));
+                tags.add(Placeholder.parsed("amount", Integer.toString(rec.amount())));
+                tags.add(Placeholder.parsed("price", econ.format(rec.unitPrice())));
+                tags.add(Placeholder.component("shop", shopLabel));
+                tags.add(Placeholder.parsed("counterparty", counterparty));
+                if (hasFee) {
+                    tags.add(Placeholder.parsed("fee", econ.format(rec.fee())));
                 }
-                line = line.append(Component.text(" [", NamedTextColor.DARK_GRAY))
-                        .append(shopLabel)
-                        .append(Component.text(" / " + counterparty + "]", NamedTextColor.DARK_GRAY));
-                sender.sendMessage(line);
+                sender.sendMessage(support.messages().get(key,
+                        tags.toArray(new net.kyori.adventure.text.minimessage.tag.resolver.TagResolver[0])));
             }
             int pages = (int) Math.max(1, (total + PER_PAGE - 1) / PER_PAGE);
             if (page < pages) {

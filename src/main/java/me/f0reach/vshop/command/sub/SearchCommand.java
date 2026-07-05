@@ -11,7 +11,6 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.ui.text.Displays;
 import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Material;
 import org.bukkit.command.CommandSender;
@@ -79,14 +78,14 @@ public final class SearchCommand {
         }
         for (int i = from; i < to; i++) {
             Hit h = hits.get(i);
-            Component line = Displays.shortId(h.shop.id()).color(NamedTextColor.YELLOW)
-                    .append(Component.text(" ", NamedTextColor.GRAY))
-                    .append(Displays.nameWithHover(Displays.truncate(h.shop.name(), 24), h.shop.name())
-                            .color(NamedTextColor.GRAY))
-                    .append(Component.text(" ", NamedTextColor.DARK_GRAY))
-                    .append(Displays.item(h.slot.itemTemplate()).color(NamedTextColor.WHITE))
-                    .append(Component.text(" [" + h.slot.side() + " @ " + h.slot.unitPrice() + "]",
-                            NamedTextColor.DARK_GRAY));
+            Component line = support.messages().get("command.search.line",
+                    Placeholder.component("shop_id", Displays.shortId(h.shop.id())),
+                    Placeholder.component("shop_name",
+                            Displays.nameWithHover(Displays.truncate(h.shop.name(), 24), h.shop.name())),
+                    Placeholder.component("item", Displays.item(h.slot.itemTemplate())),
+                    Placeholder.parsed("side", h.slot.side().name()),
+                    Placeholder.parsed("price",
+                            support.plugin().economyService().format(h.slot.unitPrice())));
             sender.sendMessage(line);
         }
         if (p < pages) {
