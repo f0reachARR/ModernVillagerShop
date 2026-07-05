@@ -68,14 +68,16 @@ public final class ShopRestockListener implements Listener {
         if (!(event.getWhoClicked() instanceof Player viewer)) return;
         int raw = event.getRawSlot();
 
-        // Player's own inventory: free except shift-click (dumps into chest)
-        // and double-click collect (pulls matching items from chest too).
-        // HOTBAR_SWAP from player-inv hovers stays within the player's own
-        // inventory so we leave it alone.
+        // Player's own inventory: free movement. Shift-click bulk transfer
+        // into the chest is intentionally allowed — nav-row and out-of-bounds
+        // slots are pre-filled with panes/icons whose meta differs from
+        // anything a player carries, so Bukkit's default MOVE_TO_OTHER_INVENTORY
+        // only lands items in valid in-bounds content slots. Double-click
+        // COLLECT_TO_CURSOR still spills across the boundary in surprising
+        // ways, so we keep that one blocked. HOTBAR_SWAP from player-inv
+        // hovers stays within the player's own inventory so we leave it alone.
         if (raw >= holder.inventorySize()) {
-            InventoryAction action = event.getAction();
-            if (action == InventoryAction.MOVE_TO_OTHER_INVENTORY
-                    || action == InventoryAction.COLLECT_TO_CURSOR) {
+            if (event.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
                 event.setCancelled(true);
             }
             return;
