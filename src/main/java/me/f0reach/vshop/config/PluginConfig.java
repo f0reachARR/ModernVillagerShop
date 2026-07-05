@@ -14,7 +14,10 @@ import java.util.Locale;
 import java.util.Set;
 
 /**
- * Immutable snapshot of plugin configuration. Recreated on /vshop reload.
+ * Mutable holder for plugin configuration. The reference is captured by
+ * services at construction time; {@link #reload(FileConfiguration)} refreshes
+ * the fields in place so {@code /vshop reload} reaches every holder without
+ * rewiring the composition root.
  */
 public final class PluginConfig {
 
@@ -22,19 +25,28 @@ public final class PluginConfig {
     public enum LimitScope { PER_PLAYER, GLOBAL }
     public enum PlayerCacheSort { LAST_SEEN_DESC, NAME_ASC }
 
-    private final String locale;
-    private final String fallbackLocale;
-    private final StorageType storageType;
-    private final String sqliteFile;
-    private final MySqlConfig mysql;
-    private final EconomyConfig economy;
-    private final ShopConfig shop;
-    private final PlayerCacheConfig playerCache;
-    private final Set<Material> blacklist;
-    private final boolean placeholderApiEnabled;
-    private final ConfigurationSection uiSection;
+    private volatile String locale;
+    private volatile String fallbackLocale;
+    private volatile StorageType storageType;
+    private volatile String sqliteFile;
+    private volatile MySqlConfig mysql;
+    private volatile EconomyConfig economy;
+    private volatile ShopConfig shop;
+    private volatile PlayerCacheConfig playerCache;
+    private volatile Set<Material> blacklist;
+    private volatile boolean placeholderApiEnabled;
+    private volatile ConfigurationSection uiSection;
 
     public PluginConfig(FileConfiguration cfg) {
+        reload(cfg);
+    }
+
+    /**
+     * Re-parses the given FileConfiguration into this holder in place. Callers
+     * that already reference this instance see the updated values on their
+     * next access — no reconstruction required.
+     */
+    public void reload(FileConfiguration cfg) {
         this.locale = cfg.getString("locale", "ja_JP");
         this.fallbackLocale = cfg.getString("fallbackLocale", "en_US");
 

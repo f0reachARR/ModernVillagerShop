@@ -1,5 +1,6 @@
 package me.f0reach.vshop.ui.chest;
 
+import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.locale.MessageManager;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import org.bukkit.Material;
@@ -16,15 +17,17 @@ import java.util.List;
  */
 public final class IconConfig {
 
-    private final ConfigurationSection root;
+    private final PluginConfig config;
     private final MiniMessage mm;
 
-    public IconConfig(MessageManager messages, ConfigurationSection uiSection) {
+    public IconConfig(MessageManager messages, PluginConfig config) {
         this.mm = messages.miniMessage();
-        this.root = uiSection == null ? null : uiSection.getConfigurationSection("chest.icons");
+        this.config = config;
     }
 
     public ItemStack icon(String key, Material defaultMaterial, String defaultName) {
+        ConfigurationSection ui = config.uiSection();
+        ConfigurationSection root = ui == null ? null : ui.getConfigurationSection("chest.icons");
         ConfigurationSection sec = root == null ? null : root.getConfigurationSection(key);
         Material material = defaultMaterial;
         String name = defaultName;

@@ -99,7 +99,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.shopService = new ShopService(storage, registry, villagerManager, config);
         this.eggFactory = new SpawnEggFactory(this, messages);
         this.dialogService = new DialogService(this);
-        this.iconConfig = new IconConfig(messages, config.uiSection());
+        this.iconConfig = new IconConfig(messages, config);
         this.priceRegistry = new PriceRegistry();
         this.priceResolver = new PriceResolver(priceRegistry, config, storage);
         this.browseUi = new ShopBrowseUi(storage, iconConfig, messages, priceResolver, economyService);
@@ -175,7 +175,14 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
     public void reloadConfigInternal() {
         reloadConfig();
-        this.config = new PluginConfig(getConfig());
+        if (this.config == null) {
+            this.config = new PluginConfig(getConfig());
+        } else {
+            // Refresh in place so every service that already holds this reference
+            // (EconomyService, ShopService, TradeService, IconConfig via uiSection, ...)
+            // sees the new values on the next access.
+            this.config.reload(getConfig());
+        }
         if (this.messages == null) {
             this.messages = new MessageManager(this);
         }
