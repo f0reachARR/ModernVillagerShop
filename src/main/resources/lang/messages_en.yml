@@ -258,6 +258,8 @@ action:
         warn-discard: "\n<yellow>Remaining stock (<count>) will be discarded."
         warn-drop: "\n<yellow>Remaining stock (<count>) will be dropped at the shop location."
         warn-refuse: "\n<red>Cannot delete: <count> item(s) still in stock. Empty the shop first."
+        refused-body: "<red><shop_name> still has <count> item(s) in stock and cannot be closed.\n<gray>Empty the shop first, then try again."
+        refused-dismiss: "Back"
         "yes": "Delete"
         "no": "Cancel"
 

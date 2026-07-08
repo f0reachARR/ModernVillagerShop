@@ -340,6 +340,16 @@ public final class ShopActionMenu {
     private void openDelete(Player viewer, Shop shop) {
         int stockCount = countStock(shop);
         PluginConfig.CloseWithInventoryMode mode = plugin.pluginConfig().shop().closeWithInventory();
+        if (stockCount > 0 && mode == PluginConfig.CloseWithInventoryMode.REFUSE) {
+            dialogs.notice(viewer,
+                    messages.get("action.delete.title"),
+                    messages.get("action.delete.refused-body",
+                            Placeholder.parsed("shop_name", shop.name()),
+                            Placeholder.parsed("count", Integer.toString(stockCount))),
+                    messages.get("action.delete.refused-dismiss"),
+                    () -> openOwnerSubmenu(viewer, shop));
+            return;
+        }
         String warnKey = switch (mode) {
             case DISCARD -> "action.delete.warn-discard";
             case DROP -> "action.delete.warn-drop";

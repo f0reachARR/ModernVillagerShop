@@ -37,12 +37,19 @@ public final class DialogService {
     }
 
     public void notice(Player player, Component title, Component body, Component dismissLabel) {
-        var dialog = NoticeDialog.builder()
+        notice(player, title, body, dismissLabel, null);
+    }
+
+    public void notice(Player player, Component title, Component body, Component dismissLabel,
+                       Runnable onDismiss) {
+        var builder = NoticeDialog.builder()
                 .title(title)
                 .body(body)
-                .dismissLabel(dismissLabel == null ? Component.text("OK") : dismissLabel)
-                .build();
-        BedrockDialog.get().show(player, dialog);
+                .dismissLabel(dismissLabel == null ? Component.text("OK") : dismissLabel);
+        if (onDismiss != null) {
+            builder.onDismiss(p -> runMain(onDismiss));
+        }
+        BedrockDialog.get().show(player, builder.build());
     }
 
     public void confirm(Player player, Component title, Component body,
