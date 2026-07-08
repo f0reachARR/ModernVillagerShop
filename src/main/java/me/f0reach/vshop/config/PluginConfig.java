@@ -24,6 +24,7 @@ public final class PluginConfig {
     public enum StorageType { SQLITE, MYSQL }
     public enum LimitScope { PER_PLAYER, GLOBAL }
     public enum PlayerCacheSort { LAST_SEEN_DESC, NAME_ASC }
+    public enum CloseWithInventoryMode { DISCARD, DROP, REFUSE }
 
     private volatile String locale;
     private volatile String fallbackLocale;
@@ -81,7 +82,9 @@ public final class PluginConfig {
                 cfg.getDouble("shop.minDistance", 0.5),
                 LimitScope.valueOf(cfg.getString("shop.defaultLimitScope", "PER_PLAYER").toUpperCase(Locale.ROOT)),
                 cfg.getString("shop.villagerNameFormat", "<shop_name> <gray>[<primary>]</gray>"),
-                cfg.getString("shop.villagerNameFormatAdmin", "<shop_name>")
+                cfg.getString("shop.villagerNameFormatAdmin", "<shop_name>"),
+                CloseWithInventoryMode.valueOf(
+                        cfg.getString("shop.closeWithInventory", "REFUSE").toUpperCase(Locale.ROOT))
         );
 
         this.playerCache = new PlayerCacheConfig(
@@ -165,7 +168,8 @@ public final class PluginConfig {
             double minDistance,
             LimitScope defaultLimitScope,
             String villagerNameFormat,
-            String villagerNameFormatAdmin
+            String villagerNameFormatAdmin,
+            CloseWithInventoryMode closeWithInventory
     ) {}
 
     public record PlayerCacheConfig(int maxEntries, PlayerCacheSort defaultSort, Duration textureTtl) {}

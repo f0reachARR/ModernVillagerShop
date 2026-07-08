@@ -1,10 +1,13 @@
 package me.f0reach.vshop.shop.edit;
 
 import me.f0reach.vshop.ModernVillagerShopPlugin;
+import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.CoOwnerRole;
+import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.TradeRecord;
+import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
 import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
@@ -330,17 +333,39 @@ public final class ShopActionMenu {
     }
 
     private void openDelete(Player viewer, Shop shop) {
+        int stockCount = countStock(shop);
+        PluginConfig.CloseWithInventoryMode mode = plugin.pluginConfig().shop().closeWithInventory();
+        String warnKey = switch (mode) {
+            case DISCARD -> "action.delete.warn-discard";
+            case DROP -> "action.delete.warn-drop";
+            case REFUSE -> "action.delete.warn-refuse";
+        };
+        Component warning = stockCount > 0
+                ? messages.get(warnKey, Placeholder.parsed("count", Integer.toString(stockCount)))
+                : Component.empty();
+
         dialogs.confirmOnce(viewer,
                 messages.get("action.delete.title"),
                 messages.get("action.delete.body",
-                        Placeholder.parsed("shop_name", shop.name())),
+                        Placeholder.parsed("shop_name", shop.name()),
+                        Placeholder.component("warning", warning)),
                 messages.get("action.delete.yes"),
                 messages.get("action.delete.no"),
                 () -> {
                     try {
-                        plugin.shopService().delete(shop);
-                        viewer.sendMessage(messages.get("shop.deleted",
-                                Placeholder.parsed("shop_id", shop.id().toString().substring(0, 8))));
+                        ShopService.DeleteResult result = plugin.shopService().delete(shop);
+                        String shortId = shop.id().toString().substring(0, 8);
+                        switch (result) {
+                            case DELETED -> viewer.sendMessage(messages.get("shop.deleted",
+                                    Placeholder.parsed("shop_id", shortId)));
+                            case DROPPED -> viewer.sendMessage(messages.get("shop.deleted-dropped",
+                                    Placeholder.parsed("shop_id", shortId)));
+                            case BLOCKED_HAS_INVENTORY -> {
+                                viewer.sendMessage(messages.get("shop.delete-blocked-has-inventory",
+                                        Placeholder.parsed("shop_id", shortId)));
+                                openOwnerSubmenu(viewer, shop);
+                            }
+                        }
                     } catch (SQLException ex) {
                         LOG.log(Level.SEVERE, "delete failed", ex);
                         viewer.sendMessage(messages.get("error.generic",
@@ -350,6 +375,19 @@ public final class ShopActionMenu {
                 },
                 () -> openOwnerSubmenu(viewer, shop),
                 () -> openOwnerSubmenu(viewer, shop));
+    }
+
+    private int countStock(Shop shop) {
+        try {
+            int total = 0;
+            for (InventoryEntry entry : plugin.storage().inventory().findByShop(shop.id())) {
+                if (entry.item() != null && entry.amount() > 0) total += entry.amount();
+            }
+            return total;
+        } catch (SQLException ex) {
+            LOG.log(Level.WARNING, "failed to read inventory for delete-confirm warning", ex);
+            return 0;
+        }
     }
 
     private void showRecentHistory(Player viewer, Shop shop) {

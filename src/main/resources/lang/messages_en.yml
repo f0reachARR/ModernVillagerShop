@@ -30,6 +30,8 @@ command:
 
 shop:
     deleted: "<green>Shop <shop_id> deleted."
+    deleted-dropped: "<green>Shop <shop_id> deleted; remaining stock dropped at the shop location."
+    delete-blocked-has-inventory: "<red>Shop <shop_id> still has stock and cannot be closed. <gray>(Change behavior via the shop.closeWithInventory config.)"
     suspended: "<yellow>Shop <shop_id> suspended."
     resumed: "<green>Shop <shop_id> resumed."
     egg:
@@ -251,7 +253,10 @@ action:
     delete:
         button: "<dark_red>Delete shop"
         title: "<dark_red>Delete shop"
-        body: "<red>Delete <shop_name>?\nThis cannot be undone."
+        body: "<red>Delete <shop_name>?\nThis cannot be undone.<warning>"
+        warn-discard: "\n<yellow>Remaining stock (<count>) will be discarded."
+        warn-drop: "\n<yellow>Remaining stock (<count>) will be dropped at the shop location."
+        warn-refuse: "\n<red>Cannot delete: <count> item(s) still in stock. Empty the shop first."
         "yes": "Delete"
         "no": "Cancel"
 

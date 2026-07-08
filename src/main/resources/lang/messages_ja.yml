@@ -30,6 +30,8 @@ command:
 
 shop:
     deleted: "<green>ショップ <shop_id> を削除しました。"
+    deleted-dropped: "<green>ショップ <shop_id> を削除し、在庫を店の位置にドロップしました。"
+    delete-blocked-has-inventory: "<red>在庫が残っているため、ショップ <shop_id> は閉じられません。<gray>(設定 shop.closeWithInventory で挙動を変更できます)"
     suspended: "<yellow>ショップ <shop_id> を一時停止しました。"
     resumed: "<green>ショップ <shop_id> の公開を再開しました。"
     egg:
@@ -251,7 +253,10 @@ action:
     delete:
         button: "<dark_red>ショップを削除"
         title: "<dark_red>ショップ削除"
-        body: "<red><shop_name> を削除します。\nこの操作は取り消せません。"
+        body: "<red><shop_name> を削除します。\nこの操作は取り消せません。<warning>"
+        warn-discard: "\n<yellow>残っている在庫 <count> 個は破棄されます。"
+        warn-drop: "\n<yellow>残っている在庫 <count> 個は店の位置にドロップされます。"
+        warn-refuse: "\n<red>在庫が <count> 個残っているため、削除できません。まず在庫を空にしてください。"
         "yes": "削除する"
         "no": "キャンセル"
 

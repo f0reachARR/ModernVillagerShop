@@ -36,6 +36,11 @@ shop:
   villagerNameFormat: "<shop_name> <gray>[<primary>]</gray>"
   # 管理者ショップ用のVillager名フォーマット（所有者名がないため別形式）
   villagerNameFormatAdmin: "<shop_name>"
+  # 在庫を持ったままの店を閉じるときの挙動
+  #   DISCARD = 在庫を破棄して削除
+  #   DROP    = 在庫を店の位置にドロップして削除
+  #   REFUSE  = 在庫がある間は削除を拒否
+  closeWithInventory: REFUSE
 
 playerCache:
   maxEntries: 5000

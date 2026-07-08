@@ -5,6 +5,7 @@ import me.f0reach.vshop.api.event.ShopDeleteEvent;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.model.CoOwner;
 import me.f0reach.vshop.model.CoOwnerRole;
+import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopLocation;
 import me.f0reach.vshop.model.ShopType;
@@ -12,11 +13,14 @@ import me.f0reach.vshop.shop.egg.SpawnEggMeta;
 import me.f0reach.vshop.storage.StorageManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 
 import java.math.BigDecimal;
 import java.sql.SQLException;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -110,11 +114,49 @@ public final class ShopService {
         return shop;
     }
 
-    public void delete(Shop shop) throws SQLException {
+    /**
+     * Deletes a shop, applying the configured policy for lingering inventory.
+     * See {@link PluginConfig.CloseWithInventoryMode}. Returns {@link DeleteResult}
+     * so callers can distinguish plain deletion from drop or a policy refusal.
+     */
+    public DeleteResult delete(Shop shop) throws SQLException {
+        List<InventoryEntry> remaining = storage.inventory().findByShop(shop.id());
+        boolean hasInventory = remaining.stream().anyMatch(e -> e.amount() > 0 && e.item() != null);
+        if (hasInventory) {
+            switch (config.shop().closeWithInventory()) {
+                case REFUSE -> {
+                    return DeleteResult.BLOCKED_HAS_INVENTORY;
+                }
+                case DROP -> dropAtShopLocation(shop, remaining);
+                case DISCARD -> { /* fall through — storage cascade will drop the rows */ }
+            }
+        }
         villagers.remove(shop);
         storage.shops().delete(shop.id());
         registry.remove(shop.id());
         Bukkit.getPluginManager().callEvent(new ShopDeleteEvent(shop));
+        return hasInventory && config.shop().closeWithInventory() == PluginConfig.CloseWithInventoryMode.DROP
+                ? DeleteResult.DROPPED
+                : DeleteResult.DELETED;
+    }
+
+    private static void dropAtShopLocation(Shop shop, List<InventoryEntry> entries) {
+        World world = Bukkit.getWorld(shop.location().worldId());
+        if (world == null) return;
+        Location at = new Location(world, shop.location().x(), shop.location().y(), shop.location().z());
+        for (InventoryEntry entry : entries) {
+            ItemStack template = entry.item();
+            if (template == null) continue;
+            int remaining = entry.amount();
+            int max = Math.max(1, template.getMaxStackSize());
+            while (remaining > 0) {
+                int chunk = Math.min(remaining, max);
+                ItemStack stack = template.clone();
+                stack.setAmount(chunk);
+                world.dropItemNaturally(at, stack);
+                remaining -= chunk;
+            }
+        }
     }
 
     public void update(Shop shop) throws SQLException {
@@ -129,6 +171,16 @@ public final class ShopService {
 
     public ShopVillagerManager villagers() {
         return villagers;
+    }
+
+    /** Outcome of {@link #delete(Shop)}. */
+    public enum DeleteResult {
+        /** Shop had no inventory (or DISCARD policy) — deleted normally. */
+        DELETED,
+        /** Shop had inventory; DROP policy — items were dropped in-world before deletion. */
+        DROPPED,
+        /** Shop had inventory; REFUSE policy — no changes were made. */
+        BLOCKED_HAS_INVENTORY
     }
 
     public static final class CreateException extends Exception {
