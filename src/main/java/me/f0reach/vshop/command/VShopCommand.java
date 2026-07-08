@@ -4,6 +4,8 @@ import com.mojang.brigadier.tree.LiteralCommandNode;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.f0reach.vshop.ModernVillagerShopPlugin;
+import me.f0reach.vshop.command.sub.AdminExportSlotsCommand;
+import me.f0reach.vshop.command.sub.AdminImportSlotsCommand;
 import me.f0reach.vshop.command.sub.CoOwnerCommand;
 import me.f0reach.vshop.command.sub.EditCommand;
 import me.f0reach.vshop.command.sub.EggCommand;
@@ -38,6 +40,8 @@ public final class VShopCommand {
     private final HistoryCommand history;
     private final MigrateCommand migrate;
     private final EggCommand egg;
+    private final AdminExportSlotsCommand adminExport;
+    private final AdminImportSlotsCommand adminImport;
 
     public VShopCommand(ModernVillagerShopPlugin plugin) {
         CommandSupport support = new CommandSupport(plugin);
@@ -53,6 +57,8 @@ public final class VShopCommand {
         this.history = new HistoryCommand(support);
         this.migrate = new MigrateCommand(support);
         this.egg = new EggCommand(support);
+        this.adminExport = new AdminExportSlotsCommand(support);
+        this.adminImport = new AdminImportSlotsCommand(support);
     }
 
     public LiteralCommandNode<CommandSourceStack> build() {
@@ -70,6 +76,9 @@ public final class VShopCommand {
                 .then(history.node())
                 .then(migrate.node())
                 .then(egg.node())
+                .then(Commands.literal("admin")
+                        .then(adminExport.node())
+                        .then(adminImport.node()))
                 .build();
     }
 }

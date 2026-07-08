@@ -14,6 +14,20 @@ command:
         started: "<yellow>Migration started: <from> -> <to>"
         done: "<green>Migration completed."
         failed: "<red>Migration failed: <reason>"
+    admin:
+        export:
+            done: "<green>Exported <count> slots to <file>."
+            no-target-villager: "<red>Look at an admin shop villager to export."
+            not-admin-shop: "<red>That shop is not an admin shop."
+            file-exists: "<red>File already exists: <file>. Choose a different name or remove it first."
+            failed: "<red>Export failed: <reason>"
+        import:
+            done: "<green>Imported slots (deleted <deleted>, inserted <inserted>). Backup: <backup>"
+            no-target-villager: "<red>Look at an admin shop villager to import."
+            not-admin-shop: "<red>That shop is not an admin shop."
+            file-not-found: "<red>File not found: <file>"
+            parse-failed: "<red>Import file is invalid: <reason>"
+            failed: "<red>Import failed: <reason>"
     history:
         header: "<gold>=== Trade history (p.<page>/<pages>, <total> rows)<filters> ==="
         empty: "<gray>No history yet."

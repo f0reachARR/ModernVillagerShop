@@ -5,7 +5,11 @@ import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Shop;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -50,5 +54,16 @@ public final class CommandSupport {
     public void sendGenericError(CommandSender sender, Throwable ex) {
         sender.sendMessage(messages.get("error.generic",
                 Placeholder.parsed("reason", String.valueOf(ex.getMessage()))));
+    }
+
+    /**
+     * Resolves the admin/player shop the given player is currently looking at,
+     * by raycasting for the target entity (up to {@code maxDistance} blocks) and
+     * checking whether it is a Villager registered in {@link me.f0reach.vshop.shop.ShopRegistry}.
+     */
+    public Optional<Shop> findShopFromLineOfSight(Player player, int maxDistance) {
+        Entity target = player.getTargetEntity(maxDistance);
+        if (!(target instanceof Villager)) return Optional.empty();
+        return plugin.registry().byVillager(target.getUniqueId());
     }
 }

@@ -12,6 +12,7 @@ import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
+import me.f0reach.vshop.shop.admin.AdminShopSlotIO;
 import me.f0reach.vshop.shop.cache.PlayerCacheService;
 import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
 import me.f0reach.vshop.shop.edit.ShopActionMenu;
@@ -40,6 +41,7 @@ import me.f0reach.vshop.ui.dialog.DialogService;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.sql.SQLException;
+import java.time.Clock;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class ModernVillagerShopPlugin extends JavaPlugin {
@@ -71,6 +73,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private PlayerPickerUi playerPickerUi;
     private ShopRestockUi restockUi;
     private ShopActionMenu actionMenu;
+    private AdminShopSlotIO adminShopSlotIO;
 
     @Override
     public void onEnable() {
@@ -118,6 +121,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
                 playerPickerUi, playerCacheService);
         this.restockUi = new ShopRestockUi(storage, messages, editService, iconConfig);
         this.actionMenu = new ShopActionMenu(this, dialogService, messages, editService, restockUi, coOwnerFlow);
+        this.adminShopSlotIO = new AdminShopSlotIO(getDataFolder(), storage.slots(), storage.inventory(), Clock.systemUTC());
         this.api = new ModernVillagerShopAPI(registry, storage, priceRegistry);
         getServer().getServicesManager().register(ModernVillagerShopAPI.class, api, this,
                 org.bukkit.plugin.ServicePriority.Normal);
@@ -214,4 +218,5 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public PlayerPickerUi playerPickerUi() { return playerPickerUi; }
     public ShopRestockUi restockUi() { return restockUi; }
     public ShopActionMenu actionMenu() { return actionMenu; }
+    public AdminShopSlotIO adminShopSlotIO() { return adminShopSlotIO; }
 }

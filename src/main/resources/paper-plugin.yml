@@ -90,6 +90,12 @@ permissions:
     modernvillagershop.admin.edit:
         description: 管理者ショップの編集
         default: "op"
+    modernvillagershop.admin.export:
+        description: 管理者ショップの品目を YAML にエクスポート
+        default: "op"
+    modernvillagershop.admin.import:
+        description: 管理者ショップの品目を YAML から上書きインポート
+        default: "op"
 
     modernvillagershop.migrate:
         description: ストレージマイグレーション実行
@@ -104,6 +110,8 @@ permissions:
         children:
             modernvillagershop.admin.egg: true
             modernvillagershop.admin.edit: true
+            modernvillagershop.admin.export: true
+            modernvillagershop.admin.import: true
             modernvillagershop.edit.others: true
             modernvillagershop.coowner.manage.others: true
             modernvillagershop.coowner.transfer.others: true

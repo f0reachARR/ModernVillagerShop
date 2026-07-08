@@ -14,6 +14,20 @@ command:
         started: "<yellow>マイグレーションを開始しました: <from> -> <to>"
         done: "<green>マイグレーション完了。"
         failed: "<red>マイグレーション失敗: <reason>"
+    admin:
+        export:
+            done: "<green>品目 <count> 件を <file> にエクスポートしました。"
+            no-target-villager: "<red>エクスポート対象の管理者ショップ Villager を見てください。"
+            not-admin-shop: "<red>対象のショップは管理者ショップではありません。"
+            file-exists: "<red>ファイルが既に存在します: <file>。別名を指定するか、既存ファイルを削除してください。"
+            failed: "<red>エクスポート失敗: <reason>"
+        import:
+            done: "<green>品目をインポートしました (削除 <deleted> 件 / 追加 <inserted> 件)。バックアップ: <backup>"
+            no-target-villager: "<red>インポート対象の管理者ショップ Villager を見てください。"
+            not-admin-shop: "<red>対象のショップは管理者ショップではありません。"
+            file-not-found: "<red>ファイルが見つかりません: <file>"
+            parse-failed: "<red>インポートファイルの内容が不正です: <reason>"
+            failed: "<red>インポート失敗: <reason>"
     history:
         header: "<gold>=== 取引履歴 (p.<page>/<pages>, <total>件)<filters> ==="
         empty: "<gray>履歴がありません"
