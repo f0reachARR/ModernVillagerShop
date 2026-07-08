@@ -9,15 +9,20 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.TradeRecord;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
+import me.f0reach.vshop.shop.egg.SpawnEggMeta;
 import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import me.f0reach.vshop.ui.text.Displays;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
+import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Registry;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
+import org.bukkit.inventory.ItemStack;
 
 import java.sql.SQLException;
 import java.time.ZoneId;
@@ -356,10 +361,16 @@ public final class ShopActionMenu {
                         ShopService.DeleteResult result = plugin.shopService().delete(shop);
                         String shortId = shop.id().toString().substring(0, 8);
                         switch (result) {
-                            case DELETED -> viewer.sendMessage(messages.get("shop.deleted",
-                                    Placeholder.parsed("shop_id", shortId)));
-                            case DROPPED -> viewer.sendMessage(messages.get("shop.deleted-dropped",
-                                    Placeholder.parsed("shop_id", shortId)));
+                            case DELETED -> {
+                                viewer.sendMessage(messages.get("shop.deleted",
+                                        Placeholder.parsed("shop_id", shortId)));
+                                refundEggIfAllowed(viewer, shop);
+                            }
+                            case DROPPED -> {
+                                viewer.sendMessage(messages.get("shop.deleted-dropped",
+                                        Placeholder.parsed("shop_id", shortId)));
+                                refundEggIfAllowed(viewer, shop);
+                            }
                             case BLOCKED_HAS_INVENTORY -> {
                                 viewer.sendMessage(messages.get("shop.delete-blocked-has-inventory",
                                         Placeholder.parsed("shop_id", shortId)));
@@ -375,6 +386,24 @@ public final class ShopActionMenu {
                 },
                 () -> openOwnerSubmenu(viewer, shop),
                 () -> openOwnerSubmenu(viewer, shop));
+    }
+
+    // Drop a spawn egg matching the deleted shop's original type at the shop
+    // location, if the viewer holds the refund permission. Skipped for admin
+    // shops so admin eggs can't be farmed via moderation deletes.
+    private void refundEggIfAllowed(Player viewer, Shop shop) {
+        if (!viewer.hasPermission("modernvillagershop.edit.delete.refund")) return;
+        if (shop.isAdminShop()) return;
+        SpawnEggMeta meta = shop.isInfiniteRows()
+                ? SpawnEggMeta.ofInfinitePlayer()
+                : SpawnEggMeta.ofFixedRows(Math.max(1, shop.rowCount()));
+        ItemStack egg = plugin.eggFactory().create(meta);
+        World world = Bukkit.getWorld(shop.location().worldId());
+        if (world == null) return;
+        Location at = new Location(world, shop.location().x(), shop.location().y(), shop.location().z());
+        world.dropItemNaturally(at, egg);
+        viewer.sendMessage(messages.get("shop.deleted-refunded",
+                Placeholder.parsed("type", meta.displayType())));
     }
 
     private int countStock(Shop shop) {

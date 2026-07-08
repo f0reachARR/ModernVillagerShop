@@ -31,6 +31,7 @@ command:
 shop:
     deleted: "<green>Shop <shop_id> deleted."
     deleted-dropped: "<green>Shop <shop_id> deleted; remaining stock dropped at the shop location."
+    deleted-refunded: "<green>Dropped a spawn egg (<type>) at the shop location."
     delete-blocked-has-inventory: "<red>Shop <shop_id> still has stock and cannot be closed. <gray>(Change behavior via the shop.closeWithInventory config.)"
     suspended: "<yellow>Shop <shop_id> suspended."
     resumed: "<green>Shop <shop_id> resumed."

@@ -31,6 +31,7 @@ command:
 shop:
     deleted: "<green>ショップ <shop_id> を削除しました。"
     deleted-dropped: "<green>ショップ <shop_id> を削除し、在庫を店の位置にドロップしました。"
+    deleted-refunded: "<green>スポーンエッグ (<type>) を店の位置にドロップしました。"
     delete-blocked-has-inventory: "<red>在庫が残っているため、ショップ <shop_id> は閉じられません。<gray>(設定 shop.closeWithInventory で挙動を変更できます)"
     suspended: "<yellow>ショップ <shop_id> を一時停止しました。"
     resumed: "<green>ショップ <shop_id> の公開を再開しました。"
