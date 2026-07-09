@@ -113,6 +113,13 @@ public final class TradeFlow {
             viewer.sendMessage(messages.get("trade.limit-reached"));
             return;
         }
+        // Command slots dispatch a one-shot server command, so multi-pack input
+        // is meaningless — skip the amount dialog and go straight to confirm
+        // with packs=1. Trade-limit still applies (e.g. once per 2h).
+        if (shop.isAdminShop() && slot.hasCommand()) {
+            showConfirm(viewer, shop, slot, TradeSide.SELL, 1);
+            return;
+        }
         promptAmount(viewer, shop, slot, TradeSide.SELL, stock, remaining, Integer.MAX_VALUE);
     }
 
