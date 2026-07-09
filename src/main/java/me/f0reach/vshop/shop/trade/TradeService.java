@@ -56,15 +56,23 @@ public final class TradeService {
     private final TradeNotifier notifier;
     private final me.f0reach.vshop.shop.edit.ShopEditService editService;
     private final PriceResolver priceResolver;
+    private final CommandDispatcher commandDispatcher;
 
     public TradeService(StorageManager storage, EconomyService economy, PluginConfig config, TradeNotifier notifier,
                         me.f0reach.vshop.shop.edit.ShopEditService editService, PriceResolver priceResolver) {
+        this(storage, economy, config, notifier, editService, priceResolver, null);
+    }
+
+    public TradeService(StorageManager storage, EconomyService economy, PluginConfig config, TradeNotifier notifier,
+                        me.f0reach.vshop.shop.edit.ShopEditService editService, PriceResolver priceResolver,
+                        CommandDispatcher commandDispatcher) {
         this.storage = storage;
         this.economy = economy;
         this.config = config;
         this.notifier = notifier;
         this.editService = editService;
         this.priceResolver = priceResolver;
+        this.commandDispatcher = commandDispatcher;
     }
 
     public TradeResult execute(TradeRequest req) {
@@ -203,8 +211,15 @@ public final class TradeService {
             c.commit();
             Bukkit.getPluginManager().callEvent(new ShopTransactionEvent(shop, recForEvent));
 
-            // 9. Post-commit: deliver items + notify online owners
-            giveItems(buyer, slot.itemTemplate(), totalItems);
+            // 9. Post-commit: deliver items (or dispatch the slot's command for
+            //    admin command-sale slots) + notify online owners. A command
+            //    failure here does NOT roll back — the trade is already
+            //    committed on both sides.
+            if (shop.isAdminShop() && slot.hasCommand() && commandDispatcher != null) {
+                commandDispatcher.dispatch(buyer, shop, slot, req.packCount(), totalItems, gross);
+            } else {
+                giveItems(buyer, slot.itemTemplate(), totalItems);
+            }
             if (shop.isPlayerShop()) {
                 notifier.notifyOnline(coOwners, shop, TradeSide.SELL, totalItems, net, slot.itemTemplate());
             }

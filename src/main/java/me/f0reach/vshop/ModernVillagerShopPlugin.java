@@ -62,6 +62,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private TradeService tradeService;
     private TradeNotifier tradeNotifier;
     private TradeFlow tradeFlow;
+    private me.f0reach.vshop.shop.trade.CommandDispatcher commandDispatcher;
     private ShopEditService editService;
     private ShopEditUi editUi;
     private SlotEditFlow slotEditFlow;
@@ -113,8 +114,10 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.openService = new ShopOpenService(browseUi, messages, config);
         this.tradeNotifier = new TradeNotifier(this, messages, storage, economyService);
         this.editService = new ShopEditService(storage, registry);
+        this.commandDispatcher = new me.f0reach.vshop.shop.trade.CommandDispatcher(
+                this, messages, economyService);
         this.tradeService = new TradeService(storage, economyService, config, tradeNotifier,
-                editService, priceResolver);
+                editService, priceResolver, commandDispatcher);
         this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config,
                 priceResolver, storage, soundService);
         this.editUi = new ShopEditUi(storage, iconConfig, messages, economyService);
