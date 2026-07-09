@@ -18,6 +18,8 @@ storage:
 
 economy:
   feeRate: 0.05
+  # 管理者ショップの手数料率。未指定なら feeRate と同じ値を使う
+  feeRateAdmin: 0.05
   priceMin: 1
   priceMax: 1000000
   amountMax: 2304

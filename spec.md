@@ -330,7 +330,7 @@
 ## 7. 経済・手数料
 
 - 通貨はVault経由の単一主通貨。
-- 取引手数料は設定可能な一律率。
+- 取引手数料は設定可能な一律率（プレイヤーショップと管理者ショップで別々に指定可能）。
 - 手数料は徴収後に消失させる（特定口座への振込は行わない）。
 - 取引精算は即時。
 - 売上の入金はオフラインのプレイヤーオーナーに対しても即時に行う（Vaultのオフライン入金APIを利用）。
@@ -406,7 +406,7 @@
   - `fallbackLocale`（デフォルト: `en_US`）
 - 主要設定キー（言語以外、概略）
   - `storage.type`, `storage.mysql.*`
-  - `economy.feeRate`, `economy.priceMin`, `economy.priceMax`, `economy.amountMax`, `economy.currencyFormat`
+  - `economy.feeRate`, `economy.feeRateAdmin`, `economy.priceMin`, `economy.priceMax`, `economy.amountMax`, `economy.currencyFormat`
   - `economy.fractionDigits`, `economy.roundingMode`, `economy.priceDriftTolerance`
   - `economy.priceProvider.enabled`
   - `shop.maxShopsPerPlayer`, `shop.openDistance`, `shop.defaultLimitScope`, `shop.minDistance`

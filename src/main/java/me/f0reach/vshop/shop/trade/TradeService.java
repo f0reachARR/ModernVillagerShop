@@ -104,7 +104,7 @@ public final class TradeService {
         Player buyer = req.viewer();
         int totalItems = req.totalItems();
         BigDecimal gross = economy.round(req.gross());
-        BigDecimal fee = economy.computeFee(gross);
+        BigDecimal fee = economy.computeFee(gross, shop.isAdminShop());
         BigDecimal net = gross.subtract(fee);
 
         // Read-only data we'll need inside the transaction. SQLite's pool may be
@@ -244,7 +244,7 @@ public final class TradeService {
         // currently-resolved price.
         BigDecimal unit = req.unitPriceSnapshot();
         BigDecimal gross = economy.round(unit.multiply(BigDecimal.valueOf(req.packCount())));
-        BigDecimal fee = economy.computeFee(gross);
+        BigDecimal fee = economy.computeFee(gross, shop.isAdminShop());
         BigDecimal payoutToDeliverer = gross.subtract(fee);
 
         // Pre-validate: deliverer has the items. We count the full inventory so

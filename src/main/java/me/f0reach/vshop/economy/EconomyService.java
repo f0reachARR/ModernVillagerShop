@@ -71,8 +71,9 @@ public final class EconomyService {
         return amount.setScale(config.economy().fractionDigits(), config.economy().roundingMode());
     }
 
-    public BigDecimal computeFee(BigDecimal gross) {
-        BigDecimal raw = gross.multiply(config.economy().feeRate());
+    public BigDecimal computeFee(BigDecimal gross, boolean adminShop) {
+        BigDecimal rate = adminShop ? config.economy().feeRateAdmin() : config.economy().feeRate();
+        BigDecimal raw = gross.multiply(rate);
         return raw.setScale(config.economy().fractionDigits(), config.economy().roundingMode());
     }
 

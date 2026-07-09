@@ -90,6 +90,7 @@ public final class MigrationService {
         shadow.set("storage.mysql.poolSize", m.poolSize());
         // Required-but-unused-for-migration sections; fall back to defaults.
         shadow.set("economy.feeRate", live.economy().feeRate().doubleValue());
+        shadow.set("economy.feeRateAdmin", live.economy().feeRateAdmin().doubleValue());
         shadow.set("shop.maxShopsPerPlayer", live.shop().maxShopsPerPlayer());
         shadow.set("shop.openDistance", live.shop().openDistance());
         shadow.set("shop.minDistance", live.shop().minDistance());

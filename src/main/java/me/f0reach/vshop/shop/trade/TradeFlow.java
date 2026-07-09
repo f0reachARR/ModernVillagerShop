@@ -269,7 +269,7 @@ public final class TradeFlow {
         PriceResolver.Resolution resolution = priceResolver.resolve(shop, slot, side, viewer, totalItems);
         BigDecimal unit = resolution.finalPrice();
         BigDecimal gross = unit.multiply(BigDecimal.valueOf(packs));
-        BigDecimal fee = economy.computeFee(gross);
+        BigDecimal fee = economy.computeFee(gross, shop.isAdminShop());
         BigDecimal payout = gross.subtract(fee);
 
         Component item = displayName(slot);

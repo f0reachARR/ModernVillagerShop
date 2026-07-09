@@ -64,8 +64,10 @@ public final class PluginConfig {
                 cfg.getInt("storage.mysql.poolSize", 8)
         );
 
+        double feeRate = cfg.getDouble("economy.feeRate", 0.05);
         this.economy = new EconomyConfig(
-                BigDecimal.valueOf(cfg.getDouble("economy.feeRate", 0.05)),
+                BigDecimal.valueOf(feeRate),
+                BigDecimal.valueOf(cfg.getDouble("economy.feeRateAdmin", feeRate)),
                 BigDecimal.valueOf(cfg.getDouble("economy.priceMin", 1)),
                 BigDecimal.valueOf(cfg.getDouble("economy.priceMax", 1_000_000)),
                 cfg.getInt("economy.amountMax", 2304),
@@ -152,6 +154,7 @@ public final class PluginConfig {
 
     public record EconomyConfig(
             BigDecimal feeRate,
+            BigDecimal feeRateAdmin,
             BigDecimal priceMin,
             BigDecimal priceMax,
             int amountMax,
