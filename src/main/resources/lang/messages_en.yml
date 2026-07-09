@@ -68,6 +68,8 @@ shop:
 trade:
     sold: "<green>Bought: <item> x<amount> = <price> <gray>(fee <fee>)"
     bought: "<green>Delivered: <item> x<amount> = <price> <gray>(fee <fee>)"
+    command:
+        failed: "<red>Command execution failed. Your purchase is complete — please contact an administrator."
     out-of-stock: "<red>Out of stock."
     not-enough-items: "<red>You don't have enough items to deliver. (need: <required>, have: <held>)"
     buy-full: "<red>Buy slot is full."
@@ -175,6 +177,7 @@ edit:
         trade-limit: "Trade limit (blank = none)"
         limit-scope: "Limit scope"
         reset-seconds: "Limit reset (seconds; blank = none)"
+        command: "Command (admin SELL only; blank for normal item sale). Separate multiple lines with newline or `;`. Placeholders: \\<player\\> \\<amount\\> \\<packs\\> \\<price\\>"
         created: "<green>Slot created."
         updated: "<green>Slot updated."
         place-prompt: "<gray>Click an empty slot while holding an item to create a new slot."
@@ -217,6 +220,7 @@ slot:
     stock-empty: "<red>Stock: <stock>"
     limit-line: "<gray>Trade limit: <limit> (<scope>)"
     capacity-unlimited: "∞"
+    command-badge: "<light_purple>Command sale"
     out-of-stock: "<red>Out of stock"
     buy-full: "<red>Buy capacity full"
     click-edit: "<light_purple>[Left-click to edit]"

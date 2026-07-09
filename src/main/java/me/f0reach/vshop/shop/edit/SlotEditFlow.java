@@ -134,6 +134,8 @@ public final class SlotEditFlow {
                 Placeholder.parsed("unit_max", Integer.toString(unitMax)));
         Component submit = messages.get("edit.slot.submit");
 
+        boolean allowCommand = shop.isAdminShop();
+
         var builder = dialogs.input(editor, title, body, submit)
                 .text("unitPrice", messages.get("edit.slot.unit-price"),
                         working.unitPrice.toPlainString())
@@ -146,6 +148,10 @@ public final class SlotEditFlow {
                         limitScopeOptions(), working.limitScope == LimitScope.GLOBAL ? 1 : 0)
                 .text("resetSeconds", messages.get("edit.slot.reset-seconds"),
                         working.resetPeriod == null ? "" : Long.toString(working.resetPeriod.toSeconds()));
+        if (allowCommand) {
+            builder = builder.text("command", messages.get("edit.slot.command"),
+                    working.command == null ? "" : working.command);
+        }
 
         Runnable reopenHub = () -> showHub(editor, shop, existing, slotIndex, template, working, afterRefresh);
 
@@ -156,6 +162,10 @@ public final class SlotEditFlow {
                 Integer tradeLimit = optionalInt(response.getText("tradeLimit"));
                 LimitScope scope = LimitScope.valueOf(response.getDropdownOptionId("limitScope"));
                 Duration resetPeriod = optionalSeconds(response.getText("resetSeconds"));
+                // Command field only surfaced for admin shops; ignore/clear
+                // otherwise so a shop swapped from admin -> player through
+                // some other flow doesn't retain a stale command string.
+                String command = allowCommand ? optionalString(response.getText("command")) : null;
 
                 if (unitPrice.compareTo(config.economy().priceMin()) < 0
                         || unitPrice.compareTo(config.economy().priceMax()) > 0) {
@@ -175,6 +185,7 @@ public final class SlotEditFlow {
                 working.tradeLimit = tradeLimit;
                 working.limitScope = scope;
                 working.resetPeriod = resetPeriod;
+                if (allowCommand) working.command = command;
                 reopenHub.run();
             } catch (NumberFormatException nfe) {
                 editor.sendMessage(messages.get("error.invalid-amount"));
@@ -282,12 +293,17 @@ public final class SlotEditFlow {
                                 ItemStack template, WorkingSlot working) throws SQLException {
         BigDecimal buyUnitPrice = working.side == TradeSide.SELL ? null : working.buyUnitPrice;
         int buyCapacity = working.side == TradeSide.SELL ? 0 : working.buyCapacity;
+        // Command sale is admin-only and SELL-only. Silently drop the command
+        // on any other shape so the DB never holds an unreachable value.
+        String command = (shop.isAdminShop()
+                && (working.side == TradeSide.SELL || working.side == TradeSide.BOTH))
+                ? emptyToNull(working.command) : null;
         ShopSlot slot;
         if (existing == null) {
             slot = new ShopSlot(UUID.randomUUID(), shop.id(), slotIndex, working.side,
                     ItemIdentity.copyTemplate(template),
                     working.unitPrice, buyUnitPrice, working.unitAmount, buyCapacity,
-                    working.tradeLimit, working.limitScope, working.resetPeriod);
+                    working.tradeLimit, working.limitScope, working.resetPeriod, command);
         } else {
             existing.setSide(working.side);
             existing.setItemTemplate(ItemIdentity.copyTemplate(template));
@@ -298,9 +314,14 @@ public final class SlotEditFlow {
             existing.setTradeLimit(working.tradeLimit);
             existing.setLimitScope(working.limitScope);
             existing.setResetPeriod(working.resetPeriod);
+            existing.setCommand(command);
             slot = existing;
         }
         editService.persistSlot(slot);
+    }
+
+    private static String emptyToNull(String s) {
+        return (s == null || s.isBlank()) ? null : s;
     }
 
     private List<DialogService.InputBuilder.Option> limitScopeOptions() {
@@ -355,6 +376,12 @@ public final class SlotEditFlow {
         return Integer.parseInt(raw.trim());
     }
 
+    private static String optionalString(String raw) {
+        if (raw == null) return null;
+        String trimmed = raw.trim();
+        return trimmed.isEmpty() ? null : trimmed;
+    }
+
     private static Duration optionalSeconds(String raw) {
         if (raw == null || raw.isBlank()) return null;
         long s = Long.parseLong(raw.trim());
@@ -379,6 +406,7 @@ public final class SlotEditFlow {
         Integer tradeLimit;
         LimitScope limitScope;
         Duration resetPeriod;
+        String command;
 
         static WorkingSlot forCreate(PluginConfig config) {
             WorkingSlot w = new WorkingSlot();
@@ -390,6 +418,7 @@ public final class SlotEditFlow {
             w.tradeLimit = null;
             w.limitScope = LimitScope.valueOf(config.shop().defaultLimitScope().name());
             w.resetPeriod = null;
+            w.command = null;
             return w;
         }
 
@@ -404,6 +433,7 @@ public final class SlotEditFlow {
             w.tradeLimit = existing.tradeLimit();
             w.limitScope = existing.limitScope();
             w.resetPeriod = existing.resetPeriod();
+            w.command = existing.command();
             return w;
         }
     }

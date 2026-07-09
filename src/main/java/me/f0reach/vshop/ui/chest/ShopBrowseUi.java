@@ -174,6 +174,12 @@ public final class ShopBrowseUi {
         }
         if (sellReason != null) lore.add(sellReason);
         if (buyReason != null && (sellReason == null || !buyReason.equals(sellReason))) lore.add(buyReason);
+        // Command-sale badge is intentionally minimal: it flags that this SELL
+        // slot dispatches a server command instead of delivering the icon
+        // item, without leaking the command string to the browser.
+        if (shop.isAdminShop() && sellEnabled && slot.hasCommand()) {
+            lore.add(messages.get("slot.command-badge"));
+        }
         meta.lore(lore);
         stack.setItemMeta(meta);
         return stack;

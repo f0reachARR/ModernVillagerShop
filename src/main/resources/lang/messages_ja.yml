@@ -68,6 +68,8 @@ shop:
 trade:
     sold: "<green>購入しました: <item> x<amount> = <price> <gray>(手数料 <fee>)"
     bought: "<green>納品しました: <item> x<amount> = <price> <gray>(手数料 <fee>)"
+    command:
+        failed: "<red>コマンドの実行に失敗しました。取引は完了しています。管理者にお問い合わせください。"
     out-of-stock: "<red>在庫が不足しています。"
     not-enough-items: "<red>納品するアイテムが手持ちに足りません。(必要: <required> 個 / 所持: <held> 個)"
     buy-full: "<red>受入枠が満杯です。"
@@ -175,6 +177,7 @@ edit:
         trade-limit: "取引上限 (空欄=無制限)"
         limit-scope: "上限のスコープ"
         reset-seconds: "上限リセット秒数 (空欄=なし)"
+        command: "実行コマンド (管理者ショップSELL専用/空欄で通常アイテム販売)。改行または;で複数指定可。変数: \\<player\\> \\<amount\\> \\<packs\\> \\<price\\>"
         created: "<green>出品枠を作成しました。"
         updated: "<green>出品枠を更新しました。"
         place-prompt: "<gray>カーソルにアイテムを持って空きスロットをクリックすると新規出品枠を作成できます。"
@@ -217,6 +220,7 @@ slot:
     stock-empty: "<red>在庫: <stock>個"
     limit-line: "<gray>取引上限: <limit> (<scope>)"
     capacity-unlimited: "∞"
+    command-badge: "<light_purple>コマンド販売"
     out-of-stock: "<red>在庫切れ"
     buy-full: "<red>受入満杯"
     click-edit: "<light_purple>[左クリックで編集]"
