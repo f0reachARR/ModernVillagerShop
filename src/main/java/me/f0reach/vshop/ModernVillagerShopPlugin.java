@@ -12,6 +12,7 @@ import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
+import me.f0reach.vshop.shop.VillagerTeleportGuard;
 import me.f0reach.vshop.shop.admin.AdminShopSlotIO;
 import me.f0reach.vshop.shop.cache.PlayerCacheService;
 import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
@@ -24,6 +25,7 @@ import me.f0reach.vshop.shop.listener.NotificationFlushListener;
 import me.f0reach.vshop.shop.listener.PlayerCacheListener;
 import me.f0reach.vshop.shop.listener.ShopEggListener;
 import me.f0reach.vshop.shop.listener.ShopVillagerListener;
+import me.f0reach.vshop.shop.listener.VillagerLookListener;
 import me.f0reach.vshop.shop.trade.PriceResolver;
 import me.f0reach.vshop.shop.trade.TradeFlow;
 import me.f0reach.vshop.shop.trade.TradeNotifier;
@@ -77,6 +79,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopActionMenu actionMenu;
     private AdminShopSlotIO adminShopSlotIO;
     private SoundService soundService;
+    private VillagerTeleportGuard villagerTeleportGuard;
 
     @Override
     public void onEnable() {
@@ -103,6 +106,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.soundService = new SoundService(config, getLogger());
 
         this.registry = new ShopRegistry();
+        this.villagerTeleportGuard = new VillagerTeleportGuard();
         this.villagerManager = new ShopVillagerManager(this, messages, storage.coOwners());
         this.shopService = new ShopService(storage, registry, villagerManager, config);
         this.eggFactory = new SpawnEggFactory(this, messages);
@@ -142,7 +146,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new ShopEggListener(this, eggFactory, shopService, messages), this);
         pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, openService,
-                actionMenu, config, soundService), this);
+                actionMenu, config, soundService, villagerTeleportGuard), this);
+        pm.registerEvents(new VillagerLookListener(registry, config, villagerTeleportGuard), this);
         pm.registerEvents(new ShopBrowseListener(this, registry, browseUi, storage, tradeFlow, messages), this);
         pm.registerEvents(new NotificationFlushListener(this, tradeNotifier), this);
         pm.registerEvents(new ShopEditListener(this, registry, editUi, editService, slotEditFlow,

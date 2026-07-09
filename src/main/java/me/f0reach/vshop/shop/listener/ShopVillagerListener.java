@@ -6,6 +6,7 @@ import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
+import me.f0reach.vshop.shop.VillagerTeleportGuard;
 import me.f0reach.vshop.shop.edit.ShopActionMenu;
 import me.f0reach.vshop.sound.SoundEvents;
 import me.f0reach.vshop.sound.SoundService;
@@ -41,10 +42,11 @@ public final class ShopVillagerListener implements Listener {
     private final NamespacedKey villagerKey;
     private final PluginConfig config;
     private final SoundService sounds;
+    private final VillagerTeleportGuard teleportGuard;
 
     public ShopVillagerListener(ShopRegistry registry, ShopService shops, ShopVillagerManager villagers,
                                 ShopOpenService openService, ShopActionMenu actionMenu, PluginConfig config,
-                                SoundService sounds) {
+                                SoundService sounds, VillagerTeleportGuard teleportGuard) {
         this.registry = registry;
         this.shops = shops;
         this.openService = openService;
@@ -52,6 +54,7 @@ public final class ShopVillagerListener implements Listener {
         this.villagerKey = villagers.villagerKey();
         this.config = config;
         this.sounds = sounds;
+        this.teleportGuard = teleportGuard;
     }
 
     private boolean isShopVillager(Entity entity) {
@@ -74,8 +77,13 @@ public final class ShopVillagerListener implements Listener {
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)
     public void onTeleport(EntityTeleportEvent event) {
         // The villager itself may be teleported by other plugins/world quirks.
-        // Cancel so it cannot leave its anchored location.
-        if (isShopVillager(event.getEntity())) event.setCancelled(true);
+        // Cancel so it cannot leave its anchored location — except when a
+        // trusted internal caller (e.g. VillagerLookListener re-orienting the
+        // villager) has whitelisted this specific teleport.
+        Entity entity = event.getEntity();
+        if (!isShopVillager(entity)) return;
+        if (teleportGuard.isSuppressed(entity.getUniqueId())) return;
+        event.setCancelled(true);
     }
 
     @EventHandler(priority = EventPriority.HIGH, ignoreCancelled = true)

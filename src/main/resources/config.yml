@@ -43,6 +43,11 @@ shop:
   #   DROP    = 在庫を店の位置にドロップして削除
   #   REFUSE  = 在庫がある間は削除を拒否
   closeWithInventory: REFUSE
+  # 店舗Villagerが近くのプレイヤーの方向を向く演出
+  villagerLook:
+    enabled: true
+    # 何ブロック以内のプレイヤーを追うか
+    radius: 6.0
 
 playerCache:
   maxEntries: 5000

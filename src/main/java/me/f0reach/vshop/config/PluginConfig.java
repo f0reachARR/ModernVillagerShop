@@ -87,7 +87,10 @@ public final class PluginConfig {
                 cfg.getString("shop.villagerNameFormat", "<shop_name> <gray>[<primary>]</gray>"),
                 cfg.getString("shop.villagerNameFormatAdmin", "<shop_name>"),
                 CloseWithInventoryMode.valueOf(
-                        cfg.getString("shop.closeWithInventory", "REFUSE").toUpperCase(Locale.ROOT))
+                        cfg.getString("shop.closeWithInventory", "REFUSE").toUpperCase(Locale.ROOT)),
+                new VillagerLookConfig(
+                        cfg.getBoolean("shop.villagerLook.enabled", true),
+                        cfg.getDouble("shop.villagerLook.radius", 6.0))
         );
 
         this.playerCache = new PlayerCacheConfig(
@@ -175,8 +178,11 @@ public final class PluginConfig {
             LimitScope defaultLimitScope,
             String villagerNameFormat,
             String villagerNameFormatAdmin,
-            CloseWithInventoryMode closeWithInventory
+            CloseWithInventoryMode closeWithInventory,
+            VillagerLookConfig villagerLook
     ) {}
+
+    public record VillagerLookConfig(boolean enabled, double radius) {}
 
     public record PlayerCacheConfig(int maxEntries, PlayerCacheSort defaultSort, Duration textureTtl) {}
 }
