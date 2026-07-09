@@ -3,9 +3,9 @@ package me.f0reach.vshop.shop.trade;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
+import me.f0reach.vshop.locale.DurationDisplay;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.InventoryEntry;
-import me.f0reach.vshop.model.LimitScope;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeLimitUsage;
@@ -13,7 +13,6 @@ import me.f0reach.vshop.model.TradeSide;
 import me.f0reach.vshop.sound.SoundEvents;
 import me.f0reach.vshop.sound.SoundService;
 import me.f0reach.vshop.storage.StorageManager;
-import me.f0reach.vshop.storage.repo.ShopLimitRepository;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -54,6 +53,7 @@ public final class TradeFlow {
     private final PriceResolver priceResolver;
     private final StorageManager storage;
     private final SoundService sounds;
+    private final DurationDisplay durations;
 
     public TradeFlow(DialogService dialogs, TradeService tradeService, MessageManager messages,
                      EconomyService economy, PluginConfig config, PriceResolver priceResolver,
@@ -66,6 +66,7 @@ public final class TradeFlow {
         this.priceResolver = priceResolver;
         this.storage = storage;
         this.sounds = sounds;
+        this.durations = new DurationDisplay(messages);
     }
 
     public void start(Player viewer, Shop shop, ShopSlot slot) {
@@ -108,9 +109,10 @@ public final class TradeFlow {
             viewer.sendMessage(messages.get("trade.out-of-stock"));
             return;
         }
-        int remaining = remainingTradeLimit(slot, viewer.getUniqueId());
+        TradeLimitStatus limitStatus = readLimitStatus(slot, viewer.getUniqueId());
+        int remaining = limitStatus == null ? Integer.MAX_VALUE : limitStatus.remaining();
         if (remaining < slot.unitAmount()) {
-            viewer.sendMessage(messages.get("trade.limit-reached"));
+            viewer.sendMessage(limitReachedMessage(limitStatus));
             return;
         }
         // Command slots dispatch a one-shot server command, so multi-pack input
@@ -120,7 +122,7 @@ public final class TradeFlow {
             showConfirm(viewer, shop, slot, TradeSide.SELL, 1);
             return;
         }
-        promptAmount(viewer, shop, slot, TradeSide.SELL, stock, remaining, Integer.MAX_VALUE);
+        promptAmount(viewer, shop, slot, TradeSide.SELL, stock, limitStatus, Integer.MAX_VALUE);
     }
 
     /**
@@ -141,17 +143,20 @@ public final class TradeFlow {
                     "held", Integer.toString(held))));
             return;
         }
-        int remaining = remainingTradeLimit(slot, viewer.getUniqueId());
+        TradeLimitStatus limitStatus = readLimitStatus(slot, viewer.getUniqueId());
+        int remaining = limitStatus == null ? Integer.MAX_VALUE : limitStatus.remaining();
         if (remaining < slot.unitAmount()) {
-            viewer.sendMessage(messages.get("trade.limit-reached"));
+            viewer.sendMessage(limitReachedMessage(limitStatus));
             return;
         }
-        promptAmount(viewer, shop, slot, TradeSide.BUY, Integer.MAX_VALUE, remaining, held);
+        promptAmount(viewer, shop, slot, TradeSide.BUY, Integer.MAX_VALUE, limitStatus, held);
     }
 
     private void promptAmount(Player viewer, Shop shop, ShopSlot slot, TradeSide side,
-                              int sellStockSnapshot, int limitRemainingSnapshot,
+                              int sellStockSnapshot, TradeLimitStatus limitStatusSnapshot,
                               int buyHeldSnapshot) {
+        int limitRemainingSnapshot = limitStatusSnapshot == null
+                ? Integer.MAX_VALUE : limitStatusSnapshot.remaining();
         Component itemName = displayName(slot);
         Component title = messages.get("trade.amount-prompt.title");
         Component body = messages.get("trade.amount-prompt.body",
@@ -201,7 +206,7 @@ public final class TradeFlow {
                         return;
                     }
                     if (limitRemainingSnapshot < totalItems) {
-                        viewer.sendMessage(messages.get("trade.limit-reached"));
+                        viewer.sendMessage(limitReachedMessage(limitStatusSnapshot));
                         return;
                     }
                     showConfirm(viewer, shop, slot, side, packs);
@@ -209,32 +214,42 @@ public final class TradeFlow {
     }
 
     /**
-     * Returns how many more items the player can still trade through this slot
-     * before the configured limit kicks in. {@link Integer#MAX_VALUE} when no
-     * limit is set or on read failure (the authoritative check happens inside
-     * the trade transaction).
+     * Reads the pre-check snapshot of the slot's trade-limit for the given
+     * player scope. Returns {@code null} when the slot has no limit configured
+     * or the read failed (the authoritative check happens inside the trade
+     * transaction, so a null snapshot lets the trade proceed).
      *
      * <p>The reset-window logic here mirrors
      * {@link TradeService#checkAndReserveLimit} — keep them in sync.</p>
      */
-    private int remainingTradeLimit(ShopSlot slot, UUID player) {
-        if (slot.tradeLimit() == null) return Integer.MAX_VALUE;
-        UUID key = slot.limitScope() == LimitScope.GLOBAL
-                ? ShopLimitRepository.GLOBAL_KEY : player;
+    private TradeLimitStatus readLimitStatus(ShopSlot slot, UUID player) {
+        if (slot.tradeLimit() == null) return null;
+        UUID key = TradeLimitStatus.scopeKey(slot, player);
         try (Connection c = storage.dataSource().getConnection()) {
-            Optional<TradeLimitUsage> found = storage.limits().findTx(c, slot.id(), key);
-            if (found.isEmpty()) return slot.tradeLimit();
-            int current = found.get().amount();
-            Instant windowStart = found.get().windowStart();
-            if (slot.resetPeriod() != null && windowStart != null) {
-                long deadline = windowStart.toEpochMilli() + slot.resetPeriod().toMillis();
-                if (Instant.now().toEpochMilli() >= deadline) current = 0;
-            }
-            return Math.max(0, slot.tradeLimit() - current);
+            Optional<TradeLimitUsage> usage = storage.limits().findTx(c, slot.id(), key);
+            return TradeLimitStatus.of(slot, usage, Instant.now());
         } catch (SQLException ex) {
             LOG.warning("Trade-limit pre-check failed for slot " + slot.id() + ": " + ex.getMessage());
-            return Integer.MAX_VALUE;
+            return null;
         }
+    }
+
+    /**
+     * Picks the localized "limit reached" message for the given snapshot,
+     * showing the reset countdown when a reset window is active. Falls back
+     * to the plain message when no reset is configured, the window has
+     * already elapsed, or the snapshot is missing.
+     */
+    private Component limitReachedMessage(TradeLimitStatus status) {
+        if (status == null || !status.hasReset()) {
+            return messages.get("trade.limit-reached");
+        }
+        Instant now = Instant.now();
+        if (!status.windowActive(now)) {
+            return messages.get("trade.limit-reached");
+        }
+        return messages.get("trade.limit-reached-with-reset",
+                Placeholder.parsed("reset_in", durations.format(status.timeUntilReset(now))));
     }
 
     /**

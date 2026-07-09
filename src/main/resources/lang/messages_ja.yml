@@ -76,6 +76,7 @@ trade:
     not-enough-money-buyer: "<red>所持金が足りません。"
     not-enough-money-owner: "<red>店主の残高が不足しているため取引できません。"
     limit-reached: "<red>取引上限に達しています。"
+    limit-reached-with-reset: "<red>取引上限に達しています。<gray>(<reset_in> 後にリセット)"
     price-drift: "<red>価格が変動したため取引をキャンセルしました。再度開いてください。"
     frozen-at: "<blue>(価格凍結: <time>)</blue>"
     amount-prompt:
@@ -218,7 +219,9 @@ slot:
     buy-line-full: "<red>買取単価: <price> / 受入残: <capacity>"
     stock: "<green>在庫: <stock>個"
     stock-empty: "<red>在庫: <stock>個"
-    limit-line: "<gray>取引上限: <limit> (<scope>)"
+    limit-line: "<gray>取引上限: <used>/<limit> (<scope>)"
+    limit-reset-line: "<gray>  リセットまで: <reset_in>"
+    limit-reset-ready: "<gray>  次の取引で窓がリセットされます"
     capacity-unlimited: "∞"
     command-badge: "<light_purple>コマンド販売"
     out-of-stock: "<red>在庫切れ"
@@ -319,6 +322,15 @@ dialog:
     save: "保存"
     invalid-number: "<red>数値を入力してください。"
     required: "<red>入力が必要です。"
+
+# Human-readable duration suffixes used by DurationDisplay.
+duration:
+    d: "日"
+    h: "時間"
+    m: "分"
+    s: "秒"
+    sep: ""
+    now: "まもなく"
 
 # Co-owner listing line — uses <primary>/<role>/<share> placeholders.
 shop-info:

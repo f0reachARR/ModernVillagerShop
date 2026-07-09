@@ -2,11 +2,14 @@ package me.f0reach.vshop.ui.chest;
 
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
+import me.f0reach.vshop.locale.DurationDisplay;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
+import me.f0reach.vshop.model.TradeLimitUsage;
 import me.f0reach.vshop.model.TradeSide;
+import me.f0reach.vshop.shop.trade.TradeLimitStatus;
 import me.f0reach.vshop.storage.StorageManager;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -17,11 +20,16 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.math.BigDecimal;
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
+import java.util.UUID;
+import java.util.logging.Logger;
 
 /**
  * Editor counterpart to {@link ShopBrowseUi}: same slot grid but tinted
@@ -29,10 +37,13 @@ import java.util.TreeMap;
  */
 public final class ShopEditUi {
 
+    private static final Logger LOG = Logger.getLogger(ShopEditUi.class.getName());
+
     private final StorageManager storage;
     private final IconConfig icons;
     private final MessageManager messages;
     private final EconomyService economy;
+    private final DurationDisplay durations;
 
     public ShopEditUi(StorageManager storage, IconConfig icons, MessageManager messages,
                       EconomyService economy) {
@@ -40,6 +51,7 @@ public final class ShopEditUi {
         this.icons = icons;
         this.messages = messages;
         this.economy = economy;
+        this.durations = new DurationDisplay(messages);
     }
 
     public void open(Player editor, Shop shop, int page) {
@@ -98,7 +110,7 @@ public final class ShopEditUi {
         for (int i = 0; i < stride; i++) {
             ShopSlot s = pageSlots.get(i);
             if (s != null) {
-                inv.setItem(i, renderSlot(shop, s, inventoryEntries));
+                inv.setItem(i, renderSlot(shop, s, inventoryEntries, holder.editorId()));
             }
         }
 
@@ -122,7 +134,7 @@ public final class ShopEditUi {
         inv.setItem(holder.slotPageIndicator(), pageIndicator(holder.page()));
     }
 
-    private ItemStack renderSlot(Shop shop, ShopSlot slot, List<InventoryEntry> inventoryEntries) {
+    private ItemStack renderSlot(Shop shop, ShopSlot slot, List<InventoryEntry> inventoryEntries, UUID editorId) {
         ItemStack stack = slot.itemTemplate().clone();
         stack.setAmount(Math.max(1, Math.min(stack.getMaxStackSize(), slot.unitAmount())));
         ItemMeta meta = stack.getItemMeta();
@@ -150,9 +162,20 @@ public final class ShopEditUi {
                         Placeholder.parsed("stock", Integer.toString(stock))));
             }
             if (slot.tradeLimit() != null) {
+                TradeLimitStatus status = readLimitStatus(slot, editorId);
                 lore.add(messages.get("slot.limit-line",
+                        Placeholder.parsed("used", Integer.toString(status == null ? 0 : status.used())),
                         Placeholder.parsed("limit", Integer.toString(slot.tradeLimit())),
                         Placeholder.parsed("scope", slot.limitScope().name())));
+                if (status != null && status.hasReset()) {
+                    Instant now = Instant.now();
+                    if (status.windowActive(now)) {
+                        lore.add(messages.get("slot.limit-reset-line",
+                                Placeholder.parsed("reset_in", durations.format(status.timeUntilReset(now)))));
+                    } else if (status.used() > 0 || status.windowStart() != null) {
+                        lore.add(messages.get("slot.limit-reset-ready"));
+                    }
+                }
             }
             lore.add(Component.empty());
             lore.add(messages.get("slot.click-edit"));
@@ -160,6 +183,22 @@ public final class ShopEditUi {
             stack.setItemMeta(meta);
         }
         return stack;
+    }
+
+    /**
+     * Reads the current trade-limit snapshot for this slot from the editor's
+     * scope key. Returns {@code null} on SQL failure so lore rendering can
+     * degrade to the plain limit-line without blowing up the whole view.
+     */
+    private TradeLimitStatus readLimitStatus(ShopSlot slot, UUID editorId) {
+        UUID key = TradeLimitStatus.scopeKey(slot, editorId);
+        try (Connection c = storage.dataSource().getConnection()) {
+            Optional<TradeLimitUsage> usage = storage.limits().findTx(c, slot.id(), key);
+            return TradeLimitStatus.of(slot, usage, Instant.now());
+        } catch (SQLException ex) {
+            LOG.warning("Trade-limit lore read failed for slot " + slot.id() + ": " + ex.getMessage());
+            return null;
+        }
     }
 
     private static int sumStock(List<InventoryEntry> entries, ItemStack template) {

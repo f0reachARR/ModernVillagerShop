@@ -76,6 +76,7 @@ trade:
     not-enough-money-buyer: "<red>You don't have enough money."
     not-enough-money-owner: "<red>The shop owner does not have enough funds."
     limit-reached: "<red>Trade limit reached."
+    limit-reached-with-reset: "<red>Trade limit reached. <gray>(resets in <reset_in>)"
     price-drift: "<red>Price changed; transaction canceled. Please reopen."
     frozen-at: "<dark_gray>(price frozen at <time>)</dark_gray>"
     amount-prompt:
@@ -218,7 +219,9 @@ slot:
     buy-line-full: "<red>Buy price: <price> / capacity left: <capacity>"
     stock: "<green>Stock: <stock>"
     stock-empty: "<red>Stock: <stock>"
-    limit-line: "<gray>Trade limit: <limit> (<scope>)"
+    limit-line: "<gray>Trade limit: <used>/<limit> (<scope>)"
+    limit-reset-line: "<gray>  Resets in: <reset_in>"
+    limit-reset-ready: "<gray>  Window resets on next trade"
     capacity-unlimited: "∞"
     command-badge: "<light_purple>Command sale"
     out-of-stock: "<red>Out of stock"
@@ -319,6 +322,15 @@ dialog:
     save: "Save"
     invalid-number: "<red>Please enter a number."
     required: "<red>Required."
+
+# Human-readable duration suffixes used by DurationDisplay.
+duration:
+    d: "d"
+    h: "h"
+    m: "m"
+    s: "s"
+    sep: " "
+    now: "now"
 
 # Co-owner listing line — uses <primary>/<role>/<share> placeholders.
 shop-info:
