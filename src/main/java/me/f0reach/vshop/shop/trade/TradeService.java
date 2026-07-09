@@ -164,7 +164,7 @@ public final class TradeService {
             TradeRecord rec = new TradeRecord(0, Instant.now(), shop.id(), slot.id(),
                     TradeSide.SELL, buyer.getUniqueId(),
                     shop.isPlayerShop() ? shop.ownerUuid() : null,
-                    cloneAs(slot.itemTemplate(), 1), totalItems,
+                    cloneAs(slot.itemTemplate(), 1), totalItems, req.packCount(),
                     req.unitPriceSnapshot(), fee,
                     req.basePrice() != null ? req.basePrice() : slot.unitPrice(),
                     req.unitPriceSnapshot(),
@@ -172,7 +172,7 @@ public final class TradeService {
             txId = storage.transactions().insertTx(c, rec);
             recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
                     rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),
-                    rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
+                    rec.packCount(), rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
 
             if (shop.isPlayerShop()) {
                 queueOfflineNotifications(c, coOwners, notifyPrefs, shop.id(), txId, net);
@@ -333,12 +333,12 @@ public final class TradeService {
             TradeRecord rec = new TradeRecord(0, Instant.now(), shop.id(), slot.id(),
                     TradeSide.BUY, shop.isPlayerShop() ? shop.ownerUuid() : null,
                     deliverer.getUniqueId(),
-                    cloneAs(slot.itemTemplate(), 1), totalItems,
+                    cloneAs(slot.itemTemplate(), 1), totalItems, req.packCount(),
                     unit, fee, baseForRec, unit, req.resolvedBy());
             long txId = storage.transactions().insertTx(c, rec);
             final TradeRecord recForEvent = new TradeRecord(txId, rec.at(), rec.shopId(), rec.slotId(),
                     rec.side(), rec.buyerUuid(), rec.sellerUuid(), rec.itemSnapshot(), rec.amount(),
-                    rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
+                    rec.packCount(), rec.unitPrice(), rec.fee(), rec.basePrice(), rec.finalPrice(), rec.resolvedBy());
 
             if (shop.isPlayerShop()) {
                 queueOfflineNotifications(c, coOwners, notifyPrefs, shop.id(), txId, gross);

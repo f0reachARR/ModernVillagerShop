@@ -96,6 +96,7 @@ public final class SqliteSchemaInitializer implements SchemaInitializer {
                     "seller_uuid TEXT," +
                     "item_data BLOB NOT NULL," +
                     "amount INTEGER NOT NULL," +
+                    "pack_count INTEGER NOT NULL DEFAULT 0," +
                     "unit_price NUMERIC NOT NULL," +
                     "fee NUMERIC NOT NULL," +
                     "base_price NUMERIC," +

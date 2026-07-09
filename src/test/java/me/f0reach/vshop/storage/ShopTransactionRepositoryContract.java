@@ -53,14 +53,14 @@ public abstract class ShopTransactionRepositoryContract extends AbstractReposito
 
     private TradeRecord sell(UUID shop, UUID seller, UUID buyer, Instant at, BigDecimal unit, int amount) {
         return new TradeRecord(0L, at, shop, UUID.randomUUID(), TradeSide.SELL,
-                buyer, seller, diamond(), amount, unit, BigDecimal.ZERO,
+                buyer, seller, diamond(), amount, amount, unit, BigDecimal.ZERO,
                 null, null, null);
     }
 
     private TradeRecord buy(UUID shop, UUID buyer, UUID seller, Instant at, BigDecimal unit, int amount,
                             BigDecimal fee) {
         return new TradeRecord(0L, at, shop, UUID.randomUUID(), TradeSide.BUY,
-                buyer, seller, diamond(), amount, unit, fee,
+                buyer, seller, diamond(), amount, amount, unit, fee,
                 unit, unit, "fixed");
     }
 
@@ -196,5 +196,26 @@ public abstract class ShopTransactionRepositoryContract extends AbstractReposito
         assertNull(bySell.resolvedBy());
         assertNotNull(byBuy.basePrice());
         assertEquals("fixed", byBuy.resolvedBy());
+    }
+
+    @Test
+    void packCountRoundTrips() throws SQLException {
+        ShopTransactionRepository repo = repository();
+        UUID shop = UUID.randomUUID();
+        UUID buyer = UUID.randomUUID();
+        UUID seller = UUID.randomUUID();
+
+        // amount = 128 = packCount(2) * unitAmount(64); the helper stores amount
+        // into pack_count, so it's enough to check the value survives the round trip.
+        TradeRecord rec = new TradeRecord(0L, Instant.ofEpochMilli(1), shop, UUID.randomUUID(),
+                TradeSide.SELL, buyer, seller, diamond(),
+                128, 2, new BigDecimal("50.0000"), BigDecimal.ZERO,
+                null, null, null);
+        long id = insert(repo, rec);
+
+        TradeRecord loaded = repo.findByShop(shop, 10, 0).stream()
+                .filter(r -> r.id() == id).findFirst().orElseThrow();
+        assertEquals(2, loaded.packCount());
+        assertEquals(128, loaded.amount());
     }
 }

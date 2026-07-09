@@ -114,6 +114,7 @@ public final class MysqlSchemaInitializer implements SchemaInitializer {
                     "seller_uuid VARCHAR(36)," +
                     "item_data LONGBLOB NOT NULL," +
                     "amount INT NOT NULL," +
+                    "pack_count INT NOT NULL DEFAULT 0," +
                     "unit_price DECIMAL(20,4) NOT NULL," +
                     "fee DECIMAL(20,4) NOT NULL," +
                     "base_price DECIMAL(20,4)," +

@@ -16,6 +16,7 @@ public record TradeRecord(
         UUID sellerUuid,
         ItemStack itemSnapshot,
         int amount,
+        int packCount,
         BigDecimal unitPrice,
         BigDecimal fee,
         BigDecimal basePrice,

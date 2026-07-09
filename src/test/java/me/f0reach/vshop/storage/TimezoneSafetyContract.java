@@ -175,7 +175,7 @@ public abstract class TimezoneSafetyContract extends AbstractRepositoryContract 
         TradeRecord rec = new TradeRecord(0L, at, shop, UUID.randomUUID(),
                 TradeSide.SELL, UUID.randomUUID(), UUID.randomUUID(),
                 BukkitTestSupport.item(Material.DIAMOND, 1),
-                1, BigDecimal.ONE, BigDecimal.ZERO, null, null, null);
+                1, 1, BigDecimal.ONE, BigDecimal.ZERO, null, null, null);
 
         try (Connection c = dataSource().getConnection()) {
             c.setAutoCommit(false);
@@ -206,7 +206,7 @@ public abstract class TimezoneSafetyContract extends AbstractRepositoryContract 
             TradeRecord rec = new TradeRecord(0L, at, shop, UUID.randomUUID(),
                     TradeSide.SELL, UUID.randomUUID(), UUID.randomUUID(),
                     BukkitTestSupport.item(Material.DIAMOND, 1),
-                    1, BigDecimal.ONE, BigDecimal.ZERO, null, null, null);
+                    1, 1, BigDecimal.ONE, BigDecimal.ZERO, null, null, null);
             try (Connection c = dataSource().getConnection()) {
                 c.setAutoCommit(false);
                 transactions().insertTx(c, rec);
@@ -244,7 +244,7 @@ public abstract class TimezoneSafetyContract extends AbstractRepositoryContract 
         TradeRecord rec = new TradeRecord(0L, Instant.now(), shop, UUID.randomUUID(),
                 TradeSide.SELL, UUID.randomUUID(), UUID.randomUUID(),
                 BukkitTestSupport.item(Material.DIAMOND, 1),
-                1, BigDecimal.ONE, BigDecimal.ZERO, null, null, null);
+                1, 1, BigDecimal.ONE, BigDecimal.ZERO, null, null, null);
         try (Connection c = dataSource().getConnection()) {
             c.setAutoCommit(false);
             transactions().insertTx(c, rec);

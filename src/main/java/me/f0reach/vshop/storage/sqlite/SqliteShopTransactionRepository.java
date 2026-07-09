@@ -33,8 +33,8 @@ public final class SqliteShopTransactionRepository implements ShopTransactionRep
     public long insertTx(Connection c, TradeRecord rec) throws SQLException {
         try (PreparedStatement ps = c.prepareStatement(
                 "INSERT INTO shop_transactions (occurred_at, shop_id, slot_id, side, buyer_uuid, seller_uuid, " +
-                        "item_data, amount, unit_price, fee, base_price, final_price, resolved_by) " +
-                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
+                        "item_data, amount, pack_count, unit_price, fee, base_price, final_price, resolved_by) " +
+                        "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)", Statement.RETURN_GENERATED_KEYS)) {
             ps.setLong(1, rec.at().toEpochMilli());
             ps.setString(2, rec.shopId().toString());
             if (rec.slotId() == null) ps.setNull(3, Types.VARCHAR);
@@ -46,14 +46,15 @@ public final class SqliteShopTransactionRepository implements ShopTransactionRep
             else ps.setString(6, rec.sellerUuid().toString());
             ps.setBytes(7, ItemStackCodec.encode(rec.itemSnapshot()));
             ps.setInt(8, rec.amount());
-            ps.setBigDecimal(9, rec.unitPrice());
-            ps.setBigDecimal(10, rec.fee());
-            if (rec.basePrice() == null) ps.setNull(11, Types.DECIMAL);
-            else ps.setBigDecimal(11, rec.basePrice());
-            if (rec.finalPrice() == null) ps.setNull(12, Types.DECIMAL);
-            else ps.setBigDecimal(12, rec.finalPrice());
-            if (rec.resolvedBy() == null) ps.setNull(13, Types.VARCHAR);
-            else ps.setString(13, rec.resolvedBy());
+            ps.setInt(9, rec.packCount());
+            ps.setBigDecimal(10, rec.unitPrice());
+            ps.setBigDecimal(11, rec.fee());
+            if (rec.basePrice() == null) ps.setNull(12, Types.DECIMAL);
+            else ps.setBigDecimal(12, rec.basePrice());
+            if (rec.finalPrice() == null) ps.setNull(13, Types.DECIMAL);
+            else ps.setBigDecimal(13, rec.finalPrice());
+            if (rec.resolvedBy() == null) ps.setNull(14, Types.VARCHAR);
+            else ps.setString(14, rec.resolvedBy());
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 return keys.next() ? keys.getLong(1) : -1L;
@@ -217,12 +218,13 @@ public final class SqliteShopTransactionRepository implements ShopTransactionRep
         UUID sellerUuid = seller == null ? null : UUID.fromString(seller);
         ItemStack item = ItemStackCodec.decode(rs.getBytes("item_data"));
         int amount = rs.getInt("amount");
+        int packCount = rs.getInt("pack_count");
         BigDecimal unit = rs.getBigDecimal("unit_price");
         BigDecimal fee = rs.getBigDecimal("fee");
         BigDecimal base = rs.getBigDecimal("base_price");
         BigDecimal fin = rs.getBigDecimal("final_price");
         String resolvedBy = rs.getString("resolved_by");
         return new TradeRecord(id, at, shopId, slotId, side, buyerUuid, sellerUuid,
-                item, amount, unit, fee, base, fin, resolvedBy);
+                item, amount, packCount, unit, fee, base, fin, resolvedBy);
     }
 }
