@@ -95,7 +95,7 @@ public final class AdminShopSlotIO {
         for (ParsedSlot p : parsed) {
             ShopSlot slot = new ShopSlot(UUID.randomUUID(), shop.id(), p.slotIndex, p.side, p.item,
                     p.unitPrice, p.buyUnitPrice, p.unitAmount, p.buyCapacity, p.tradeLimit,
-                    p.limitScope, p.resetPeriod);
+                    p.limitScope, p.resetPeriod, p.command);
             slots.upsert(slot);
             inserted++;
         }
@@ -163,6 +163,7 @@ public final class AdminShopSlotIO {
                 s.set("limit_scope", slot.limitScope().name());
             }
             if (slot.resetPeriod() != null) s.set("reset_period", slot.resetPeriod().toString());
+            if (slot.command() != null && !slot.command().isBlank()) s.set("command", slot.command());
         }
         yml.save(target.toFile());
     }
@@ -221,8 +222,10 @@ public final class AdminShopSlotIO {
                         section.getString("limit_scope", LimitScope.PER_PLAYER.name()), LimitScope.class);
         Duration resetPeriod = parseDuration(prefix + ".reset_period",
                 section.getString("reset_period"));
+        String command = section.getString("command");
+        if (command != null && command.isBlank()) command = null;
         return new ParsedSlot(slotIndex, side, item, unitPrice, buyUnitPrice, unitAmount, buyCapacity,
-                tradeLimit, scope, resetPeriod);
+                tradeLimit, scope, resetPeriod, command);
     }
 
     private static <E extends Enum<E>> E enumOrFail(String field, String value, Class<E> type)
@@ -301,5 +304,6 @@ public final class AdminShopSlotIO {
 
     private record ParsedSlot(int slotIndex, TradeSide side, ItemStack item, BigDecimal unitPrice,
                               BigDecimal buyUnitPrice, int unitAmount, int buyCapacity,
-                              Integer tradeLimit, LimitScope limitScope, Duration resetPeriod) {}
+                              Integer tradeLimit, LimitScope limitScope, Duration resetPeriod,
+                              String command) {}
 }

@@ -58,13 +58,14 @@ public final class MysqlShopSlotRepository implements ShopSlotRepository {
         try (Connection c = dataSource.getConnection();
              PreparedStatement ps = c.prepareStatement(
                      "INSERT INTO shop_slots (id, shop_id, slot_index, side, item_data, unit_price," +
-                             "buy_unit_price, unit_amount, buy_capacity, trade_limit, limit_scope, reset_period_sec) " +
-                             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?) " +
+                             "buy_unit_price, unit_amount, buy_capacity, trade_limit, limit_scope, reset_period_sec, command) " +
+                             "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?) " +
                              "ON DUPLICATE KEY UPDATE shop_id=VALUES(shop_id), slot_index=VALUES(slot_index), " +
                              "side=VALUES(side), item_data=VALUES(item_data), unit_price=VALUES(unit_price), " +
                              "buy_unit_price=VALUES(buy_unit_price), unit_amount=VALUES(unit_amount), " +
                              "buy_capacity=VALUES(buy_capacity), trade_limit=VALUES(trade_limit), " +
-                             "limit_scope=VALUES(limit_scope), reset_period_sec=VALUES(reset_period_sec)")) {
+                             "limit_scope=VALUES(limit_scope), reset_period_sec=VALUES(reset_period_sec), " +
+                             "command=VALUES(command)")) {
             ps.setString(1, slot.id().toString());
             int i = 2;
             ps.setString(i++, slot.shopId().toString());
@@ -79,8 +80,10 @@ public final class MysqlShopSlotRepository implements ShopSlotRepository {
             if (slot.tradeLimit() == null) ps.setNull(i++, Types.INTEGER);
             else ps.setInt(i++, slot.tradeLimit());
             ps.setString(i++, slot.limitScope().name());
-            if (slot.resetPeriod() == null) ps.setNull(i, Types.BIGINT);
-            else ps.setLong(i, slot.resetPeriod().getSeconds());
+            if (slot.resetPeriod() == null) ps.setNull(i++, Types.BIGINT);
+            else ps.setLong(i++, slot.resetPeriod().getSeconds());
+            if (slot.command() == null) ps.setNull(i, Types.VARCHAR);
+            else ps.setString(i, slot.command());
             ps.executeUpdate();
         }
     }
@@ -123,7 +126,8 @@ public final class MysqlShopSlotRepository implements ShopSlotRepository {
         LimitScope scope = LimitScope.valueOf(rs.getString("limit_scope"));
         long resetSec = rs.getLong("reset_period_sec");
         Duration period = rs.wasNull() || resetSec <= 0 ? null : Duration.ofSeconds(resetSec);
+        String command = rs.getString("command");
         return new ShopSlot(id, shopId, slotIndex, side, item, unitPrice, buyUnitPrice,
-                unitAmount, buyCapacity, tradeLimit, scope, period);
+                unitAmount, buyCapacity, tradeLimit, scope, period, command);
     }
 }

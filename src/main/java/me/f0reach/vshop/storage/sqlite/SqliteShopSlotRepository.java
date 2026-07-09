@@ -67,17 +67,17 @@ public final class SqliteShopSlotRepository implements ShopSlotRepository {
             if (exists) {
                 try (PreparedStatement ps = c.prepareStatement(
                         "UPDATE shop_slots SET shop_id=?, slot_index=?, side=?, item_data=?, unit_price=?," +
-                                "buy_unit_price=?, unit_amount=?, buy_capacity=?, trade_limit=?, limit_scope=?, reset_period_sec=? " +
+                                "buy_unit_price=?, unit_amount=?, buy_capacity=?, trade_limit=?, limit_scope=?, reset_period_sec=?, command=? " +
                                 "WHERE id=?")) {
                     bindBody(ps, slot, 1);
-                    ps.setString(12, slot.id().toString());
+                    ps.setString(13, slot.id().toString());
                     ps.executeUpdate();
                 }
             } else {
                 try (PreparedStatement ps = c.prepareStatement(
                         "INSERT INTO shop_slots (id, shop_id, slot_index, side, item_data, unit_price," +
-                                "buy_unit_price, unit_amount, buy_capacity, trade_limit, limit_scope, reset_period_sec) " +
-                                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?)")) {
+                                "buy_unit_price, unit_amount, buy_capacity, trade_limit, limit_scope, reset_period_sec, command) " +
+                                "VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)")) {
                     ps.setString(1, slot.id().toString());
                     bindBody(ps, slot, 2);
                     ps.executeUpdate();
@@ -123,8 +123,10 @@ public final class SqliteShopSlotRepository implements ShopSlotRepository {
         if (slot.tradeLimit() == null) ps.setNull(i++, Types.INTEGER);
         else ps.setInt(i++, slot.tradeLimit());
         ps.setString(i++, slot.limitScope().name());
-        if (slot.resetPeriod() == null) ps.setNull(i, Types.BIGINT);
-        else ps.setLong(i, slot.resetPeriod().getSeconds());
+        if (slot.resetPeriod() == null) ps.setNull(i++, Types.BIGINT);
+        else ps.setLong(i++, slot.resetPeriod().getSeconds());
+        if (slot.command() == null) ps.setNull(i, Types.VARCHAR);
+        else ps.setString(i, slot.command());
     }
 
     private static ShopSlot map(ResultSet rs) throws SQLException {
@@ -142,7 +144,8 @@ public final class SqliteShopSlotRepository implements ShopSlotRepository {
         LimitScope scope = LimitScope.valueOf(rs.getString("limit_scope"));
         long resetSec = rs.getLong("reset_period_sec");
         Duration period = rs.wasNull() || resetSec <= 0 ? null : Duration.ofSeconds(resetSec);
+        String command = rs.getString("command");
         return new ShopSlot(id, shopId, slotIndex, side, item, unitPrice, buyUnitPrice,
-                unitAmount, buyCapacity, tradeLimit, scope, period);
+                unitAmount, buyCapacity, tradeLimit, scope, period, command);
     }
 }

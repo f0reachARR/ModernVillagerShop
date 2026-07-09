@@ -25,10 +25,18 @@ public final class ShopSlot {
     private Integer tradeLimit;         // null => unlimited per scope window
     private LimitScope limitScope;
     private Duration resetPeriod;       // null => no reset
+    private String command;             // admin SELL only: run instead of giving items (null => normal item trade)
 
     public ShopSlot(UUID id, UUID shopId, int slotIndex, TradeSide side, ItemStack itemTemplate,
                     BigDecimal unitPrice, BigDecimal buyUnitPrice, int unitAmount, int buyCapacity,
                     Integer tradeLimit, LimitScope limitScope, Duration resetPeriod) {
+        this(id, shopId, slotIndex, side, itemTemplate, unitPrice, buyUnitPrice, unitAmount,
+                buyCapacity, tradeLimit, limitScope, resetPeriod, null);
+    }
+
+    public ShopSlot(UUID id, UUID shopId, int slotIndex, TradeSide side, ItemStack itemTemplate,
+                    BigDecimal unitPrice, BigDecimal buyUnitPrice, int unitAmount, int buyCapacity,
+                    Integer tradeLimit, LimitScope limitScope, Duration resetPeriod, String command) {
         this.id = id;
         this.shopId = shopId;
         this.slotIndex = slotIndex;
@@ -41,6 +49,7 @@ public final class ShopSlot {
         this.tradeLimit = tradeLimit;
         this.limitScope = limitScope;
         this.resetPeriod = resetPeriod;
+        this.command = command;
     }
 
     public UUID id() { return id; }
@@ -55,6 +64,7 @@ public final class ShopSlot {
     public Integer tradeLimit() { return tradeLimit; }
     public LimitScope limitScope() { return limitScope; }
     public Duration resetPeriod() { return resetPeriod; }
+    public String command() { return command; }
 
     public boolean allowsSell() { return side == TradeSide.SELL || side == TradeSide.BOTH; }
     public boolean allowsBuy() { return side == TradeSide.BUY || side == TradeSide.BOTH; }
@@ -77,4 +87,12 @@ public final class ShopSlot {
     public void setTradeLimit(Integer tradeLimit) { this.tradeLimit = tradeLimit; }
     public void setLimitScope(LimitScope limitScope) { this.limitScope = limitScope; }
     public void setResetPeriod(Duration resetPeriod) { this.resetPeriod = resetPeriod; }
+    public void setCommand(String command) { this.command = command; }
+
+    /**
+     * True when this slot dispatches a server command on SELL settlement instead
+     * of delivering {@link #itemTemplate}. Only meaningful on admin shops — the
+     * TradeService branch also gates on {@code shop.isAdminShop()}.
+     */
+    public boolean hasCommand() { return command != null && !command.isBlank(); }
 }

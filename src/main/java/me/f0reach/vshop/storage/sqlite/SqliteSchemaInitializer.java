@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Creates the SQLite schema. SQLite stores integers as INTEGER (which is 64-bit
@@ -26,7 +27,20 @@ public final class SqliteSchemaInitializer implements SchemaInitializer {
         try (Connection c = dataSource.getConnection(); Statement st = c.createStatement()) {
             for (String ddl : TABLES) st.executeUpdate(ddl);
             for (String ddl : INDEXES) st.executeUpdate(ddl);
+            for (String ddl : ALTERS) {
+                try {
+                    st.executeUpdate(ddl);
+                } catch (SQLException ex) {
+                    if (!isDuplicateColumn(ex)) throw ex;
+                }
+            }
         }
+    }
+
+    /** SQLite reports {@code duplicate column name: <name>} when ADD COLUMN clashes. */
+    private static boolean isDuplicateColumn(SQLException ex) {
+        String msg = ex.getMessage() == null ? "" : ex.getMessage().toLowerCase(Locale.ROOT);
+        return msg.contains("duplicate column name");
     }
 
     private static final List<String> TABLES = List.of(
@@ -70,6 +84,7 @@ public final class SqliteSchemaInitializer implements SchemaInitializer {
                     "trade_limit INTEGER," +
                     "limit_scope TEXT NOT NULL," +
                     "reset_period_sec INTEGER," +
+                    "command TEXT," +
                     "UNIQUE (shop_id, slot_index)" +
                     ")",
             "CREATE TABLE IF NOT EXISTS shop_inventory (" +
@@ -140,5 +155,15 @@ public final class SqliteSchemaInitializer implements SchemaInitializer {
             "CREATE INDEX IF NOT EXISTS idx_notif_player ON shop_notifications(player_uuid)",
             "CREATE INDEX IF NOT EXISTS idx_cache_name_lower ON player_cache(name_lower)",
             "CREATE INDEX IF NOT EXISTS idx_cache_last_seen ON player_cache(last_seen)"
+    );
+
+    /**
+     * Idempotent additive migrations for pre-existing installations. Each ADD
+     * COLUMN is attempted once at startup; duplicate-column errors are swallowed
+     * so re-runs are a no-op. Do NOT put schema-changing DDL here that isn't
+     * safe to repeat.
+     */
+    private static final List<String> ALTERS = List.of(
+            "ALTER TABLE shop_slots ADD COLUMN command TEXT"
     );
 }
