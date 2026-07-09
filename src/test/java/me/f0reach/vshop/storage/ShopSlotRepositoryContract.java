@@ -118,6 +118,34 @@ public abstract class ShopSlotRepositoryContract extends AbstractRepositoryContr
     }
 
     @Test
+    void commandFieldRoundTrips() throws SQLException {
+        ShopSlotRepository repo = repository();
+        UUID shop = UUID.randomUUID();
+        ShopSlot withCommand = new ShopSlot(UUID.randomUUID(), shop, 4, TradeSide.SELL, diamond(),
+                new BigDecimal("50.0000"), null, 1, 0, null,
+                LimitScope.PER_PLAYER, null, "give <player> diamond <amount>");
+        repo.upsert(withCommand);
+        ShopSlot loaded = repo.findById(withCommand.id()).orElseThrow();
+        assertEquals("give <player> diamond <amount>", loaded.command());
+        assertTrue(loaded.hasCommand());
+
+        // Clear back to null and confirm the column is nulled, not left stale.
+        loaded.setCommand(null);
+        repo.upsert(loaded);
+        ShopSlot reloaded = repo.findById(withCommand.id()).orElseThrow();
+        assertNull(reloaded.command());
+    }
+
+    @Test
+    void commandDefaultsToNullForLegacySlots() throws SQLException {
+        ShopSlotRepository repo = repository();
+        UUID shop = UUID.randomUUID();
+        ShopSlot slot = sellSlot(shop, 0);
+        repo.upsert(slot);
+        assertNull(repo.findById(slot.id()).orElseThrow().command());
+    }
+
+    @Test
     void deleteRemovesSlot() throws SQLException {
         ShopSlotRepository repo = repository();
         UUID shop = UUID.randomUUID();
