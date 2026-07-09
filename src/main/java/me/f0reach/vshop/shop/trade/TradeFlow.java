@@ -10,6 +10,8 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeLimitUsage;
 import me.f0reach.vshop.model.TradeSide;
+import me.f0reach.vshop.sound.SoundEvents;
+import me.f0reach.vshop.sound.SoundService;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.storage.repo.ShopLimitRepository;
 import me.f0reach.vshop.ui.dialog.DialogService;
@@ -51,10 +53,11 @@ public final class TradeFlow {
     private final PluginConfig config;
     private final PriceResolver priceResolver;
     private final StorageManager storage;
+    private final SoundService sounds;
 
     public TradeFlow(DialogService dialogs, TradeService tradeService, MessageManager messages,
                      EconomyService economy, PluginConfig config, PriceResolver priceResolver,
-                     StorageManager storage) {
+                     StorageManager storage, SoundService sounds) {
         this.dialogs = dialogs;
         this.tradeService = tradeService;
         this.messages = messages;
@@ -62,6 +65,7 @@ public final class TradeFlow {
         this.config = config;
         this.priceResolver = priceResolver;
         this.storage = storage;
+        this.sounds = sounds;
     }
 
     public void start(Player viewer, Shop shop, ShopSlot slot) {
@@ -312,8 +316,11 @@ public final class TradeFlow {
                     Placeholder.parsed("amount", Integer.toString(ok.amount())),
                     Placeholder.parsed("price", economy.format(ok.gross())),
                     Placeholder.parsed("fee", economy.format(ok.fee()))));
+            sounds.play(viewer, ok.side() == TradeSide.SELL
+                    ? SoundEvents.TRADE_SUCCESS_SELL : SoundEvents.TRADE_SUCCESS_BUY);
         } else if (result instanceof TradeResult.Failure fail) {
             viewer.sendMessage(messages.get(fail.messageKey(), fail.placeholders()));
+            sounds.play(viewer, SoundEvents.TRADE_FAILURE);
         }
     }
 

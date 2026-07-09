@@ -73,6 +73,39 @@ items:
 placeholderapi:
   enabled: true
 
+# プレイヤー本人にだけ聞こえる効果音。
+# key はマイクラのサウンドID（例: minecraft:ui.button.click）。
+# key を空文字にすればそのイベントは無音になる。
+# category は MASTER | PLAYERS | AMBIENT | BLOCKS | HOSTILE | NEUTRAL | RECORDS | MUSIC | VOICE | UI から選ぶ。
+sounds:
+  ui:
+    # 村人ショップを右クリックして操作画面を開いた瞬間（顧客ビュー / オーナーメニュー共通）
+    open:
+      key: "minecraft:ui.button.click"
+      volume: 1.0
+      pitch: 1.0
+      category: MASTER
+  trade:
+    success:
+      # SELL 成功時（プレイヤーがショップに売った）
+      sell:
+        key: "minecraft:entity.villager.yes"
+        volume: 1.0
+        pitch: 1.0
+        category: MASTER
+      # BUY 成功時（オーダーへ納品した）
+      buy:
+        key: "minecraft:entity.villager.yes"
+        volume: 1.0
+        pitch: 1.0
+        category: MASTER
+    # 取引失敗時（在庫切れ・所持金不足・上限超過など）
+    failure:
+      key: "minecraft:entity.villager.no"
+      volume: 1.0
+      pitch: 1.0
+      category: MASTER
+
 ui:
   chest:
     icons:

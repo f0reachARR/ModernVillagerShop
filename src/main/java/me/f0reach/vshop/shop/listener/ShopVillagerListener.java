@@ -7,6 +7,8 @@ import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.ShopVillagerManager;
 import me.f0reach.vshop.shop.edit.ShopActionMenu;
+import me.f0reach.vshop.sound.SoundEvents;
+import me.f0reach.vshop.sound.SoundService;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -38,15 +40,18 @@ public final class ShopVillagerListener implements Listener {
     private final ShopActionMenu actionMenu;
     private final NamespacedKey villagerKey;
     private final PluginConfig config;
+    private final SoundService sounds;
 
     public ShopVillagerListener(ShopRegistry registry, ShopService shops, ShopVillagerManager villagers,
-                                ShopOpenService openService, ShopActionMenu actionMenu, PluginConfig config) {
+                                ShopOpenService openService, ShopActionMenu actionMenu, PluginConfig config,
+                                SoundService sounds) {
         this.registry = registry;
         this.shops = shops;
         this.openService = openService;
         this.actionMenu = actionMenu;
         this.villagerKey = villagers.villagerKey();
         this.config = config;
+        this.sounds = sounds;
     }
 
     private boolean isShopVillager(Entity entity) {
@@ -89,6 +94,7 @@ public final class ShopVillagerListener implements Listener {
         if (shop == null) return;
         if (!(event.getPlayer() instanceof Player viewer)) return;
         // Owners / privileged co-owners get the action menu directly; others see the customer view.
+        sounds.play(viewer, SoundEvents.UI_OPEN);
         if (actionMenu.canShow(viewer, shop)) {
             actionMenu.open(viewer, shop);
             return;

@@ -28,6 +28,7 @@ import me.f0reach.vshop.shop.trade.PriceResolver;
 import me.f0reach.vshop.shop.trade.TradeFlow;
 import me.f0reach.vshop.shop.trade.TradeNotifier;
 import me.f0reach.vshop.shop.trade.TradeService;
+import me.f0reach.vshop.sound.SoundService;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.chest.IconConfig;
 import me.f0reach.vshop.ui.chest.PlayerPickerListener;
@@ -74,6 +75,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopRestockUi restockUi;
     private ShopActionMenu actionMenu;
     private AdminShopSlotIO adminShopSlotIO;
+    private SoundService soundService;
 
     @Override
     public void onEnable() {
@@ -97,6 +99,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
             return;
         }
 
+        this.soundService = new SoundService(config, getLogger());
+
         this.registry = new ShopRegistry();
         this.villagerManager = new ShopVillagerManager(this, messages, storage.coOwners());
         this.shopService = new ShopService(storage, registry, villagerManager, config);
@@ -112,7 +116,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.tradeService = new TradeService(storage, economyService, config, tradeNotifier,
                 editService, priceResolver);
         this.tradeFlow = new TradeFlow(dialogService, tradeService, messages, economyService, config,
-                priceResolver, storage);
+                priceResolver, storage, soundService);
         this.editUi = new ShopEditUi(storage, iconConfig, messages, economyService);
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
         this.playerCacheService = new PlayerCacheService(this);
@@ -135,7 +139,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         var pm = getServer().getPluginManager();
         pm.registerEvents(new ShopEggListener(this, eggFactory, shopService, messages), this);
         pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, openService,
-                actionMenu, config), this);
+                actionMenu, config, soundService), this);
         pm.registerEvents(new ShopBrowseListener(this, registry, browseUi, storage, tradeFlow, messages), this);
         pm.registerEvents(new NotificationFlushListener(this, tradeNotifier), this);
         pm.registerEvents(new ShopEditListener(this, registry, editUi, editService, slotEditFlow,
@@ -191,6 +195,10 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
             this.messages = new MessageManager(this);
         }
         this.messages.load(config.locale(), config.fallbackLocale());
+        // Sound specs are parsed eagerly and cached, so refresh explicitly.
+        if (this.soundService != null) {
+            this.soundService.reload();
+        }
     }
 
     public PluginConfig pluginConfig() { return config; }
@@ -219,4 +227,5 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public ShopRestockUi restockUi() { return restockUi; }
     public ShopActionMenu actionMenu() { return actionMenu; }
     public AdminShopSlotIO adminShopSlotIO() { return adminShopSlotIO; }
+    public SoundService soundService() { return soundService; }
 }

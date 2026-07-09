@@ -37,6 +37,7 @@ public final class PluginConfig {
     private volatile Set<Material> blacklist;
     private volatile boolean placeholderApiEnabled;
     private volatile ConfigurationSection uiSection;
+    private volatile ConfigurationSection soundsSection;
 
     public PluginConfig(FileConfiguration cfg) {
         reload(cfg);
@@ -105,6 +106,7 @@ public final class PluginConfig {
 
         this.placeholderApiEnabled = cfg.getBoolean("placeholderapi.enabled", true);
         this.uiSection = cfg.getConfigurationSection("ui");
+        this.soundsSection = cfg.getConfigurationSection("sounds");
     }
 
     private static Duration parseDuration(String input) {
@@ -144,6 +146,7 @@ public final class PluginConfig {
     public Set<Material> blacklist() { return blacklist; }
     public boolean placeholderApiEnabled() { return placeholderApiEnabled; }
     public ConfigurationSection uiSection() { return uiSection; }
+    public ConfigurationSection soundsSection() { return soundsSection; }
 
     public boolean isBlacklisted(Material material) {
         return blacklist.contains(material);
