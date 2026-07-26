@@ -132,7 +132,7 @@ public final class HistoryCommand {
                 String key = hasFee ? "command.history.line-with-fee" : "command.history.line";
                 java.util.List<net.kyori.adventure.text.minimessage.tag.resolver.TagResolver> tags = new java.util.ArrayList<>();
                 tags.add(Placeholder.parsed("time", when));
-                tags.add(Placeholder.parsed("side", rec.side().name()));
+                tags.add(Placeholder.component("side", support.enumLabels().label(rec.side())));
                 tags.add(Placeholder.component("item", Displays.item(rec.itemSnapshot())));
                 tags.add(Placeholder.parsed("amount", Integer.toString(rec.amount())));
                 tags.add(Placeholder.parsed("price", econ.format(rec.unitPrice())));

@@ -2,6 +2,7 @@ package me.f0reach.vshop.shop.edit;
 
 import me.f0reach.vshop.ModernVillagerShopPlugin;
 import me.f0reach.vshop.config.PluginConfig;
+import me.f0reach.vshop.locale.EnumLabels;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.CoOwnerRole;
 import me.f0reach.vshop.model.InventoryEntry;
@@ -56,6 +57,7 @@ public final class ShopActionMenu {
     private final ShopEditService editService;
     private final ShopRestockUi restockUi;
     private final CoOwnerFlow coOwnerFlow;
+    private final EnumLabels enumLabels;
 
     public ShopActionMenu(ModernVillagerShopPlugin plugin, DialogService dialogs, MessageManager messages,
                           ShopEditService editService, ShopRestockUi restockUi, CoOwnerFlow coOwnerFlow) {
@@ -65,6 +67,7 @@ public final class ShopActionMenu {
         this.editService = editService;
         this.restockUi = restockUi;
         this.coOwnerFlow = coOwnerFlow;
+        this.enumLabels = new EnumLabels(messages);
     }
 
     public boolean canShow(Player viewer, Shop shop) {
@@ -81,7 +84,7 @@ public final class ShopActionMenu {
         Component title = messages.get("action.title",
                 Placeholder.parsed("shop_name", shop.name()));
         Component body = messages.get("action.body",
-                Placeholder.parsed("type", shop.type().name()),
+                Placeholder.component("type", enumLabels.label(shop.type())),
                 Placeholder.parsed("suspended", shop.suspended() ? "yes" : "no"));
 
         List<DialogService.ButtonSpec> buttons = new ArrayList<>();
@@ -442,7 +445,7 @@ public final class ShopActionMenu {
                 String counterparty = resolveCounterparty(rec);
                 Component line = messages.get("history.line",
                         Placeholder.parsed("time", HISTORY_FORMAT.format(rec.at())),
-                        Placeholder.parsed("side", rec.side().name()),
+                        Placeholder.component("side", enumLabels.label(rec.side())),
                         Placeholder.parsed("amount", Integer.toString(rec.amount())),
                         Placeholder.component("item", Displays.item(rec.itemSnapshot())),
                         Placeholder.parsed("price", plugin.economyService().format(rec.unitPrice())),

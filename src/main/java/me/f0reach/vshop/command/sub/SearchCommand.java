@@ -83,7 +83,7 @@ public final class SearchCommand {
                     Placeholder.component("shop_name",
                             Displays.nameWithHover(Displays.truncate(h.shop.name(), 24), h.shop.name())),
                     Placeholder.component("item", Displays.item(h.slot.itemTemplate())),
-                    Placeholder.parsed("side", h.slot.side().name()),
+                    Placeholder.component("side", support.enumLabels().label(h.slot.side())),
                     Placeholder.parsed("price",
                             support.plugin().economyService().format(h.slot.unitPrice())));
             sender.sendMessage(line);
