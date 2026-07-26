@@ -10,6 +10,7 @@ import com.mojang.brigadier.suggestion.SuggestionProvider;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.f0reach.vshop.command.CommandSupport;
+import me.f0reach.vshop.command.ShopIdSuggestions;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopAppearance;
@@ -49,9 +50,11 @@ public final class AppearanceCommand {
     private static final String CLEAR_TOKEN = "@none";
 
     private final CommandSupport support;
+    private final ShopIdSuggestions shopIds;
 
     public AppearanceCommand(CommandSupport support) {
         this.support = support;
+        this.shopIds = new ShopIdSuggestions(support);
     }
 
     public LiteralArgumentBuilder<CommandSourceStack> node() {
@@ -60,7 +63,7 @@ public final class AppearanceCommand {
                         || s.getSender().hasPermission("modernvillagershop.edit.others")
                         || s.getSender().hasPermission("modernvillagershop.admin.appearance"))
                 .then(Commands.argument("shopId", StringArgumentType.word())
-                        .suggests(shopIds())
+                        .suggests(shopIds.provider())
                         .then(Commands.literal("show")
                                 .executes(ctx -> show(ctx, shopId(ctx))))
                         .then(Commands.literal("npc")
@@ -400,17 +403,6 @@ public final class AppearanceCommand {
     }
 
     // ---- completions ----
-
-    private SuggestionProvider<CommandSourceStack> shopIds() {
-        return (ctx, builder) -> {
-            String prefix = builder.getRemaining().toLowerCase(Locale.ROOT);
-            for (Shop shop : support.plugin().registry().all()) {
-                String id = shop.id().toString().substring(0, 8);
-                if (id.startsWith(prefix)) builder.suggest(id, () -> shop.name());
-            }
-            return builder.buildFuture();
-        };
-    }
 
     private SuggestionProvider<CommandSourceStack> entityTypes() {
         return (ctx, builder) -> {

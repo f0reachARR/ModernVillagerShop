@@ -117,7 +117,7 @@ If your server has FancyNpcs installed, the shop can look like an **NPC** instea
 /vshop appearance <shopId> villager       # back to a villager
 ```
 
-`<shopId>` is the first 8 characters of the shop ID, and Tab completes it. There is also `type` (entity kind), `scale`, `skin`, `attribute` and `reset`.
+`<shopId>` is the first 8 characters of the shop ID, and Tab completes it. Completion only lists shops within 64 blocks of you, and highlighting a suggestion shows its name, type, owner and distance. A distant shop still works if you type its ID out. There is also `type` (entity kind), `scale`, `skin`, `attribute` and `reset`.
 
 While the shop renders as an NPC the profession button disappears, because professions only exist on villagers. Switching back with `villager` restores the profession you had.
 

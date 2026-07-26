@@ -18,6 +18,12 @@ command:
     no-permission: "<red>権限がありません。"
     player-only: "<red>このコマンドはプレイヤーのみ実行できます。"
     shop-not-found: "<red>指定されたショップが見つかりません: <shop_id>"
+    shop-suggest:
+        tooltip: "<white><shop_name></white><suspended><newline><gray><type> / <owner> / <distance>"
+        distance: "<blocks>ブロック先"
+        distance-unknown: "距離不明"
+        owner-none: "オーナーなし"
+        suspended-mark: " <red>[停止中]"
     egg:
         issued: "<green>スポーンエッグを <player> に配布しました。"
         not-found: "<red>対象プレイヤーが見つかりません: <player>"
