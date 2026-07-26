@@ -65,6 +65,16 @@ CI runs both backends — see [.github/workflows/ci.yml](.github/workflows/ci.ym
 - Tests using Bukkit types should extend or use `testsupport/BukkitTestSupport` to manage MockBukkit lifecycle.
 - Test naming: `<ClassName>Test`; method names describe behavior (`createsShopWhenVillagerIsValid`).
 
+## Release automation
+
+Versioning, CHANGELOG and publishing are automated — never bump a version or write a CHANGELOG entry by hand.
+
+- **Commits drive everything.** [release-please](https://github.com/googleapis/release-please) parses Conventional Commits on `main` and maintains a "chore: release x.y.z" PR that carries the CHANGELOG diff and the version bump. Merging that PR creates the tag, the GitHub release, and triggers publishing. Sections and hidden types are configured in [release-please-config.json](release-please-config.json); the last released version is in [.release-please-manifest.json](.release-please-manifest.json).
+- **The version lives in [gradle.properties](gradle.properties)** inside the `x-release-please-start-version` / `x-release-please-end` block. Gradle reads it automatically (there is no `version =` in [build.gradle](build.gradle)), `processResources` expands it into `paper-plugin.yml`, and Minotaur reuses it as the Modrinth version number. The block-comment form matters: a trailing `# x-release-please-version` would be swallowed into the properties value.
+- **[.github/workflows/release.yml](.github/workflows/release.yml)** holds both the release-please job and the publish job. They are one workflow on purpose — a release created with `GITHUB_TOKEN` does not fire `release: published`, so a separate publish workflow would never run without a PAT.
+- **Modrinth** upload is the `modrinth` Gradle task ([com.modrinth.minotaur](https://github.com/modrinth/minotaur)); `modrinthSyncBody` pushes `README.md` as the project description, so links in it must stay absolute. Declared Minecraft versions come from `modrinth.gameVersions` in `gradle.properties` and track BedrockDialog's supported list. Modrinth dependencies are `bedrockdialog` (required) and `placeholderapi` (optional) — Vault has no Modrinth project and can only be mentioned in the body.
+- **PR titles are linted** ([.github/workflows/pr-title.yml](.github/workflows/pr-title.yml)) because squash merges turn the title into the commit message release-please reads.
+
 ## Style
 
 - Java 21, UTF-8, 4-space indent, no tabs.

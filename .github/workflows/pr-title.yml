@@ -1,0 +1,36 @@
+name: PR title
+
+# release-please builds the CHANGELOG from the commits that land on main. With
+# squash merges the PR title becomes that commit message, so it has to follow
+# Conventional Commits.
+on:
+    # `synchronize` is here so the check re-reports on every push, which matters
+    # if this is made a required check.
+    pull_request:
+        types: [opened, reopened, edited, synchronize]
+
+permissions:
+    pull-requests: read
+
+jobs:
+    lint:
+        name: Validate the PR title
+        runs-on: ubuntu-latest
+        steps:
+            - uses: amannn/action-semantic-pull-request@v6
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              with:
+                  # Mirrors the types listed in release-please-config.json.
+                  types: |
+                      feat
+                      fix
+                      perf
+                      refactor
+                      docs
+                      build
+                      ci
+                      chore
+                      style
+                      test
+                      revert

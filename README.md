@@ -1,5 +1,9 @@
 # ModernVillagerShop
 
+[![Modrinth](https://img.shields.io/modrinth/dt/modernvillagershop?logo=modrinth&label=Modrinth&color=00AF5C)](https://modrinth.com/plugin/modernvillagershop)
+[![GitHub release](https://img.shields.io/github/v/release/f0reachARR/ModernVillagerShop?logo=github&label=Release)](https://github.com/f0reachARR/ModernVillagerShop/releases/latest)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/f0reachARR/ModernVillagerShop/blob/main/LICENSE)
+
 Turn Villagers into real shops — player-owned or admin-run — with selling, buying (order slots), co-ownership and revenue sharing, on Paper 1.21.8+.
 
 ModernVillagerShop replaces the vanilla trade window with a **chest UI + Dialog** hybrid: a chest inventory to browse and manage listings, and native Paper Dialogs for every amount, price and confirmation prompt. Because dialogs are driven through [BedrockDialog](https://modrinth.com/plugin/bedrockdialog), Bedrock players (Geyser + Floodgate) get the same flows rendered as Bedrock forms.
@@ -31,7 +35,7 @@ ModernVillagerShop replaces the vanilla trade window with a **chest UI + Dialog*
 
 ## Installation
 
-1. Drop `ModernVillagerShop-*.jar`, `Vault` and `BedrockDialog` into `plugins/`.
+1. Download `ModernVillagerShop-*.jar` from [Modrinth](https://modrinth.com/plugin/modernvillagershop) (or the [GitHub releases](https://github.com/f0reachARR/ModernVillagerShop/releases/latest)) and drop it, together with `Vault` and `BedrockDialog`, into `plugins/`.
 2. Make sure a Vault-compatible economy plugin is installed and running.
 3. Start the server. `plugins/ModernVillagerShop/config.yml` and `lang/messages_{en,ja}.yml` are generated on first boot.
 4. Set `locale` in `config.yml` (`ja_JP` by default, `en_US` also ships) and run `/vshop reload`.
