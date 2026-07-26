@@ -39,14 +39,31 @@
 
 ## Commit & Pull Request Guidelines
 
-- Existing history is minimal (`initial commit`), so use clear imperative commits going forward.
-- Suggested commit format: `type(scope): short summary` (example: `feat(ui): add listing pagination controls`).
+- Commit format is [Conventional Commits](https://www.conventionalcommits.org/): `type(scope): short summary` (example: `feat(ui): add listing pagination controls`). This is not cosmetic — release-please derives the version bump and the CHANGELOG from it, so `feat` means a minor bump, `fix` a patch, and `!` or a `BREAKING CHANGE:` footer a major.
+- Because merges are squashed, **the PR title becomes the commit message on `main`** and must follow the same convention. `.github/workflows/pr-title.yml` enforces it.
 - Keep commits focused; avoid mixing refactors with feature work.
 - PRs should include:
   - What changed and why
   - Related issue/ticket (if available)
   - Validation steps (`./gradlew build`, local `runServer` checks)
   - Screenshots/GIFs for UI or dialog flow changes
+
+## Releasing
+
+Releases are fully automated; nothing is bumped or tagged by hand.
+
+1. Merge PRs into `main` as usual. `.github/workflows/release.yml` runs release-please, which opens (or updates) a **"chore: release x.y.z"** PR containing the CHANGELOG entries and the new version in `gradle.properties`.
+2. Review that PR — the CHANGELOG is a normal file, so hand-edit it there if the generated wording needs help.
+3. Merge it. release-please then creates the `vx.y.z` tag and the GitHub release, and the same workflow builds and publishes to GitHub Packages and to [Modrinth](https://modrinth.com/plugin/modernvillagershop), attaches the shaded JAR to the GitHub release, and syncs `README.md` to the Modrinth project description.
+
+Notes:
+
+- The version lives only in `gradle.properties`, inside the `x-release-please-start-version` block. `processResources` expands it into `paper-plugin.yml` and Minotaur uses it as the Modrinth version number.
+- To force a specific version (e.g. going 0.x → 1.0.0), land an empty commit with a `Release-As: 1.0.0` footer: `git commit --allow-empty -m "chore: release 1.0.0" -m "Release-As: 1.0.0"`.
+- The Minecraft versions advertised on Modrinth come from `modrinth.gameVersions` in `gradle.properties`. Keep them aligned with what BedrockDialog supports, since it is a hard dependency.
+- Because `README.md` is pushed as the Modrinth description, every link in it must be an absolute URL.
+- Re-publishing an existing tag (e.g. after a transient Modrinth failure): run the **Release** workflow manually with the tag name as input.
+- Required repository setup: the `MODRINTH_TOKEN` secret, and *Settings → Actions → General → Allow GitHub Actions to create and approve pull requests*.
 
 ## Security & Configuration Tips
 
