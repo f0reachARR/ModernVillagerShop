@@ -2,6 +2,18 @@
 command:
     help:
         header: "<gold>=== ModernVillagerShop Help ==="
+        # One key per subcommand; HelpCommand owns the display order.
+        list: "<yellow>/vshop list [page] <gray>- List shops"
+        open: "<yellow>/vshop open <shopId> <gray>- Open a shop"
+        edit: "<yellow>/vshop edit <shopId> <gray>- Open the editor UI"
+        coowner: "<yellow>/vshop coowner <shopId> <gray>- Manage co-owners"
+        transfer: "<yellow>/vshop transfer <shopId> <player> <gray>- Transfer ownership"
+        stats: "<yellow>/vshop stats <shopId> <gray>- Shop statistics"
+        search: "<yellow>/vshop search <item> [page] <gray>- Search items"
+        history: "<yellow>/vshop history [page] [--shop <id>] [--side sell|buy] [--from <date>] [--to <date>] [--player <name>] <gray>- Trade history"
+        egg: "<yellow>/vshop egg <player> <lines|inf|admin> <gray>- Give a spawn egg"
+        migrate: "<yellow>/vshop migrate <from> <to> <gray>- Migrate storage"
+        reload: "<yellow>/vshop reload <gray>- Reload configuration"
     no-permission: "<red>You don't have permission."
     player-only: "<red>This command can only be used by a player."
     shop-not-found: "<red>Shop not found: <shop_id>"

@@ -2,6 +2,18 @@
 command:
     help:
         header: "<gold>=== ModernVillagerShop ヘルプ ==="
+        # One key per subcommand; HelpCommand owns the display order.
+        list: "<yellow>/vshop list [page] <gray>- ショップ一覧"
+        open: "<yellow>/vshop open <shopId> <gray>- ショップを開く"
+        edit: "<yellow>/vshop edit <shopId> <gray>- 編集UIを開く"
+        coowner: "<yellow>/vshop coowner <shopId> <gray>- 共同オーナー管理"
+        transfer: "<yellow>/vshop transfer <shopId> <player> <gray>- オーナー権の移譲"
+        stats: "<yellow>/vshop stats <shopId> <gray>- ショップ統計"
+        search: "<yellow>/vshop search <item> [page] <gray>- アイテム検索"
+        history: "<yellow>/vshop history [page] [--shop <id>] [--side sell|buy] [--from <date>] [--to <date>] [--player <name>] <gray>- 取引履歴"
+        egg: "<yellow>/vshop egg <player> <lines|inf|admin> <gray>- スポーンエッグ配布"
+        migrate: "<yellow>/vshop migrate <from> <to> <gray>- ストレージ移行"
+        reload: "<yellow>/vshop reload <gray>- 設定リロード"
     no-permission: "<red>権限がありません。"
     player-only: "<red>このコマンドはプレイヤーのみ実行できます。"
     shop-not-found: "<red>指定されたショップが見つかりません: <shop_id>"

@@ -13,19 +13,10 @@ import java.util.List;
 @SuppressWarnings("UnstableApiUsage")
 public final class HelpCommand {
 
-    private static final List<String> LINES = List.of(
-            "<yellow>/vshop list [page] <gray>- ショップ一覧",
-            "<yellow>/vshop open <shopId> <gray>- ショップを開く",
-            "<yellow>/vshop edit <shopId> <gray>- 編集UIを開く",
-            "<yellow>/vshop coowner <shopId> <gray>- 共同オーナー管理",
-            "<yellow>/vshop transfer <shopId> <player> <gray>- PRIMARY 移譲",
-            "<yellow>/vshop stats <shopId> <gray>- ショップ統計",
-            "<yellow>/vshop search <item> [page] <gray>- アイテム検索",
-            "<yellow>/vshop history [page] [--shop <id>] [--side sell|buy] [--from <date>] [--to <date>] [--player <name>] <gray>- 取引履歴",
-            "<yellow>/vshop egg <player> <lines|inf|admin> <gray>- スポーンエッグ配布",
-            "<yellow>/vshop migrate <from> <to> <gray>- ストレージ移行",
-            "<yellow>/vshop reload <gray>- 設定リロード"
-    );
+    /** Display order; the text of each line lives in {@code command.help.<key>}. */
+    private static final List<String> ENTRIES = List.of(
+            "list", "open", "edit", "coowner", "transfer", "stats",
+            "search", "history", "egg", "migrate", "reload");
 
     private final CommandSupport support;
 
@@ -40,8 +31,8 @@ public final class HelpCommand {
     public int execute(CommandContext<CommandSourceStack> ctx) {
         CommandSender sender = ctx.getSource().getSender();
         sender.sendMessage(support.messages().get("command.help.header"));
-        for (String line : LINES) {
-            sender.sendMessage(support.messages().miniMessage().deserialize(line));
+        for (String entry : ENTRIES) {
+            sender.sendMessage(support.messages().get("command.help." + entry));
         }
         return Command.SINGLE_SUCCESS;
     }
