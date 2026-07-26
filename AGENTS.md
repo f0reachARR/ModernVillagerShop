@@ -6,7 +6,7 @@
 - Runtime resources are in `src/main/resources`:
   - `paper-plugin.yml` for plugin metadata
   - `config.yml` for plugin settings
-  - `lang/messages_*.yml` for localized text
+  - `lang/messages_*.yml` for localized text — keep `messages_en.yml` and `messages_ja.yml` in sync, and never print a domain enum with `name()`: route it through `locale/EnumLabels`, which reads `enum.<kebab-class>.<kebab-value>`
 - Build output is generated under `build/` (do not commit generated artifacts).
 
 ## Build, Test, and Development Commands

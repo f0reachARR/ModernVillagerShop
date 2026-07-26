@@ -2,6 +2,7 @@ package me.f0reach.vshop.shop.edit;
 
 import me.f0reach.vshop.ModernVillagerShopPlugin;
 import me.f0reach.vshop.config.PluginConfig;
+import me.f0reach.vshop.locale.EnumLabels;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.CoOwnerRole;
 import me.f0reach.vshop.model.InventoryEntry;
@@ -13,6 +14,7 @@ import me.f0reach.vshop.shop.egg.SpawnEggMeta;
 import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import me.f0reach.vshop.ui.text.Displays;
+import me.f0reach.vshop.ui.text.StatsView;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
@@ -56,6 +58,7 @@ public final class ShopActionMenu {
     private final ShopEditService editService;
     private final ShopRestockUi restockUi;
     private final CoOwnerFlow coOwnerFlow;
+    private final EnumLabels enumLabels;
 
     public ShopActionMenu(ModernVillagerShopPlugin plugin, DialogService dialogs, MessageManager messages,
                           ShopEditService editService, ShopRestockUi restockUi, CoOwnerFlow coOwnerFlow) {
@@ -65,6 +68,7 @@ public final class ShopActionMenu {
         this.editService = editService;
         this.restockUi = restockUi;
         this.coOwnerFlow = coOwnerFlow;
+        this.enumLabels = new EnumLabels(messages);
     }
 
     public boolean canShow(Player viewer, Shop shop) {
@@ -81,8 +85,9 @@ public final class ShopActionMenu {
         Component title = messages.get("action.title",
                 Placeholder.parsed("shop_name", shop.name()));
         Component body = messages.get("action.body",
-                Placeholder.parsed("type", shop.type().name()),
-                Placeholder.parsed("suspended", shop.suspended() ? "yes" : "no"));
+                Placeholder.component("type", enumLabels.label(shop.type())),
+                Placeholder.parsed("suspended",
+                        messages.getRaw(shop.suspended() ? "action.state-on" : "action.state-off")));
 
         List<DialogService.ButtonSpec> buttons = new ArrayList<>();
 
@@ -175,7 +180,8 @@ public final class ShopActionMenu {
         }
         if (shop.isPlayerShop() && hasAnyPerm(viewer,
                 "modernvillagershop.coowner.transfer", "modernvillagershop.coowner.transfer.others")) {
-            buttons.add(new DialogService.ButtonSpec(messages.get("action.transfer"),
+            buttons.add(new DialogService.ButtonSpec(messages.get("action.transfer",
+                            Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))),
                     () -> coOwnerFlow.openTransferWithPicker(viewer, shop,
                             () -> openOwnerSubmenu(viewer, shop))));
         }
@@ -442,7 +448,7 @@ public final class ShopActionMenu {
                 String counterparty = resolveCounterparty(rec);
                 Component line = messages.get("history.line",
                         Placeholder.parsed("time", HISTORY_FORMAT.format(rec.at())),
-                        Placeholder.parsed("side", rec.side().name()),
+                        Placeholder.component("side", enumLabels.label(rec.side())),
                         Placeholder.parsed("amount", Integer.toString(rec.amount())),
                         Placeholder.component("item", Displays.item(rec.itemSnapshot())),
                         Placeholder.parsed("price", plugin.economyService().format(rec.unitPrice())),
@@ -471,15 +477,7 @@ public final class ShopActionMenu {
         try {
             var agg = plugin.api().statsFor(shop.id());
             int slotCount = plugin.storage().slots().findByShop(shop.id()).size();
-            viewer.sendMessage(messages.get("stats.header",
-                    Placeholder.parsed("shop_name", shop.name())));
-            viewer.sendMessage(messages.get("stats.slots",
-                    Placeholder.parsed("count", String.valueOf(slotCount))));
-            viewer.sendMessage(messages.get("stats.totals",
-                    Placeholder.parsed("sell_count", String.valueOf(agg.sellCount())),
-                    Placeholder.parsed("buy_count", String.valueOf(agg.buyCount())),
-                    Placeholder.parsed("sell_total", plugin.economyService().format(agg.totalSalesValue())),
-                    Placeholder.parsed("buy_total", plugin.economyService().format(agg.totalBuyValue()))));
+            new StatsView(messages, plugin.economyService()).send(viewer, shop, agg, slotCount);
         } catch (SQLException ex) {
             viewer.sendMessage(messages.get("error.generic",
                     Placeholder.parsed("reason", ex.getMessage())));

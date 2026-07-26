@@ -3,6 +3,7 @@ package me.f0reach.vshop.shop.edit;
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
+import me.f0reach.vshop.locale.EnumLabels;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.LimitScope;
 import me.f0reach.vshop.model.Shop;
@@ -38,6 +39,7 @@ public final class SlotEditFlow {
     private final EconomyService economy;
     private final ShopEditService editService;
     private final PluginConfig config;
+    private final EnumLabels enumLabels;
 
     public SlotEditFlow(DialogService dialogs, MessageManager messages, EconomyService economy,
                         ShopEditService editService, PluginConfig config) {
@@ -46,6 +48,7 @@ public final class SlotEditFlow {
         this.economy = economy;
         this.editService = editService;
         this.config = config;
+        this.enumLabels = new EnumLabels(messages);
     }
 
     public void openCreate(Player editor, Shop shop, int slotIndex, ItemStack template, Runnable afterRefresh) {
@@ -324,21 +327,20 @@ public final class SlotEditFlow {
         return (s == null || s.isBlank()) ? null : s;
     }
 
+    /**
+     * Option IDs stay the raw enum names — {@code LimitScope.valueOf} reads them
+     * back on submit — while the visible label comes from the locale files.
+     */
     private List<DialogService.InputBuilder.Option> limitScopeOptions() {
         return List.of(
-                new DialogService.InputBuilder.Option("PER_PLAYER",
-                        messages.get("edit.slot.scope.per-player")),
-                new DialogService.InputBuilder.Option("GLOBAL",
-                        messages.get("edit.slot.scope.global")));
+                new DialogService.InputBuilder.Option(LimitScope.PER_PLAYER.name(),
+                        enumLabels.label(LimitScope.PER_PLAYER)),
+                new DialogService.InputBuilder.Option(LimitScope.GLOBAL.name(),
+                        enumLabels.label(LimitScope.GLOBAL)));
     }
 
     private Component sideLabel(TradeSide side) {
-        String key = switch (side) {
-            case SELL -> "edit.slot.side-sell";
-            case BUY -> "edit.slot.side-buy";
-            case BOTH -> "edit.slot.side-both";
-        };
-        return messages.get(key);
+        return enumLabels.label(side);
     }
 
     private static TradeSide cycleSide(TradeSide s) {

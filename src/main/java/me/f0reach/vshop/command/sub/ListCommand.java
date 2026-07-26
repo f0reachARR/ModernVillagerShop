@@ -6,7 +6,11 @@ import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.f0reach.vshop.command.CommandSupport;
+import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.ui.text.Displays;
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.command.CommandSender;
 
 import java.util.ArrayList;
@@ -42,14 +46,27 @@ public final class ListCommand {
         int from = (p - 1) * PER_PAGE;
         int to = Math.min(from + PER_PAGE, total);
 
-        var mm = support.messages().miniMessage();
-        sender.sendMessage(mm.deserialize("<gold>=== ショップ一覧 (" + p + "/" + pages + ") ==="));
+        MessageManager messages = support.messages();
+        sender.sendMessage(messages.get("command.list.header",
+                Placeholder.parsed("page", String.valueOf(p)),
+                Placeholder.parsed("pages", String.valueOf(pages)),
+                Placeholder.parsed("total", String.valueOf(total))));
+        if (total == 0) {
+            sender.sendMessage(messages.get("command.list.empty"));
+            return Command.SINGLE_SUCCESS;
+        }
         for (int i = from; i < to; i++) {
             Shop s = all.get(i);
-            sender.sendMessage(mm.deserialize(
-                    "<yellow>" + s.id().toString().substring(0, 8)
-                            + " <gray>- <white>" + s.name()
-                            + " <dark_gray>[" + s.type() + (s.suspended() ? " SUSPENDED" : "") + "]"));
+            // Shop names are player-supplied: insert as a component so a name
+            // containing MiniMessage syntax cannot inject formatting.
+            sender.sendMessage(messages.get("command.list.line",
+                    Placeholder.component("shop_id", Displays.shortId(s.id())),
+                    Placeholder.component("shop_name",
+                            Displays.nameWithHover(Displays.truncate(s.name(), 24), s.name())),
+                    Placeholder.component("type", support.enumLabels().label(s.type())),
+                    Placeholder.component("suspended", s.suspended()
+                            ? messages.get("command.list.suspended-mark")
+                            : Component.empty())));
         }
         return Command.SINGLE_SUCCESS;
     }

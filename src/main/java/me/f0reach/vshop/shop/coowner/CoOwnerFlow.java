@@ -1,5 +1,6 @@
 package me.f0reach.vshop.shop.coowner;
 
+import me.f0reach.vshop.locale.EnumLabels;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.CoOwner;
 import me.f0reach.vshop.model.CoOwnerRole;
@@ -49,6 +50,7 @@ public final class CoOwnerFlow {
     private final ShopVillagerManager villagerManager;
     private final PlayerPickerUi playerPicker;
     private final PlayerCacheService playerCache;
+    private final EnumLabels enumLabels;
 
     public CoOwnerFlow(DialogService dialogs, MessageManager messages, StorageManager storage,
                        ShopService shopService, ShopVillagerManager villagerManager,
@@ -60,6 +62,7 @@ public final class CoOwnerFlow {
         this.villagerManager = villagerManager;
         this.playerPicker = playerPicker;
         this.playerCache = playerCache;
+        this.enumLabels = new EnumLabels(messages);
     }
 
     public void openManager(Player primary, Shop shop) {
@@ -136,9 +139,12 @@ public final class CoOwnerFlow {
                                        String displayName, Runnable onReturn) {
         Component body = messages.get("coowner.transfer.body",
                 Placeholder.parsed("player", displayName),
-                Placeholder.parsed("shop_name", shop.name()));
+                Placeholder.parsed("shop_name", shop.name()),
+                Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY)),
+                Placeholder.component("new_role", enumLabels.label(CoOwnerRole.MANAGER)));
         dialogs.confirmOnce(primary,
-                messages.get("coowner.transfer.title"), body,
+                messages.get("coowner.transfer.title",
+                        Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))), body,
                 messages.get("coowner.transfer.yes"), messages.get("coowner.transfer.no"),
                 () -> performTransfer(primary, shop, target),
                 nullSafeReturn(onReturn),
@@ -172,7 +178,7 @@ public final class CoOwnerFlow {
                     ? p.getName() : co.playerUuid().toString().substring(0, 8);
             Component label = messages.get("coowner.list.entry",
                     Placeholder.parsed("player", playerLabel),
-                    Placeholder.parsed("role", co.role().name()),
+                    Placeholder.component("role", enumLabels.label(co.role())),
                     Placeholder.parsed("share", co.share().toPlainString()));
             buttons.add(new DialogService.ButtonSpec(label,
                     () -> showMemberActions(primary, shop, co, onReturn)));
@@ -204,7 +210,8 @@ public final class CoOwnerFlow {
             for (CoOwner co : storage.coOwners().findByShop(shop.id())) {
                 if (co.playerUuid().equals(picked.playerUuid())) {
                     if (co.role() == CoOwnerRole.PRIMARY) {
-                        primary.sendMessage(messages.get("coowner.primary-immutable"));
+                        primary.sendMessage(messages.get("coowner.primary-immutable",
+                            Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))));
                         reloadList(primary, shop, onReturn);
                         return;
                     }
@@ -226,11 +233,7 @@ public final class CoOwnerFlow {
                         messages.get("coowner.add.body-for",
                                 Placeholder.parsed("player", picked.name())),
                         messages.get("coowner.add.submit"))
-                .dropdown("role", messages.get("coowner.add.role-label"),
-                        List.of(
-                                new DialogService.InputBuilder.Option("MANAGER", Component.text("MANAGER")),
-                                new DialogService.InputBuilder.Option("STAFF", Component.text("STAFF"))
-                        ), roleIdx)
+                .dropdown("role", messages.get("coowner.add.role-label"), roleOptions(),roleIdx)
                 .text("share", messages.get("coowner.add.share-label"), shareDefault)
                 .onCancel(() -> reloadList(primary, shop, onReturn))
                 .onSubmit(response -> {
@@ -244,7 +247,8 @@ public final class CoOwnerFlow {
 
     private void showMemberActions(Player primary, Shop shop, CoOwner co, Runnable onReturn) {
         if (co.role() == CoOwnerRole.PRIMARY) {
-            primary.sendMessage(messages.get("coowner.primary-immutable"));
+            primary.sendMessage(messages.get("coowner.primary-immutable",
+                    Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))));
             reloadList(primary, shop, onReturn);
             return;
         }
@@ -252,7 +256,7 @@ public final class CoOwnerFlow {
         OfflinePlayer p = Bukkit.getOfflinePlayer(co.playerUuid());
         Component body = messages.get("coowner.member.body",
                 Placeholder.parsed("player", p.getName() == null ? co.playerUuid().toString() : p.getName()),
-                Placeholder.parsed("role", co.role().name()),
+                Placeholder.component("role", enumLabels.label(co.role())),
                 Placeholder.parsed("share", co.share().toPlainString()));
         dialogs.multiButton(primary, title, body, List.of(
                 new DialogService.ButtonSpec(messages.get("coowner.member.edit"),
@@ -267,11 +271,7 @@ public final class CoOwnerFlow {
                         messages.get("coowner.edit.title"),
                         messages.get("coowner.edit.body"),
                         messages.get("coowner.edit.submit"))
-                .dropdown("role", messages.get("coowner.add.role-label"),
-                        List.of(
-                                new DialogService.InputBuilder.Option("MANAGER", Component.text("MANAGER")),
-                                new DialogService.InputBuilder.Option("STAFF", Component.text("STAFF"))
-                        ), co.role() == CoOwnerRole.STAFF ? 1 : 0)
+                .dropdown("role", messages.get("coowner.add.role-label"), roleOptions(),co.role() == CoOwnerRole.STAFF ? 1 : 0)
                 .text("share", messages.get("coowner.add.share-label"), co.share().toPlainString())
                 .onCancel(() -> showMemberActions(primary, shop, co, onReturn))
                 .onSubmit(response -> {
@@ -379,12 +379,27 @@ public final class CoOwnerFlow {
 
             oldPrimary.sendMessage(messages.get("coowner.transfer.done",
                     Placeholder.parsed("player",
-                            newPrimary.getName() == null ? newId.toString() : newPrimary.getName())));
+                            newPrimary.getName() == null ? newId.toString() : newPrimary.getName()),
+                    Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))));
         } catch (SQLException ex) {
             LOG.severe("PRIMARY transfer failed: " + ex.getMessage());
             oldPrimary.sendMessage(messages.get("error.generic",
                     Placeholder.parsed("reason", ex.getMessage())));
         }
+    }
+
+    /**
+     * Assignable roles for the add/edit dropdown. Option IDs stay the raw enum
+     * names — {@code CoOwnerRole.valueOf} reads them back on submit — while the
+     * visible label comes from the locale files. PRIMARY is absent by design:
+     * it moves only through transfer.
+     */
+    private List<DialogService.InputBuilder.Option> roleOptions() {
+        return List.of(
+                new DialogService.InputBuilder.Option(CoOwnerRole.MANAGER.name(),
+                        enumLabels.label(CoOwnerRole.MANAGER)),
+                new DialogService.InputBuilder.Option(CoOwnerRole.STAFF.name(),
+                        enumLabels.label(CoOwnerRole.STAFF)));
     }
 
     private static Runnable nullSafeReturn(Runnable onReturn) {

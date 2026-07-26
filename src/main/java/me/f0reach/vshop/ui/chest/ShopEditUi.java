@@ -3,6 +3,7 @@ package me.f0reach.vshop.ui.chest;
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
 import me.f0reach.vshop.locale.DurationDisplay;
+import me.f0reach.vshop.locale.EnumLabels;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
@@ -44,6 +45,7 @@ public final class ShopEditUi {
     private final MessageManager messages;
     private final EconomyService economy;
     private final DurationDisplay durations;
+    private final EnumLabels enumLabels;
 
     public ShopEditUi(StorageManager storage, IconConfig icons, MessageManager messages,
                       EconomyService economy) {
@@ -52,6 +54,7 @@ public final class ShopEditUi {
         this.messages = messages;
         this.economy = economy;
         this.durations = new DurationDisplay(messages);
+        this.enumLabels = new EnumLabels(messages);
     }
 
     public void open(Player editor, Shop shop, int page) {
@@ -141,7 +144,7 @@ public final class ShopEditUi {
         if (meta != null) {
             List<Component> lore = new ArrayList<>();
             lore.add(messages.get("slot.side",
-                    Placeholder.parsed("side", slot.side().name())));
+                    Placeholder.component("side", enumLabels.label(slot.side()))));
             if (slot.side() == TradeSide.SELL || slot.side() == TradeSide.BOTH) {
                 lore.add(messages.get("slot.sell-line",
                         Placeholder.parsed("price", economy.format(slot.unitPrice())),
@@ -166,7 +169,7 @@ public final class ShopEditUi {
                 lore.add(messages.get("slot.limit-line",
                         Placeholder.parsed("used", Integer.toString(status == null ? 0 : status.used())),
                         Placeholder.parsed("limit", Integer.toString(slot.tradeLimit())),
-                        Placeholder.parsed("scope", slot.limitScope().name())));
+                        Placeholder.component("scope", enumLabels.label(slot.limitScope()))));
                 if (status != null && status.hasReset()) {
                     Instant now = Instant.now();
                     if (status.windowActive(now)) {

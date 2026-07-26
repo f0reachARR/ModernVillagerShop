@@ -56,6 +56,7 @@ CI runs both backends — see [.github/workflows/ci.yml](.github/workflows/ci.ym
 - BedrockDialog callbacks may fire off the main thread. Anything that touches Bukkit API must be wrapped in `Bukkit.getScheduler().runTask(plugin, ...)` — see existing flows in `shop/trade/TradeFlow` and `shop/edit/SlotEditFlow` for the pattern.
 - BedrockDialog only ships `ConfirmDialog` / `NoticeDialog` / `MultiButtonDialog` / `InputDialog` and has no `onClose` on Bedrock — design flows around explicit cancel buttons, not close detection. Sliders are banned for amount/price (use `InputDialog`).
 - Localization: every user-visible string lives in `lang/messages_*.yml` and both `messages_en.yml` and `messages_ja.yml` must stay in sync when keys are added.
+- Never render a domain enum with `name()` in player-facing output. `locale/EnumLabels` resolves `TradeSide` / `LimitScope` / `CoOwnerRole` / `ShopType` to `enum.<kebab-class>.<kebab-value>` (e.g. `enum.trade-side.sell`); insert the result with `Placeholder.component` so the surrounding message keeps supplying the color, and keep the label itself plain text. Adding an enum constant means adding the key to *both* locale files — `EnumLabelsTest` fails otherwise. `name()` remains correct for the DB, YAML import/export, command arguments and Dialog dropdown option IDs.
 
 ## Testing notes
 

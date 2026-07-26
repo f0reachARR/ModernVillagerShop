@@ -2,6 +2,18 @@
 command:
     help:
         header: "<gold>=== ModernVillagerShop ヘルプ ==="
+        # One key per subcommand; HelpCommand owns the display order.
+        list: "<yellow>/vshop list [page] <gray>- ショップ一覧"
+        open: "<yellow>/vshop open <shopId> <gray>- ショップを開く"
+        edit: "<yellow>/vshop edit <shopId> <gray>- 編集UIを開く"
+        coowner: "<yellow>/vshop coowner <shopId> <gray>- 共同オーナー管理"
+        transfer: "<yellow>/vshop transfer <shopId> <player> <gray>- オーナー権の移譲"
+        stats: "<yellow>/vshop stats <shopId> <gray>- ショップ統計"
+        search: "<yellow>/vshop search <item> [page] <gray>- アイテム検索"
+        history: "<yellow>/vshop history [page] [--shop <id>] [--side sell|buy] [--from <date>] [--to <date>] [--player <name>] <gray>- 取引履歴"
+        egg: "<yellow>/vshop egg <player> <lines|inf|admin> <gray>- スポーンエッグ配布"
+        migrate: "<yellow>/vshop migrate <from> <to> <gray>- ストレージ移行"
+        reload: "<yellow>/vshop reload <gray>- 設定リロード"
     no-permission: "<red>権限がありません。"
     player-only: "<red>このコマンドはプレイヤーのみ実行できます。"
     shop-not-found: "<red>指定されたショップが見つかりません: <shop_id>"
@@ -36,6 +48,11 @@ command:
         player-not-found: "<red>プレイヤーが見つかりません: <player>"
         line: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <dark_gray>[<shop> / <counterparty>]"
         line-with-fee: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <gray>(手数料 <fee>) <dark_gray>[<shop> / <counterparty>]"
+    list:
+        header: "<gold>=== ショップ一覧 (<page>/<pages>, 全<total>件) ==="
+        empty: "<gray>ショップがありません。"
+        line: "<yellow><shop_id></yellow> <gray>- <white><shop_name></white> <dark_gray>[<type>]<suspended>"
+        suspended-mark: " <red>[停止中]"
     search:
         header: "<gold>=== 検索: <query> (<page>/<pages>, <total>件) ==="
         empty: "<gray>ヒットなし"
@@ -115,7 +132,7 @@ error:
 coowner:
     no-permission: "<red>共同オーナーを管理する権限がありません。"
     admin-shop: "<red>管理者ショップには共同オーナーを設定できません。"
-    primary-immutable: "<gray>PRIMARYは直接編集できません。移譲を使用してください。"
+    primary-immutable: "<gray><role>は直接編集できません。移譲を使用してください。"
     list:
         title: "<white>共同オーナー: <shop_name>"
         body: "<gray>編集対象を選択するか、追加してください。"
@@ -145,12 +162,12 @@ coowner:
         "no": "やめる"
         done: "<green>共同オーナーを削除しました。"
     transfer:
-        title: "<white>PRIMARY 移譲"
-        body: "<gray>このショップの PRIMARY を <player> へ移譲します。\nあなたは MANAGER に降格します。"
+        title: "<white><role>の移譲"
+        body: "<gray>このショップの<role>を <player> へ移譲します。\nあなたは<new_role>に降格します。"
         "yes": "移譲する"
         "no": "やめる"
         same-player: "<red>同じプレイヤーには移譲できません。"
-        done: "<green>PRIMARY を <player> に移譲しました。"
+        done: "<green><role>を <player> に移譲しました。"
 
 edit:
     slot:
@@ -168,9 +185,6 @@ edit:
         buy-title: "<white>納品用設定"
         body: "<gray>対象アイテム: <item> (1パック上限: <unit_max>個)"
         submit: "適用"
-        side-sell: "販売 (SELL)"
-        side-buy: "買取 (BUY)"
-        side-both: "双方向 (BOTH)"
         unit-price: "販売単価"
         unit-amount: "1パックあたりの個数 (上限 <max>)"
         buy-unit-price: "買取単価"
@@ -182,9 +196,6 @@ edit:
         created: "<green>出品枠を作成しました。"
         updated: "<green>出品枠を更新しました。"
         place-prompt: "<gray>カーソルにアイテムを持って空きスロットをクリックすると新規出品枠を作成できます。"
-        scope:
-            per-player: "プレイヤー単位"
-            global: "全体共有"
     delete:
         title: "<white>出品枠の削除"
         body: "<gray><item> の出品枠を削除します。よろしいですか？"
@@ -238,7 +249,7 @@ action:
     settings-menu: "<white>店舗設定 ..."
     owner-menu: "<light_purple>オーナー管理 ..."
     coowner: "<light_purple>共同オーナー"
-    transfer: "<gold>PRIMARY 移譲"
+    transfer: "<gold><role>の移譲"
     notifications: "<white>取引通知 [現在: <current>]"
     notifications-on: "<green>取引通知を有効化しました。"
     notifications-off: "<yellow>取引通知を無効化しました。"
@@ -292,7 +303,9 @@ history:
 stats:
     header: "<aqua>=== <shop_name> 統計 ==="
     slots: "<gray>出品枠数: <count>"
-    totals: "<gray>SELL: <sell_count> 件 (<sell_total>) / BUY: <buy_count> 件 (<buy_total>)"
+    # Emitted once per trade side; <side> comes from enum.trade-side.*.
+    side-line: "<gray><side>: <count>件 (<total>)"
+    fees: "<gray>累計手数料: <fees>"
 
 player-picker:
     title: "<white>プレイヤー選択"
@@ -332,9 +345,24 @@ duration:
     sep: ""
     now: "まもなく"
 
-# Co-owner listing line — uses <primary>/<role>/<share> placeholders.
-shop-info:
-    coowner-line: "<gray>- <player> <yellow>[<role>]</yellow> <gray><share>%</gray>"
-    primary-line: "<gold>PRIMARY:</gold> <primary>"
-    # Shop location line — uses <world>/<x>/<y>/<z>.
-    location: "<gray>位置: <world> (<x>, <y>, <z>)"
+# Display labels for domain enums, resolved by locale.EnumLabels.
+# Key shape: enum.<kebab-class>.<kebab-value>. Keep these plain (no color tags) —
+# call sites insert them as components and the surrounding message adds color.
+# These are labels only; the DB, YAML import/export and command arguments keep
+# using the raw constant names.
+enum:
+    trade-side:
+        sell: "販売"
+        buy: "買取"
+        both: "双方向"
+    limit-scope:
+        per-player: "プレイヤー単位"
+        global: "全体共有"
+    co-owner-role:
+        primary: "オーナー"
+        manager: "マネージャー"
+        staff: "スタッフ"
+    shop-type:
+        player: "プレイヤーショップ"
+        admin: "管理者ショップ"
+

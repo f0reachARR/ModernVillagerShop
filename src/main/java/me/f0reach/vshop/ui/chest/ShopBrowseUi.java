@@ -3,6 +3,7 @@ package me.f0reach.vshop.ui.chest;
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.item.ItemIdentity;
 import me.f0reach.vshop.locale.DurationDisplay;
+import me.f0reach.vshop.locale.EnumLabels;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.InventoryEntry;
 import me.f0reach.vshop.model.Shop;
@@ -47,6 +48,7 @@ public final class ShopBrowseUi {
     private final PriceResolver priceResolver;
     private final EconomyService economy;
     private final DurationDisplay durations;
+    private final EnumLabels enumLabels;
 
     public ShopBrowseUi(StorageManager storage, IconConfig icons, MessageManager messages,
                         PriceResolver priceResolver, EconomyService economy) {
@@ -56,6 +58,7 @@ public final class ShopBrowseUi {
         this.priceResolver = priceResolver;
         this.economy = economy;
         this.durations = new DurationDisplay(messages);
+        this.enumLabels = new EnumLabels(messages);
     }
 
     public void open(Player viewer, Shop shop, int page) {
@@ -149,7 +152,7 @@ public final class ShopBrowseUi {
 
         List<Component> lore = new ArrayList<>();
         lore.add(messages.get("slot.side",
-                Placeholder.parsed("side", slot.side().name())));
+                Placeholder.component("side", enumLabels.label(slot.side()))));
         Component sellReason = null;
         Component buyReason = null;
         if (sellEnabled) {
@@ -184,7 +187,7 @@ public final class ShopBrowseUi {
             lore.add(messages.get("slot.limit-line",
                     Placeholder.parsed("used", Integer.toString(status == null ? 0 : status.used())),
                     Placeholder.parsed("limit", Integer.toString(slot.tradeLimit())),
-                    Placeholder.parsed("scope", slot.limitScope().name())));
+                    Placeholder.component("scope", enumLabels.label(slot.limitScope()))));
             if (status != null && status.hasReset()) {
                 Instant now = Instant.now();
                 if (status.windowActive(now)) {

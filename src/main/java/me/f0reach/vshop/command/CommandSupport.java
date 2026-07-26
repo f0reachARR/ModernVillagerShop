@@ -1,6 +1,7 @@
 package me.f0reach.vshop.command;
 
 import me.f0reach.vshop.ModernVillagerShopPlugin;
+import me.f0reach.vshop.locale.EnumLabels;
 import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.model.Shop;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
@@ -20,15 +21,19 @@ public final class CommandSupport {
 
     private final ModernVillagerShopPlugin plugin;
     private final MessageManager messages;
+    private final EnumLabels enumLabels;
 
     public CommandSupport(ModernVillagerShopPlugin plugin) {
         this.plugin = plugin;
         this.messages = plugin.messages();
+        this.enumLabels = new EnumLabels(messages);
     }
 
     public ModernVillagerShopPlugin plugin() { return plugin; }
 
     public MessageManager messages() { return messages; }
+
+    public EnumLabels enumLabels() { return enumLabels; }
 
     /** Resolves a shop by either an 8-char ID prefix or a full UUID. */
     public Shop findShopByPrefix(String prefix) {
