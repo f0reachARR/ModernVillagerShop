@@ -332,6 +332,27 @@ duration:
     sep: " "
     now: "now"
 
+# Display labels for domain enums, resolved by locale.EnumLabels.
+# Key shape: enum.<kebab-class>.<kebab-value>. Keep these plain (no color tags) —
+# call sites insert them as components and the surrounding message adds color.
+# These are labels only; the DB, YAML import/export and command arguments keep
+# using the raw constant names.
+enum:
+    trade-side:
+        sell: "Sell"
+        buy: "Buy"
+        both: "Both"
+    limit-scope:
+        per-player: "Per player"
+        global: "Shared globally"
+    co-owner-role:
+        primary: "Owner"
+        manager: "Manager"
+        staff: "Staff"
+    shop-type:
+        player: "Player shop"
+        admin: "Admin shop"
+
 # Co-owner listing line — uses <primary>/<role>/<share> placeholders.
 shop-info:
     coowner-line: "<gray>- <player> <yellow>[<role>]</yellow> <gray><share>%</gray>"
