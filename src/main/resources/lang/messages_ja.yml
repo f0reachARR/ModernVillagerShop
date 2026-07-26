@@ -36,6 +36,11 @@ command:
         player-not-found: "<red>プレイヤーが見つかりません: <player>"
         line: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <dark_gray>[<shop> / <counterparty>]"
         line-with-fee: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <gray>(手数料 <fee>) <dark_gray>[<shop> / <counterparty>]"
+    list:
+        header: "<gold>=== ショップ一覧 (<page>/<pages>, 全<total>件) ==="
+        empty: "<gray>ショップがありません。"
+        line: "<yellow><shop_id></yellow> <gray>- <white><shop_name></white> <dark_gray>[<type>]<suspended>"
+        suspended-mark: " <red>[停止中]"
     search:
         header: "<gold>=== 検索: <query> (<page>/<pages>, <total>件) ==="
         empty: "<gray>ヒットなし"
