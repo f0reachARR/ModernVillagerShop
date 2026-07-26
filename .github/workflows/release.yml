@@ -1,0 +1,89 @@
+name: Release
+
+on:
+    push:
+        branches: [main]
+    workflow_dispatch:
+        inputs:
+            tag:
+                description: "Existing release tag to (re)publish, e.g. v0.1.0"
+                required: true
+                type: string
+
+permissions:
+    contents: write
+    pull-requests: write
+
+concurrency:
+    group: release-${{ github.ref }}
+    cancel-in-progress: false
+
+jobs:
+    release-please:
+        name: Maintain the release PR
+        # Manual runs skip straight to publishing an already-tagged version.
+        if: github.event_name == 'push'
+        runs-on: ubuntu-latest
+        outputs:
+            release_created: ${{ steps.release.outputs.release_created }}
+            tag_name: ${{ steps.release.outputs.tag_name }}
+        steps:
+            - uses: googleapis/release-please-action@v5
+              id: release
+
+    publish:
+        name: Publish to GitHub Packages and Modrinth
+        needs: [release-please]
+        # `!cancelled()` keeps this job reachable when release-please is skipped
+        # (workflow_dispatch) instead of inheriting the skip.
+        if: >-
+            !cancelled()
+            && (needs.release-please.outputs.release_created == 'true'
+                || github.event_name == 'workflow_dispatch')
+        runs-on: ubuntu-latest
+        permissions:
+            # `write` is needed to attach the JAR to the GitHub release.
+            contents: write
+            packages: write
+        env:
+            TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || needs.release-please.outputs.tag_name }}
+        steps:
+            - uses: actions/checkout@v6
+              with:
+                  ref: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || needs.release-please.outputs.tag_name }}
+
+            - name: Set up JDK 21
+              uses: actions/setup-java@v5
+              with:
+                  distribution: temurin
+                  java-version: "21"
+
+            - name: Set up Gradle
+              uses: gradle/actions/setup-gradle@v6
+
+            # SQLite-only here; the MySQL matrix already ran on the release PR.
+            - name: Build
+              run: ./gradlew build --no-daemon --stacktrace
+
+            - name: Extract the release notes for Modrinth
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: |
+                  mkdir -p build
+                  gh release view "$TAG" --json body -q .body > build/modrinth-changelog.md
+
+            - name: Publish to GitHub Packages
+              env:
+                  GITHUB_ACTOR: ${{ github.actor }}
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: ./gradlew publish --no-daemon --stacktrace
+
+            - name: Publish to Modrinth
+              env:
+                  MODRINTH_TOKEN: ${{ secrets.MODRINTH_TOKEN }}
+              run: ./gradlew modrinth modrinthSyncBody --no-daemon --stacktrace
+
+            - name: Attach the shaded JAR to the GitHub release
+              env:
+                  GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+              run: gh release upload "$TAG" build/libs/ModernVillagerShop-*.jar --clobber

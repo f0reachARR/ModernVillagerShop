@@ -3,10 +3,11 @@ plugins {
     id 'maven-publish'
     id("xyz.jpenilla.run-paper") version "2.3.1"
     id("com.gradleup.shadow") version "9.0.0-beta13"
+    id("com.modrinth.minotaur") version "2.9.0"
 }
 
 group = 'me.f0reach.vshop'
-version = '1.0.0'
+// `version` comes from gradle.properties, which release-please keeps up to date.
 
 repositories {
     mavenCentral()
@@ -104,6 +105,37 @@ processResources {
     filteringCharset 'UTF-8'
     filesMatching('paper-plugin.yml') {
         expand props
+    }
+}
+
+// Written by the release workflow from the GitHub Release body. When it is
+// absent (a hand-run publish), fall back to a link to the release page.
+def modrinthChangelogFile = layout.buildDirectory.file("modrinth-changelog.md")
+
+modrinth {
+    token = providers.environmentVariable("MODRINTH_TOKEN")
+    projectId = "modernvillagershop"
+    versionNumber = project.version.toString()
+    versionName = "ModernVillagerShop ${project.version}"
+    versionType = project.version.toString().contains("-") ? "beta" : "release"
+    uploadFile = tasks.shadowJar
+    gameVersions = providers.gradleProperty("modrinth.gameVersions")
+            .map { spec -> spec.split(",").collect { it.trim() }.findAll { !it.isEmpty() } }
+    loaders = ["paper"]
+    detectLoaders = false
+    changelog = providers.provider {
+        def file = modrinthChangelogFile.get().asFile
+        file.exists() && !file.text.trim().isEmpty()
+                ? file.text
+                : "See https://github.com/f0reachARR/ModernVillagerShop/releases/tag/v${project.version}".toString()
+    }
+    // README.md doubles as the Modrinth project description; `modrinthSyncBody`
+    // pushes it. Every link in it must stay absolute for that reason.
+    syncBodyFrom = providers.fileContents(layout.projectDirectory.file("README.md")).asText
+    dependencies {
+        required.project "bedrockdialog"
+        optional.project "placeholderapi"
+        // Vault has no Modrinth project, so it can only be documented in the body.
     }
 }
 
