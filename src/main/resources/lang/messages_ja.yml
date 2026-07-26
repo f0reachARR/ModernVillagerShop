@@ -168,9 +168,6 @@ edit:
         buy-title: "<white>納品用設定"
         body: "<gray>対象アイテム: <item> (1パック上限: <unit_max>個)"
         submit: "適用"
-        side-sell: "販売 (SELL)"
-        side-buy: "買取 (BUY)"
-        side-both: "双方向 (BOTH)"
         unit-price: "販売単価"
         unit-amount: "1パックあたりの個数 (上限 <max>)"
         buy-unit-price: "買取単価"
@@ -182,9 +179,6 @@ edit:
         created: "<green>出品枠を作成しました。"
         updated: "<green>出品枠を更新しました。"
         place-prompt: "<gray>カーソルにアイテムを持って空きスロットをクリックすると新規出品枠を作成できます。"
-        scope:
-            per-player: "プレイヤー単位"
-            global: "全体共有"
     delete:
         title: "<white>出品枠の削除"
         body: "<gray><item> の出品枠を削除します。よろしいですか？"
@@ -343,7 +337,7 @@ enum:
         buy: "買取"
         both: "双方向"
     limit-scope:
-        per-player: "プレイヤーごと"
+        per-player: "プレイヤー単位"
         global: "全体共有"
     co-owner-role:
         primary: "オーナー"
