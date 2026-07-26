@@ -61,6 +61,12 @@ permissions:
     modernvillagershop.edit.profession:
         description: 自ショップの職業変更
         default: "true"
+    modernvillagershop.edit.appearance:
+        description: 自ショップの見た目変更（FancyNpcs NPC 化を含む）
+        default: "true"
+    modernvillagershop.edit.appearance.url:
+        description: 任意の URL からスキンを読み込む
+        default: "op"
     modernvillagershop.edit.suspend:
         description: 自ショップの公開・一時停止切り替え
         default: "true"
@@ -99,6 +105,9 @@ permissions:
     modernvillagershop.admin.import:
         description: 管理者ショップの品目を YAML から上書きインポート
         default: "op"
+    modernvillagershop.admin.appearance:
+        description: 見た目のエンティティタイプ・大きさ制限を無視する
+        default: "op"
 
     modernvillagershop.migrate:
         description: ストレージマイグレーション実行
@@ -115,6 +124,7 @@ permissions:
             modernvillagershop.admin.edit: true
             modernvillagershop.admin.export: true
             modernvillagershop.admin.import: true
+            modernvillagershop.admin.appearance: true
             modernvillagershop.edit.others: true
             modernvillagershop.coowner.manage.others: true
             modernvillagershop.coowner.transfer.others: true
@@ -137,6 +147,7 @@ permissions:
             modernvillagershop.edit.move: true
             modernvillagershop.edit.rename: true
             modernvillagershop.edit.profession: true
+            modernvillagershop.edit.appearance: true
             modernvillagershop.edit.suspend: true
             modernvillagershop.edit.delete: true
             modernvillagershop.edit.delete.refund: true

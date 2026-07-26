@@ -6,6 +6,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import me.f0reach.vshop.ModernVillagerShopPlugin;
 import me.f0reach.vshop.command.sub.AdminExportSlotsCommand;
 import me.f0reach.vshop.command.sub.AdminImportSlotsCommand;
+import me.f0reach.vshop.command.sub.AppearanceCommand;
 import me.f0reach.vshop.command.sub.CoOwnerCommand;
 import me.f0reach.vshop.command.sub.EditCommand;
 import me.f0reach.vshop.command.sub.EggCommand;
@@ -33,6 +34,7 @@ public final class VShopCommand {
     private final ListCommand list;
     private final OpenCommand open;
     private final EditCommand edit;
+    private final AppearanceCommand appearance;
     private final CoOwnerCommand coowner;
     private final TransferCommand transfer;
     private final StatsCommand stats;
@@ -50,6 +52,7 @@ public final class VShopCommand {
         this.list = new ListCommand(support);
         this.open = new OpenCommand(support);
         this.edit = new EditCommand(support);
+        this.appearance = new AppearanceCommand(support);
         this.coowner = new CoOwnerCommand(support);
         this.transfer = new TransferCommand(support);
         this.stats = new StatsCommand(support);
@@ -69,6 +72,7 @@ public final class VShopCommand {
                 .then(list.node())
                 .then(open.node())
                 .then(edit.node())
+                .then(appearance.node())
                 .then(coowner.node())
                 .then(transfer.node())
                 .then(stats.node())

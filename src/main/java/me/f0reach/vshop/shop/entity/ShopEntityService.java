@@ -1,6 +1,7 @@
 package me.f0reach.vshop.shop.entity;
 
 import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.model.ShopAppearance;
 import me.f0reach.vshop.model.ShopEntityKind;
 import org.bukkit.Location;
 
@@ -42,14 +43,28 @@ public final class ShopEntityService implements ShopEntityBackend {
 
     /** True when the shop currently renders as something other than a Villager. */
     public boolean isNpcBacked(Shop shop) {
-        return backendFor(shop) == npc;
+        return npc != null && backendFor(shop) == npc;
     }
 
     private ShopEntityBackend backendFor(Shop shop) {
-        if (npc != null && appearances.backendOf(shop.id()) == ShopEntityKind.FANCY_NPC) {
+        return backendFor(shop.id());
+    }
+
+    private ShopEntityBackend backendFor(UUID shopId) {
+        if (npc != null && appearances.backendOf(shopId) == ShopEntityKind.FANCY_NPC) {
             return npc;
         }
         return villagers;
+    }
+
+    @Override
+    public void prepare(ShopAppearance appearance) {
+        backendFor(appearance.shopId()).prepare(appearance);
+    }
+
+    /** Off-thread warm-up for this shop's current appearance. See {@link ShopEntityBackend#prepare}. */
+    public void prepare(Shop shop) {
+        prepare(appearances.getOrDefault(shop.id()));
     }
 
     @Override

@@ -15,7 +15,7 @@ public final class HelpCommand {
 
     /** Display order; the text of each line lives in {@code command.help.<key>}. */
     private static final List<String> ENTRIES = List.of(
-            "list", "open", "edit", "coowner", "transfer", "stats",
+            "list", "open", "edit", "appearance", "coowner", "transfer", "stats",
             "search", "history", "egg", "migrate", "reload");
 
     private final CommandSupport support;

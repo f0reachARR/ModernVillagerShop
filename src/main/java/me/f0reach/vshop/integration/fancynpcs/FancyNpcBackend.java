@@ -122,6 +122,29 @@ public final class FancyNpcBackend implements ShopEntityBackend {
         npc.removeForAll();
     }
 
+    @Override
+    public void prepare(ShopAppearance a) {
+        if (a.skin() == null) return;
+        EntityType type = a.entityType() == null ? EntityType.PLAYER : a.entityType();
+        if (type != EntityType.PLAYER) return;
+        try {
+            // Populates FancyNpcs' skin cache so the later setSkin() on the main
+            // thread is a hit rather than a ~0.7s round trip to Mojang.
+            FancyNpcsPlugin.get().getSkinManager().getByIdentifier(a.skin(), variantOf(a));
+        } catch (SkinLoadException ex) {
+            // Reported again with the shop id attached when the NPC is built.
+            plugin.getLogger().warning("Could not pre-load skin '" + a.skin() + "': " + ex.getReason());
+        } catch (RuntimeException ex) {
+            plugin.getLogger().warning("Skin pre-load failed for '" + a.skin() + "': " + ex);
+        }
+    }
+
+    private static SkinData.SkinVariant variantOf(ShopAppearance a) {
+        return a.skinVariant() == me.f0reach.vshop.model.SkinVariant.SLIM
+                ? SkinData.SkinVariant.SLIM
+                : SkinData.SkinVariant.AUTO;
+    }
+
     Npc find(UUID shopId) {
         return FancyNpcsPlugin.get().getNpcManager().getNpc(npcName(shopId));
     }
@@ -158,11 +181,8 @@ public final class FancyNpcBackend implements ShopEntityBackend {
             data.setSkinData(null);
             return;
         }
-        SkinData.SkinVariant variant = a.skinVariant() == me.f0reach.vshop.model.SkinVariant.SLIM
-                ? SkinData.SkinVariant.SLIM
-                : SkinData.SkinVariant.AUTO;
         try {
-            data.setSkin(a.skin(), variant);
+            data.setSkin(a.skin(), variantOf(a));
         } catch (SkinLoadException ex) {
             plugin.getLogger().warning("Shop " + shop.id() + ": could not load skin '"
                     + a.skin() + "' (" + ex.getReason() + "); rendering without one");

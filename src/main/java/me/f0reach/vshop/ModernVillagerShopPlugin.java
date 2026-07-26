@@ -14,6 +14,7 @@ import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.VillagerTeleportGuard;
 import me.f0reach.vshop.shop.entity.ShopAppearanceRegistry;
+import me.f0reach.vshop.shop.entity.ShopAppearanceService;
 import me.f0reach.vshop.shop.entity.ShopDisplayName;
 import me.f0reach.vshop.shop.entity.ShopEntityBackend;
 import me.f0reach.vshop.shop.entity.ShopEntityIntegration;
@@ -67,6 +68,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private VillagerBackend villagerBackend;
     private ShopEntityService shopEntities;
     private ShopTargeting shopTargeting;
+    private ShopAppearanceService shopAppearanceService;
     private ShopInteractionRouter interactionRouter;
     private ShopEntityIntegration npcIntegration;
     private DialogService dialogService;
@@ -134,6 +136,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.shopEntities = new ShopEntityService(villagerBackend, shopAppearances, npcBackend);
         this.shopTargeting = new ShopTargeting(registry, shopEntities);
         this.shopService = new ShopService(storage, registry, shopEntities, config);
+        this.shopAppearanceService = new ShopAppearanceService(this, storage.appearance(),
+                shopAppearances, shopEntities, shopService);
         this.eggFactory = new SpawnEggFactory(this, messages);
         this.dialogService = new DialogService(this);
         this.iconConfig = new IconConfig(messages, config);
@@ -265,6 +269,9 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public ShopEntityService shopEntities() { return shopEntities; }
     public ShopAppearanceRegistry shopAppearances() { return shopAppearances; }
     public ShopTargeting shopTargeting() { return shopTargeting; }
+    public ShopAppearanceService shopAppearanceService() { return shopAppearanceService; }
+    /** Whether NPC-backed shops can actually be rendered right now. */
+    public boolean hasNpcIntegration() { return npcIntegration != null; }
     public ShopDisplayName shopDisplayName() { return shopDisplayName; }
     public DialogService dialogService() { return dialogService; }
     public ShopBrowseUi browseUi() { return browseUi; }

@@ -57,6 +57,11 @@ fancynpcs:
   turnToPlayer: true
   # 同一プレイヤーの連続クリックを無視する秒数（0 = 無効）
   interactionCooldown: 0.0
+  # /vshop appearance scale で指定できる最大倍率
+  maxScale: 2.0
+  # NPC に指定できるエンティティタイプのホワイトリスト。空 = 全許可。
+  # modernvillagershop.admin.appearance 保持者はこの制限を受けない。
+  allowedTypes: []
 
 playerCache:
   maxEntries: 5000

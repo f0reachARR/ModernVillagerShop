@@ -1,14 +1,15 @@
 package me.f0reach.vshop.shop.entity;
 
 import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.model.ShopAppearance;
 import org.bukkit.Location;
 
 import java.util.UUID;
 
 /**
  * Strategy for the in-world representation of a shop — the thing a player walks
- * up to and clicks. Today the only implementation is {@link VillagerBackend};
- * a FancyNpcs-backed one is planned, which is why callers should depend on
+ * up to and clicks: a real Villager ({@link VillagerBackend}) or a packet NPC
+ * ({@code integration.fancynpcs.FancyNpcBackend}). Callers depend on
  * {@link ShopEntityService} rather than on a concrete backend.
  *
  * <p>All methods run on the main thread and are best-effort: if the shop's
@@ -32,4 +33,13 @@ public interface ShopEntityBackend {
 
     /** Despawns the representation. Does not touch persistence. */
     void remove(Shop shop);
+
+    /**
+     * Off-main-thread warm-up for an appearance that is about to be spawned or
+     * refreshed. Backends whose rendering needs a slow lookup — FancyNpcs
+     * resolves a skin name against Mojang, blocking the caller for the better
+     * part of a second on a cache miss — do it here so the main thread only
+     * hits the cache. Must be safe to call from any thread, and safe to skip.
+     */
+    default void prepare(ShopAppearance appearance) {}
 }

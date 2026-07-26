@@ -6,6 +6,7 @@ command:
         list: "<yellow>/vshop list [page] <gray>- ショップ一覧"
         open: "<yellow>/vshop open <shopId> <gray>- ショップを開く"
         edit: "<yellow>/vshop edit <shopId> <gray>- 編集UIを開く"
+        appearance: "<yellow>/vshop appearance <shopId> <sub> <gray>- 見た目の変更（npc/villager/type/skin/glow/scale/equip/attribute/show/reset）"
         coowner: "<yellow>/vshop coowner <shopId> <gray>- 共同オーナー管理"
         transfer: "<yellow>/vshop transfer <shopId> <player> <gray>- オーナー権の移譲"
         stats: "<yellow>/vshop stats <shopId> <gray>- ショップ統計"
@@ -48,6 +49,34 @@ command:
         player-not-found: "<red>プレイヤーが見つかりません: <player>"
         line: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <dark_gray>[<shop> / <counterparty>]"
         line-with-fee: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <gray>(手数料 <fee>) <dark_gray>[<shop> / <counterparty>]"
+    appearance:
+        header: "<gold>=== 見た目: <shop_name> ==="
+        line-backend: "<gray>表示方式: <white><backend>"
+        line-type: "<gray>エンティティ: <white><type>"
+        line-skin: "<gray>スキン: <white><skin></white> <dark_gray>(<variant>)"
+        line-glow: "<gray>発光: <white><state></white> <dark_gray>(<color>)"
+        line-scale: "<gray>大きさ: <white><scale>"
+        line-turn: "<gray>プレイヤーを向く: <white><state>"
+        line-equipment: "<gray>装備 <white><slot></white>: <white><item>"
+        line-equipment-empty: "<gray>装備: <dark_gray>なし"
+        line-attribute: "<gray>属性 <white><name></white>: <white><value>"
+        none: "<dark_gray>未設定"
+        unavailable: "<red>FancyNpcs が利用できないため、この操作はできません。"
+        npc-done: "<green><shop_name> を NPC 表示に切り替えました。"
+        villager-done: "<green><shop_name> を村人表示に戻しました。"
+        updated: "<green>見た目を更新しました。"
+        reset-done: "<green>見た目の設定を初期化しました。"
+        invalid-type: "<red>不明なエンティティタイプです: <type>"
+        type-not-allowed: "<red>このエンティティタイプは許可されていません: <type>"
+        invalid-color: "<red>不明な色です: <color>"
+        invalid-scale: "<red>大きさは <min> 〜 <max> の範囲で指定してください。"
+        invalid-slot: "<red>不明な装備スロットです: <slot>"
+        skin-needs-player: "<red>スキンを設定できるのは PLAYER タイプの NPC だけです。"
+        skin-url-no-permission: "<red>URL からスキンを設定する権限がありません。"
+        equip-empty-hand: "<red>装備させたいアイテムを手に持ってから実行してください。"
+        equip-done: "<green><slot> に <item> を装備させました。"
+        equip-cleared: "<green><slot> の装備を外しました。"
+        attribute-cleared: "<green>属性 <name> を削除しました。"
     list:
         header: "<gold>=== ショップ一覧 (<page>/<pages>, 全<total>件) ==="
         empty: "<gray>ショップがありません。"
@@ -351,6 +380,12 @@ duration:
 # These are labels only; the DB, YAML import/export and command arguments keep
 # using the raw constant names.
 enum:
+    shop-entity-kind:
+        villager: "村人"
+        fancy-npc: "NPC"
+    skin-variant:
+        auto: "自動"
+        slim: "細腕"
     trade-side:
         sell: "販売"
         buy: "買取"

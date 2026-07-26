@@ -97,7 +97,9 @@ public final class PluginConfig {
         this.fancyNpcs = new FancyNpcsConfig(
                 cfg.getBoolean("fancynpcs.enabled", true),
                 cfg.getBoolean("fancynpcs.turnToPlayer", true),
-                (float) cfg.getDouble("fancynpcs.interactionCooldown", 0.0)
+                (float) cfg.getDouble("fancynpcs.interactionCooldown", 0.0),
+                (float) cfg.getDouble("fancynpcs.maxScale", 2.0),
+                List.copyOf(cfg.getStringList("fancynpcs.allowedTypes"))
         );
 
         this.playerCache = new PlayerCacheConfig(
@@ -197,7 +199,18 @@ public final class PluginConfig {
      * plugin still has to be installed for NPC-backed shops to render at all.
      * {@code turnToPlayer} is the default for shops that have not overridden it.
      */
-    public record FancyNpcsConfig(boolean enabled, boolean turnToPlayer, float interactionCooldown) {}
+    public record FancyNpcsConfig(boolean enabled, boolean turnToPlayer, float interactionCooldown,
+                                  float maxScale, List<String> allowedTypes) {
+
+        /** Empty list = every entity type is allowed. Matching is case-insensitive on the enum name. */
+        public boolean allowsType(org.bukkit.entity.EntityType type) {
+            if (allowedTypes.isEmpty()) return true;
+            for (String allowed : allowedTypes) {
+                if (allowed.equalsIgnoreCase(type.name())) return true;
+            }
+            return false;
+        }
+    }
 
     public record PlayerCacheConfig(int maxEntries, PlayerCacheSort defaultSort, Duration textureTtl) {}
 }
