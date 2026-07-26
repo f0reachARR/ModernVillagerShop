@@ -16,6 +16,9 @@ dependencies:
         PlaceholderAPI:
             load: BEFORE
             required: false
+        FancyNpcs:
+            load: BEFORE
+            required: false
 
 permissions:
     modernvillagershop.use:

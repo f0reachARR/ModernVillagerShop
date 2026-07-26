@@ -22,6 +22,10 @@ repositories {
         name = "placeholderapi"
         url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
     }
+    maven {
+        name = "fancyinnovations"
+        url = "https://repo.fancyinnovations.com/releases"
+    }
     exclusiveContent {
         forRepository {
             maven {
@@ -39,6 +43,11 @@ dependencies {
     compileOnly("me.clip:placeholderapi:2.11.6")
     // BedrockDialog (Modrinth Maven). Version slug pinned to the latest available 1.21.8+ compatible build.
     compileOnly("maven.modrinth:bedrockdialog:1.0.3")
+    // FancyNpcs API. Pinned to 2.9.2 — the last release whose API jar is a Java 17
+    // class file (2.10.0+ ship Java 25 bytecode, unreadable by our JDK 21 toolchain).
+    // 2.9.2's full public API is present unchanged in 2.10.x / 2.11.x, so binaries
+    // compiled here run against the current plugin releases.
+    compileOnly("de.oliver:FancyNpcs:2.9.2")
     implementation("com.zaxxer:HikariCP:5.1.0")
     runtimeOnly("org.xerial:sqlite-jdbc:3.49.1.0")
     runtimeOnly("com.mysql:mysql-connector-j:9.1.0")
