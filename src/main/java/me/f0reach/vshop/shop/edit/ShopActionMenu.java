@@ -86,7 +86,8 @@ public final class ShopActionMenu {
                 Placeholder.parsed("shop_name", shop.name()));
         Component body = messages.get("action.body",
                 Placeholder.component("type", enumLabels.label(shop.type())),
-                Placeholder.parsed("suspended", shop.suspended() ? "yes" : "no"));
+                Placeholder.parsed("suspended",
+                        messages.getRaw(shop.suspended() ? "action.state-on" : "action.state-off")));
 
         List<DialogService.ButtonSpec> buttons = new ArrayList<>();
 

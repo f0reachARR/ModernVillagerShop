@@ -366,9 +366,3 @@ enum:
         player: "プレイヤーショップ"
         admin: "管理者ショップ"
 
-# Co-owner listing line — uses <primary>/<role>/<share> placeholders.
-shop-info:
-    coowner-line: "<gray>- <player> <yellow>[<role>]</yellow> <gray><share>%</gray>"
-    primary-line: "<gold>PRIMARY:</gold> <primary>"
-    # Shop location line — uses <world>/<x>/<y>/<z>.
-    location: "<gray>位置: <world> (<x>, <y>, <z>)"
