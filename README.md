@@ -11,6 +11,7 @@ ModernVillagerShop replaces the vanilla trade window with a **chest UI + Dialog*
 - **Co-owners with revenue sharing.** `PRIMARY` / `MANAGER` / `STAFF` roles per shop, percentage shares that always add up to 100%, instant payout split on every sale, and an ownership-transfer flow.
 - **Trade limits.** Per-slot caps, counted per player or server-wide, with an optional rolling reset window. Remaining amount and time-to-reset are shown in the slot lore.
 - **Villagers that stay put.** Shop villagers are AI-locked, invulnerable, protected from portals, and respawned from the database on chunk load if something removes them.
+- **Custom shop appearance.** With [FancyNpcs](https://modrinth.com/plugin/fancynpcs) installed, a shop can render as an NPC instead of a villager — a player skin, any entity type, glow colour, scale and equipment — all through `/vshop appearance`, no UI to click through.
 - **Spawn-egg based creation.** `/vshop egg` hands out an egg that encodes how many listing rows the shop gets — 1 to *n* rows, or unlimited.
 - **Full trade history and statistics.** Filterable history (`--side`, `--from`, `--to`, `--player`, `--shop`), per-shop stats, cumulative fees, and audit fields (`basePrice` / `finalPrice` / `resolvedBy`) on every record.
 - **Owner notifications.** Chat notification on each trade while online, a summary on next login while offline, toggleable per player.
@@ -28,6 +29,7 @@ ModernVillagerShop replaces the vanilla trade window with a **chest UI + Dialog*
 | [BedrockDialog](https://modrinth.com/plugin/bedrockdialog) | **required** |
 | Geyser + Floodgate | optional — needed only to serve Bedrock clients |
 | [PlaceholderAPI](https://www.spigotmc.org/resources/placeholderapi.6245/) | optional |
+| [FancyNpcs](https://modrinth.com/plugin/fancynpcs) | optional — lets shops render as NPCs instead of villagers |
 
 ## Installation
 
@@ -67,6 +69,7 @@ Root command is `/vshop` (bare `/vshop` prints help).
 | `/vshop stats <shopId>` | Shop statistics | `modernvillagershop.stats` |
 | `/vshop history [page] [--shop <id>] [--side sell\|buy] [--from <date>] [--to <date>] [--player <name>]` | Trade history | `history` / `history.others` |
 | `/vshop edit [shopId]` | Open the owner/editor menu | `edit` / `edit.others` |
+| `/vshop appearance <shopId> <sub>` | Change how the shop looks (needs FancyNpcs) | `edit.appearance` / `edit.others` |
 | `/vshop coowner <shopId>` | Co-owner management UI | `coowner.manage` / `.others` |
 | `/vshop transfer <shopId> <player>` | Transfer `PRIMARY` ownership | `coowner.transfer` / `.others` |
 | `/vshop egg <player> <lines\|inf\|admin>` | Give a shop spawn egg | `egg` / `admin.egg` |
@@ -77,12 +80,33 @@ Root command is `/vshop` (bare `/vshop` prints help).
 
 `--from` / `--to` accept `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm[:ss]`, interpreted in the server's default time zone.
 
+### `/vshop appearance`
+
+Command-only, by design — this is an occasional operation with a lot of knobs, which reads better flat than as a menu tree.
+
+| Subcommand | Effect |
+| --- | --- |
+| `show` | Print the current settings (read-only, so the console can run it too) |
+| `npc [skin]` | Switch to a PLAYER NPC. Without `skin`, uses the owner's name |
+| `villager` | Switch back to a plain villager |
+| `type <entityType>` | Change the NPC's entity type |
+| `skin <name\|uuid\|url\|@none> [slim]` | Set or clear the skin (PLAYER type only) |
+| `glow <true\|false> [color]` | Glow and glow colour |
+| `scale <n>` | Size multiplier |
+| `equip <slot> [none]` | Equip the item in your hand, or clear the slot |
+| `attribute <name> <value\|@none>` | Set a FancyNpcs attribute (e.g. `pose sitting`) |
+| `reset` | Drop every override and go back to a villager |
+
+Equipment slots are FancyNpcs': `MAINHAND`, `OFFHAND`, `HEAD`, `CHEST`, `LEGS`, `FEET`, `BODY`, `SADDLE`.
+
+Appearance is stored in this plugin's own database, so it travels with `/vshop migrate` and NPCs are rebuilt from it on every boot. If FancyNpcs is missing or `fancynpcs.enabled` is false, NPC-backed shops fall back to villagers with a single warning — cosmetics never take a shop offline.
+
 ## Permissions
 
 All nodes are prefixed `modernvillagershop.`. Two convenience bundles exist:
 
 - **`modernvillagershop.player`** (default: everyone) — `use`, `egg`, `list`, `search`, `stats`, `history`, `open.nearby`, and the `edit.*` / `coowner.*` nodes needed to run your own shop.
-- **`modernvillagershop.admin`** (default: op) — `admin.egg`, `admin.edit`, `admin.export`, `admin.import`, `edit.others`, `coowner.manage.others`, `coowner.transfer.others`, `history.others`, `open.any`, `migrate`, `reload`.
+- **`modernvillagershop.admin`** (default: op) — `admin.egg`, `admin.edit`, `admin.export`, `admin.import`, `admin.appearance`, `edit.others`, `coowner.manage.others`, `coowner.transfer.others`, `history.others`, `open.any`, `migrate`, `reload`.
 
 Two independent layers decide what a player can do:
 
@@ -90,6 +114,8 @@ Two independent layers decide what a player can do:
 - **Co-owner role** (`PRIMARY` / `MANAGER` / `STAFF`) decides what someone may do *inside a shop they belong to*. `STAFF` can only restock; `MANAGER` can edit listings, prices, stock, name, profession and suspend state; `PRIMARY` additionally deletes the shop and manages co-owners.
 
 The `*.others` nodes are moderation overrides — they ignore role entirely and apply to any shop.
+
+Two appearance nodes sit outside the bundles' defaults: `edit.appearance.url` (op) gates loading a skin from an arbitrary URL, since that pulls a remote image through the server, and `admin.appearance` (op) bypasses the `fancynpcs.allowedTypes` and `fancynpcs.maxScale` limits.
 
 ## Configuration highlights
 
@@ -157,6 +183,8 @@ which copies shops, listings, stock, transactions, notifications, limits, co-own
 | `%mvshop_shop_owner_<shopId>%` | Owner name |
 | `%mvshop_total_sales_<player>%` | Cumulative sales |
 | `%mvshop_total_purchases_<player>%` | Cumulative purchases |
+
+**FancyNpcs** (`fancynpcs.enabled: true`) — renders shops as NPCs; see [`/vshop appearance`](#vshop-appearance). Built against the `de.oliver:FancyNpcs` 2.x API. FancyNpcs 2.10.0+ requires Java 25 on the server; if you are on Java 21, use the `-java21` builds FancyNpcs publishes.
 
 **Events** — `ShopCreateEvent`, `ShopDeleteEvent`, `ShopPreTransactionEvent` (cancellable), `ShopTransactionEvent`, `ShopSlotChangeEvent`.
 

@@ -97,7 +97,7 @@
 
 BUY 枠に対する納品は在庫に積み上がるので、それを SELL 枠として再販する運用も可能です。
 
-## 5. 名前・職業・公開状態・場所を変える
+## 5. 名前・見た目・公開状態・場所を変える
 
 編集メニュー内の `店舗設定` サブメニューから変更できます。
 
@@ -105,6 +105,21 @@ BUY 枠に対する納品は在庫に積み上がるので、それを SELL 枠�
 - **職業変更**: 村人の見た目（職業ブロック）を変えます。
 - **一時停止 / 公開再開**: 一時停止中は購入も納品も拒否されます。長期不在時に使えます。
 - **移動**: 権限 `modernvillagershop.edit.move` がある場合、ショップを別の位置に移動できます。
+
+サーバーに FancyNpcs が導入されていれば、村人ではなく **NPC** の見た目にもできます。こちらはメニューではなくコマンドで操作します。
+
+```
+/vshop appearance <shopId> npc            # 自分のスキンのプレイヤー NPC にする
+/vshop appearance <shopId> npc Notch      # スキンを指定する
+/vshop appearance <shopId> glow true gold # 金色に光らせる
+/vshop appearance <shopId> equip MAINHAND # 手に持っているアイテムを持たせる
+/vshop appearance <shopId> show           # 今の設定を確認する
+/vshop appearance <shopId> villager       # 村人に戻す
+```
+
+`<shopId>` はショップ ID の先頭 8 文字で、Tab キーで補完できます。ほかに `type`（エンティティの種類）・`scale`（大きさ）・`skin`・`attribute`・`reset` があります。
+
+NPC 表示にしている間は職業変更のボタンが消えます。職業は村人だけの設定だからです。`villager` に戻せば元の職業のまま復元されます。
 
 ## 6. 共同オーナー（プレイヤーショップのみ）
 

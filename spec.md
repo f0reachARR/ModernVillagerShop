@@ -91,6 +91,16 @@
   - 配置制限
     - 既存ショップVillagerの座標から `shop.minDistance`（デフォルト: 0.5ブロック）未満の距離にはショップを配置できない
     - 設置時にスポーンエッグ使用を検証し、満たさない場合はエッグ消費せず拒否する
+  - 見た目（外見バックエンド）
+    - ショップの実体は **Villager（既定）** または **FancyNpcs の NPC** のいずれかで描画する
+    - 切り替えと外見の設定は `/vshop appearance`（§4）でのみ行う。Dialog UI は提供しない
+    - FancyNpcs 未導入・`fancynpcs.enabled: false` の場合、NPC 指定のショップも Villager として描画し、起動時に警告を1行出す。ショップ機能自体は停止しない
+    - NPC はパケットベースでサーバー側のエンティティを持たない。したがって
+      - チャンクロード時の再スポーン処理の対象外とする
+      - 視線によるショップ特定（`/vshop admin export|import`）はエンティティレイキャストではなく、ショップ座標に置いた当たり判定との交差で行う
+      - 職業（profession）の設定は Villager 専用とし、NPC 表示中は編集UIから隠す（値自体はDBに保持し、Villager に戻したときに復元する）
+    - NPC は FancyNpcs 側に永続化させない（`saveToFile(false)`）。起動のたびに `shop_appearance` から再生成し、`onDisable` で撤去する
+      - これにより外見設定は `/vshop migrate` の対象に含まれ、異常終了時にも孤児 NPC が残らない
 - プレイヤーショップ
   - 所有者（PRIMARY）付き。共同オーナーを設定可能（詳細は §3.6）
   - 在庫はショップ専用ストレージで保持し、論理上の容量制限は設けない（DB保持）
@@ -184,6 +194,18 @@
   - `/vshop list [page]`: ショップ一覧・ページング対応
   - `/vshop search <item> [page]`: アイテム名・IDでショップ検索（ページング対応）
   - `/vshop edit <shopId>`: ショップ編集（PRIMARY / MANAGER / STAFF が役割範囲で実行可能。詳細は §3.6）
+  - `/vshop appearance <shopId> <sub>`: ショップの見た目を変更する（コマンドのみ。UI は提供しない）
+    - `show`: 現在の設定を一覧表示（読み取り専用のためコンソールからも実行可）
+    - `npc [skin]`: FancyNpcs の PLAYER NPC に切り替える。`skin` 省略時は PRIMARY（管理者ショップは実行者）の名前を使う
+    - `villager`: 通常の Villager に戻す
+    - `type <entityType>`: NPC のエンティティタイプを変更する
+    - `skin <name|uuid|url|@none> [slim]`: スキンを設定する。`@none` で解除。PLAYER タイプ以外では拒否する
+    - `glow <true|false> [color]`: 発光と発光色
+    - `scale <倍率>`: 大きさ
+    - `equip <slot> [none]`: 手に持っているアイテムを装備させる。`none` で解除。slot は FancyNpcs の `NpcEquipmentSlot`（`MAINHAND` / `OFFHAND` / `HEAD` / `CHEST` / `LEGS` / `FEET` / `BODY` / `SADDLE`）
+    - `attribute <name> <value|@none>`: FancyNpcs の属性を設定・削除する。名前と値は FancyNpcs 側の定義に従い、不正な組み合わせは適用時に警告を出してスキップする
+    - `reset`: 外見設定をすべて破棄し Villager に戻す
+    - 実行可否はショップのロール（§3.6）で判定する。FancyNpcs が利用できない場合、NPC 専用の操作は拒否する
   - `/vshop coowner <shopId>`: 共同オーナー管理UIを開く（PRIMARY のみ）
   - `/vshop transfer <shopId> <player>`: PRIMARY 権限を譲渡する（PRIMARY のみ。確認 Dialog 経由）
   - `/vshop history [shopId] [page] [--side sell|buy] [--from <date>] [--to <date>] [--player <name>]`: 取引履歴表示（shopId省略時は自身が関与した履歴を表示）
@@ -368,6 +390,11 @@
   - `shops`: ショップID・種別（player/admin）・所有者UUID（PRIMARYのキャッシュ）・座標・職業・名称・公開状態
   - `shop_co_owners`: 共同オーナー（ショップID・プレイヤーUUID・役割 `PRIMARY|MANAGER|STAFF`・持分 DECIMAL(5,2)・追加日時・追加者UUID、`(shop_id, player_uuid)` を主キーとする）
     - `shops.owner_uuid` は本テーブルの PRIMARY 行とアプリケーション層で同期する
+  - `shop_appearance`: 外見設定（ショップID・バックエンド `VILLAGER|FANCY_NPC`・エンティティタイプ・スキン・スキンバリアント・発光・発光色・大きさ・プレイヤー追従・属性JSON・更新日時）
+    - 行が存在しない = 素の Villager。既存ショップへのバックフィルは不要
+    - 装備スロット名と属性キーは FancyNpcs 側の名前空間に属し版によって増減するため、文字列として保持し、適用側で検証する
+  - `shop_appearance_equipment`: 外見の装備（ショップID・スロット名・アイテムBLOB、`(shop_id, slot)` を主キーとする）
+    - `shop_appearance` の upsert 時に全置換する（スロットを外したときに古い行が残らないようにするため）
   - `shop_slots`: 出品枠（ショップID・slot_index・種別SELL/BUY/BOTH・アイテムBLOB・単価・数量上限・取引上限・上限スコープ・リセット周期）
     - `slot_index` はフラットな整数で、編集モードと閲覧モードで同じ座標表現を共有する
       - `rowCount ≤ 6` のショップ: `slot_index` ∈ `[0, rowCount * 9)`（単一ページ）
@@ -487,7 +514,20 @@
   - `%mvshop_total_purchases_<player>%`: プレイヤーの累計購入額
   - 必要に応じて拡張可能な設計とする
 
-### 12.2 公開API / イベント
+### 12.2 FancyNpcs
+
+- 任意依存。導入時、ショップの実体を Villager ではなく NPC で描画できる（§3.1「見た目」）。
+- 対応バージョン: `de.oliver:FancyNpcs` 2.x 系（API パッケージ `de.oliver.fancynpcs.api`）。
+  - ビルドは 2.9.2 に対して行う。2.10.0 以降の API jar は Java 25 クラスファイルで、本プラグインの JDK 21 ツールチェインでは読めないため。2.9.2 の公開 API は 2.10.x / 2.11.x にそのまま存在するので、実行時は最新版で問題ない。
+  - サーバーが Java 25 を用意できない場合、FancyNpcs 側が配布する `-java21` ビルドを使う。
+- 実装上の制約（実測に基づく）
+  - `NpcInteractEvent` は同期 Bukkit イベント（Paper の `PlayerUseUnknownEntityEvent` 経由）であり、メインスレッドで発火する。
+  - `NpcData#setSkin` はキャッシュミス時に呼び出しスレッドを 0.7 秒前後ブロックする。生成前に非同期でスキンを解決してから、メインスレッドで NPC を組み立てる。
+  - NPC はサーバー側エンティティとして存在しない（`World#getEntities` / `Bukkit#getEntity` から見えない）。
+  - `NpcData#getId()` は起動ごとに変わるため、NPC の同定には名前 `vshop-<shopId>` を使う。
+- FancyNpcs のクラスを参照するのは `integration/fancynpcs` パッケージのみとし、未導入環境でクラス解決が発生しないようにする。
+
+### 12.3 公開API / イベント
 
 - 他プラグインから利用できる Bukkit Event を提供する。
   - `ShopCreateEvent` / `ShopDeleteEvent`
@@ -499,7 +539,7 @@
   - サードパーティ統合（ログ、ダッシュボード等）を想定
 - APIはセマンティックバージョニングに従い、互換性を維持する。
 
-### 12.3 動的価格API（PriceProvider）
+### 12.4 動的価格API（PriceProvider）
 
 - 管理者ショップの価格を拡張プラグインから動的に決定するための SPI を提供する。
 - パイプライン型 SPI として設計し、複数の Provider を順序付きで重ねがけできる。

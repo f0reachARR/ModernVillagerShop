@@ -13,6 +13,8 @@ A guide for server operators and OPs. It covers installation, configuration, per
 - **Vault**: required. A Vault-compatible economy plugin (e.g. EssentialsX Economy) is needed separately.
 - **BedrockDialog**: required. A Paper plugin distributed on Modrinth. Add Geyser + Floodgate as well if you want Bedrock support.
 - **PlaceholderAPI**: optional. Install it to use the placeholders.
+- **FancyNpcs**: optional. Install it to render shops as something other than a villager (mostly player NPCs).
+    - FancyNpcs 2.10.0 and later require **Java 25** on the server. If you run Java 21, use the `-java21` builds FancyNpcs publishes.
 
 ### 1.2 Installing
 
@@ -94,7 +96,22 @@ shop:
     - `DROP`: drop the stock at the shop location and delete
     - `REFUSE`: refuse deletion while stock remains (default, safest)
 
-### 2.5 Player cache
+### 2.5 FancyNpcs integration
+
+```yaml
+fancynpcs:
+  enabled: true
+  turnToPlayer: true        # default when a shop does not override it
+  interactionCooldown: 0.0  # seconds to ignore repeat clicks from the same player (0 = off)
+  maxScale: 2.0             # largest multiplier /vshop appearance scale accepts
+  allowedTypes: []          # empty = everything allowed
+```
+
+- `enabled: false` turns the integration off even with FancyNpcs installed. NPC-backed shops then render as villagers, you get one warning at startup, and the shops themselves keep working normally.
+- `allowedTypes` and `maxScale` do not apply to players holding `modernvillagershop.admin.appearance`.
+- Appearance is stored in this plugin's own database (the `shop_appearance` table), never in FancyNpcs' `npcs.yml`. That means it travels with `/vshop migrate`, and NPCs are rebuilt from the database on every boot.
+
+### 2.6 Player cache
 
 ```yaml
 playerCache:
@@ -105,7 +122,7 @@ playerCache:
 
 This cache backs the player-picker UI (adding co-owners, choosing a PRIMARY transfer target, `--player` arguments, and so on). It is upserted on login, on logout, and when co-owners are looked up.
 
-### 2.6 Forbidden items
+### 2.7 Forbidden items
 
 ```yaml
 items:
@@ -119,7 +136,7 @@ items:
 - Shulker boxes and bundles are included by default. Treat items that can hold other items carefully — they open unintended duplication and extraction paths.
 - The plugin enforces no built-in blacklist of its own. Add and remove entries to match your policy.
 
-### 2.7 UI icons
+### 2.8 UI icons
 
 `ui.chest.icons.*` lets you override the material, display name, lore and custom model data of every navigation icon in the chest UI (next/prev page, close, filter, sort, back, empty slot, unavailable, unknown player head). Combine it with a resource pack to match your server's look.
 
@@ -130,7 +147,7 @@ items:
 `paper-plugin.yml` defines the following role-like groupings. Granting them through a permission plugin such as LuckPerms is convenient.
 
 - **`modernvillagershop.player`** (default: `true`): the pack a regular player needs. Includes `use`, `egg`, `list`, `search`, `stats`, `history`, `open.nearby`, `edit.*`, `coowner.manage`, `coowner.transfer`.
-- **`modernvillagershop.admin`** (default: `op`): the admin pack. Includes `admin.egg`, `admin.edit`, `admin.export`, `admin.import`, `edit.others`, `coowner.manage.others`, `coowner.transfer.others`, `history.others`, `open.any`, `migrate`, `reload`.
+- **`modernvillagershop.admin`** (default: `op`): the admin pack. Includes `admin.egg`, `admin.edit`, `admin.export`, `admin.import`, `edit.others`, `coowner.manage.others`, `coowner.transfer.others`, `history.others`, `open.any`, `migrate`, `reload`, `admin.appearance`.
 
 ### 3.2 Individual permissions
 
@@ -142,7 +159,9 @@ The notable ones:
 | `modernvillagershop.egg` | Use a player shop spawn egg |
 | `modernvillagershop.admin.egg` | Use an admin shop spawn egg |
 | `modernvillagershop.admin.edit` | Edit admin shops |
-| `modernvillagershop.edit.*` | The individual edit operations on your own shop (move / rename / profession / suspend / delete / delete.refund) |
+| `modernvillagershop.edit.*` | The individual edit operations on your own shop (move / rename / profession / appearance / suspend / delete / delete.refund) |
+| `modernvillagershop.edit.appearance.url` | Load a skin from an arbitrary URL (default op) |
+| `modernvillagershop.admin.appearance` | Bypass the `fancynpcs.allowedTypes` / `maxScale` limits |
 | `modernvillagershop.edit.others` | Edit someone else's shop (ignores role) |
 | `modernvillagershop.coowner.manage.others` | Manage co-owners of any shop |
 | `modernvillagershop.coowner.transfer.others` | Force a PRIMARY transfer on any shop (e.g. for players who left) |
@@ -211,6 +230,7 @@ Practical uses: keep exported YAML under review in pull requests, or build it in
 | `/vshop stats <shopId>` | Show statistics | `modernvillagershop.stats` |
 | `/vshop history [shopId] [page] [--flags]` | Trade history | `history` / `history.others` |
 | `/vshop edit [shopId]` | Edit menu | `edit` / `edit.others` |
+| `/vshop appearance <shopId> <sub>` | Change how the shop looks (needs FancyNpcs) | `edit.appearance` / `edit.others` |
 | `/vshop coowner <shopId>` | Co-owner management UI | `coowner.manage` / `.others` |
 | `/vshop transfer <shopId> <player>` | Transfer PRIMARY | `coowner.transfer` / `.others` |
 | `/vshop egg <player> <lines\|inf\|admin>` | Give a spawn egg | `egg` / `admin.egg` |
@@ -220,6 +240,32 @@ Practical uses: keep exported YAML under review in pull requests, or build it in
 | `/vshop reload` | Reload config, language files and messages | `reload` |
 
 `--from` / `--to` on `/vshop history` accept `YYYY-MM-DD` or `YYYY-MM-DDTHH:mm[:ss]`, interpreted in the server's default time zone.
+
+### 5.1 `/vshop appearance` in detail
+
+Appearance has no Dialog UI on purpose — it is an occasional operation with a lot of knobs, and a flat command surface is easier to work with than a menu tree.
+
+| Subcommand | Effect |
+| --- | --- |
+| `show` | Print the current settings (read-only, so the console can run it too) |
+| `npc [skin]` | Switch to a player NPC. Without `skin`, uses the owner's name |
+| `villager` | Switch back to a plain villager |
+| `type <entityType>` | Change the NPC's entity type |
+| `skin <name\|uuid\|url\|@none> [slim]` | Set or clear the skin (PLAYER type only) |
+| `glow <true\|false> [color]` | Glow and glow colour |
+| `scale <n>` | Size multiplier |
+| `equip <slot> [none]` | Equip the item in your hand, or clear the slot |
+| `attribute <name> <value\|@none>` | Set or remove a FancyNpcs attribute (e.g. `pose sitting`) |
+| `reset` | Drop every setting and go back to a villager |
+
+Equipment slots are FancyNpcs': `MAINHAND`, `OFFHAND`, `HEAD`, `CHEST`, `LEGS`, `FEET`, `BODY`, `SADDLE`.
+
+Things worth knowing when running this:
+
+- **URL skins need their own permission.** Only holders of `modernvillagershop.edit.appearance.url` (default op) may pass `https://...`. It pulls an arbitrary remote image through your server, so leaving it closed to regular players is the safe default.
+- While a shop renders as an NPC, **the profession button disappears** from its edit menu, since professions are a villager-only concept. The stored value is kept, so switching back with `villager` restores the original profession.
+- NPCs do not exist as server-side entities. They will not show up in other plugins' entity listings or mob counts, and `/kill` cannot touch them.
+- `/vshop reload` re-sends the NPCs so changes to the `fancynpcs` section take effect immediately.
 
 ## 6. Auditing and trade logs
 
