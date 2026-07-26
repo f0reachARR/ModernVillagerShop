@@ -1,22 +1,14 @@
 package me.f0reach.vshop.shop.entity;
 
-import me.f0reach.vshop.config.PluginConfig;
-import me.f0reach.vshop.locale.MessageManager;
-import me.f0reach.vshop.model.CoOwner;
 import me.f0reach.vshop.model.Shop;
-import me.f0reach.vshop.storage.repo.CoOwnerRepository;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.OfflinePlayer;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Villager;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 
-import java.sql.SQLException;
 import java.util.UUID;
 
 /**
@@ -27,18 +19,11 @@ public final class VillagerBackend implements ShopEntityBackend {
 
     public static final String VILLAGER_PDC_KEY = "shop_id";
 
-    private final Plugin plugin;
-    private final MessageManager messages;
-    private final CoOwnerRepository coOwnerRepo;
-    private final PluginConfig config;
+    private final ShopDisplayName displayName;
     private final NamespacedKey villagerKey;
 
-    public VillagerBackend(Plugin plugin, MessageManager messages, CoOwnerRepository coOwnerRepo,
-                           PluginConfig config) {
-        this.plugin = plugin;
-        this.messages = messages;
-        this.coOwnerRepo = coOwnerRepo;
-        this.config = config;
+    public VillagerBackend(Plugin plugin, ShopDisplayName displayName) {
+        this.displayName = displayName;
         this.villagerKey = new NamespacedKey(plugin, VILLAGER_PDC_KEY);
     }
 
@@ -66,7 +51,7 @@ public final class VillagerBackend implements ShopEntityBackend {
         // will pick up the change via spawn().
         Villager v = findEntity(shop);
         if (v == null) return;
-        v.customName(buildName(shop));
+        v.customName(displayName.component(shop));
         v.setCustomNameVisible(true);
     }
 
@@ -95,38 +80,8 @@ public final class VillagerBackend implements ShopEntityBackend {
         // Mark this villager as belonging to a shop for fast event-side lookup.
         v.getPersistentDataContainer().set(villagerKey, PersistentDataType.STRING, shop.id().toString());
 
-        v.customName(buildName(shop));
+        v.customName(displayName.component(shop));
         v.setCustomNameVisible(true);
-    }
-
-    public Component buildName(Shop shop) {
-        String primaryName = shop.isAdminShop() ? "" : resolvePrimaryName(shop);
-        String format = shop.isAdminShop()
-                ? config.shop().villagerNameFormatAdmin()
-                : config.shop().villagerNameFormat();
-        return messages.miniMessage().deserialize(format,
-                Placeholder.parsed("shop_name", shop.name() == null ? "" : shop.name()),
-                Placeholder.parsed("primary", primaryName));
-    }
-
-    private String resolvePrimaryName(Shop shop) {
-        UUID owner = shop.ownerUuid();
-        if (owner == null) {
-            // Fall back to scanning the co-owner table (e.g. cache miss).
-            try {
-                for (CoOwner co : coOwnerRepo.findByShop(shop.id())) {
-                    if (co.role().canDeleteShop()) {
-                        owner = co.playerUuid();
-                        break;
-                    }
-                }
-            } catch (SQLException ex) {
-                plugin.getLogger().warning("Failed to resolve PRIMARY for shop " + shop.id() + ": " + ex.getMessage());
-            }
-        }
-        if (owner == null) return "";
-        OfflinePlayer op = Bukkit.getOfflinePlayer(owner);
-        return op.getName() == null ? owner.toString().substring(0, 8) : op.getName();
     }
 
     /**

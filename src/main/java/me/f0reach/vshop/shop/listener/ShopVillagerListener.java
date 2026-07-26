@@ -1,14 +1,11 @@
 package me.f0reach.vshop.shop.listener;
 
 import me.f0reach.vshop.model.Shop;
-import me.f0reach.vshop.shop.ShopOpenService;
+import me.f0reach.vshop.shop.ShopInteractionRouter;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.VillagerTeleportGuard;
-import me.f0reach.vshop.shop.edit.ShopActionMenu;
 import me.f0reach.vshop.shop.entity.VillagerBackend;
-import me.f0reach.vshop.sound.SoundEvents;
-import me.f0reach.vshop.sound.SoundService;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -36,21 +33,16 @@ public final class ShopVillagerListener implements Listener {
 
     private final ShopRegistry registry;
     private final ShopService shops;
-    private final ShopOpenService openService;
-    private final ShopActionMenu actionMenu;
     private final NamespacedKey villagerKey;
-    private final SoundService sounds;
+    private final ShopInteractionRouter router;
     private final VillagerTeleportGuard teleportGuard;
 
     public ShopVillagerListener(ShopRegistry registry, ShopService shops, VillagerBackend villagers,
-                                ShopOpenService openService, ShopActionMenu actionMenu,
-                                SoundService sounds, VillagerTeleportGuard teleportGuard) {
+                                ShopInteractionRouter router, VillagerTeleportGuard teleportGuard) {
         this.registry = registry;
         this.shops = shops;
-        this.openService = openService;
-        this.actionMenu = actionMenu;
         this.villagerKey = villagers.villagerKey();
-        this.sounds = sounds;
+        this.router = router;
         this.teleportGuard = teleportGuard;
     }
 
@@ -98,13 +90,7 @@ public final class ShopVillagerListener implements Listener {
         Shop shop = registry.byVillager(entity.getUniqueId()).orElse(null);
         if (shop == null) return;
         if (!(event.getPlayer() instanceof Player viewer)) return;
-        // Owners / privileged co-owners get the action menu directly; others see the customer view.
-        sounds.play(viewer, SoundEvents.UI_OPEN);
-        if (actionMenu.canShow(viewer, shop)) {
-            actionMenu.open(viewer, shop);
-            return;
-        }
-        openService.open(viewer, shop);
+        router.onRightClick(viewer, shop);
     }
 
     @EventHandler
@@ -119,6 +105,10 @@ public final class ShopVillagerListener implements Listener {
             int sx = (int) Math.floor(shop.location().x()) >> 4;
             int sz = (int) Math.floor(shop.location().z()) >> 4;
             if (sx != cx || sz != cz) continue;
+
+            // NPC-backed shops are packet-based and have no entity id: they are
+            // spawned once at boot and are unaffected by chunk loading.
+            if (shops.entities().isNpcBacked(shop)) continue;
 
             UUID villagerId = shop.villagerEntityId();
             if (villagerId == null) continue;

@@ -8,10 +8,15 @@ import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.integration.MvshopPlaceholders;
 import me.f0reach.vshop.locale.MessageManager;
+import me.f0reach.vshop.shop.ShopInteractionRouter;
 import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
 import me.f0reach.vshop.shop.VillagerTeleportGuard;
+import me.f0reach.vshop.shop.entity.ShopAppearanceRegistry;
+import me.f0reach.vshop.shop.entity.ShopDisplayName;
+import me.f0reach.vshop.shop.entity.ShopEntityBackend;
+import me.f0reach.vshop.shop.entity.ShopEntityIntegration;
 import me.f0reach.vshop.shop.entity.ShopEntityService;
 import me.f0reach.vshop.shop.entity.VillagerBackend;
 import me.f0reach.vshop.shop.admin.AdminShopSlotIO;
@@ -56,8 +61,12 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopRegistry registry;
     private ShopService shopService;
     private SpawnEggFactory eggFactory;
+    private ShopDisplayName shopDisplayName;
+    private ShopAppearanceRegistry shopAppearances;
     private VillagerBackend villagerBackend;
     private ShopEntityService shopEntities;
+    private ShopInteractionRouter interactionRouter;
+    private ShopEntityIntegration npcIntegration;
     private DialogService dialogService;
     private IconConfig iconConfig;
     private ShopBrowseUi browseUi;
@@ -109,8 +118,18 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
         this.registry = new ShopRegistry();
         this.villagerTeleportGuard = new VillagerTeleportGuard();
-        this.villagerBackend = new VillagerBackend(this, messages, storage.coOwners(), config);
-        this.shopEntities = new ShopEntityService(villagerBackend);
+        this.shopDisplayName = new ShopDisplayName(this, messages, storage.coOwners(), config);
+        this.shopAppearances = new ShopAppearanceRegistry();
+        this.villagerBackend = new VillagerBackend(this, shopDisplayName);
+        // Naming FancyNpcsIntegration only inside this guard keeps the JVM from
+        // resolving FancyNpcs types on servers that do not have the plugin.
+        ShopEntityBackend npcBackend = null;
+        if (config.fancyNpcs().enabled() && getServer().getPluginManager().isPluginEnabled("FancyNpcs")) {
+            this.npcIntegration = new me.f0reach.vshop.integration.fancynpcs.FancyNpcsIntegration(
+                    this, registry, shopAppearances, shopDisplayName, config);
+            npcBackend = npcIntegration.backend();
+        }
+        this.shopEntities = new ShopEntityService(villagerBackend, shopAppearances, npcBackend);
         this.shopService = new ShopService(storage, registry, shopEntities, config);
         this.eggFactory = new SpawnEggFactory(this, messages);
         this.dialogService = new DialogService(this);
@@ -142,14 +161,27 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
         try {
             shopService.loadAll();
+            shopAppearances.loadAll(storage.appearance().findAll());
         } catch (SQLException ex) {
             getLogger().severe("Failed to load existing shops: " + ex.getMessage());
         }
 
+        this.interactionRouter = new ShopInteractionRouter(openService, actionMenu, soundService);
+
+        if (npcIntegration != null) {
+            npcIntegration.start(interactionRouter);
+        } else {
+            int wanted = shopAppearances.countByBackend(me.f0reach.vshop.model.ShopEntityKind.FANCY_NPC);
+            if (wanted > 0) {
+                getLogger().warning(wanted + " shop(s) are configured as FancyNpcs NPCs but the "
+                        + "integration is unavailable; they will render as villagers.");
+            }
+        }
+
         var pm = getServer().getPluginManager();
         pm.registerEvents(new ShopEggListener(this, eggFactory, shopService, messages), this);
-        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerBackend, openService,
-                actionMenu, soundService, villagerTeleportGuard), this);
+        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerBackend,
+                interactionRouter, villagerTeleportGuard), this);
         pm.registerEvents(new VillagerLookListener(registry, config, villagerTeleportGuard), this);
         pm.registerEvents(new ShopBrowseListener(this, registry, browseUi, storage, tradeFlow, messages), this);
         pm.registerEvents(new NotificationFlushListener(this, tradeNotifier), this);
@@ -181,6 +213,14 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (npcIntegration != null) {
+            // NPCs are never persisted by FancyNpcs, so they must be taken down
+            // explicitly or they linger for the rest of the server's life.
+            try { npcIntegration.shutdown(); } catch (Throwable t) {
+                getLogger().warning("FancyNpcs shutdown failed: " + t);
+            }
+            npcIntegration = null;
+        }
         if (papiExpansion != null) {
             try { papiExpansion.unregister(); } catch (Throwable ignored) {}
             papiExpansion = null;
@@ -220,6 +260,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public SpawnEggFactory eggFactory() { return eggFactory; }
     public VillagerBackend villagerBackend() { return villagerBackend; }
     public ShopEntityService shopEntities() { return shopEntities; }
+    public ShopAppearanceRegistry shopAppearances() { return shopAppearances; }
+    public ShopDisplayName shopDisplayName() { return shopDisplayName; }
     public DialogService dialogService() { return dialogService; }
     public ShopBrowseUi browseUi() { return browseUi; }
     public ShopOpenService openService() { return openService; }

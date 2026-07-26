@@ -132,7 +132,7 @@ public final class ShopService {
                 case DISCARD -> { /* fall through — storage cascade will drop the rows */ }
             }
         }
-        entities.remove(shop);
+        entities.onShopDeleted(shop);
         storage.shops().delete(shop.id());
         registry.remove(shop.id());
         Bukkit.getPluginManager().callEvent(new ShopDeleteEvent(shop));
