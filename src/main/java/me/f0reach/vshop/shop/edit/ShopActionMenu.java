@@ -179,7 +179,8 @@ public final class ShopActionMenu {
         }
         if (shop.isPlayerShop() && hasAnyPerm(viewer,
                 "modernvillagershop.coowner.transfer", "modernvillagershop.coowner.transfer.others")) {
-            buttons.add(new DialogService.ButtonSpec(messages.get("action.transfer"),
+            buttons.add(new DialogService.ButtonSpec(messages.get("action.transfer",
+                            Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))),
                     () -> coOwnerFlow.openTransferWithPicker(viewer, shop,
                             () -> openOwnerSubmenu(viewer, shop))));
         }

@@ -132,7 +132,7 @@ error:
 coowner:
     no-permission: "<red>You do not have permission to manage co-owners."
     admin-shop: "<red>Admin shops have no co-owners."
-    primary-immutable: "<gray>PRIMARY cannot be edited directly — use transfer."
+    primary-immutable: "<gray><role> cannot be edited directly — use transfer."
     list:
         title: "<white>Co-owners: <shop_name>"
         body: "<gray>Pick a member to edit, or add a new one."
@@ -162,12 +162,12 @@ coowner:
         "no": "Cancel"
         done: "<green>Co-owner removed."
     transfer:
-        title: "<white>Transfer PRIMARY"
-        body: "<gray>Transfer PRIMARY to <player>?\nYou will be demoted to MANAGER."
+        title: "<white>Transfer <role>"
+        body: "<gray>Transfer <role> to <player>?\nYou will be demoted to <new_role>."
         "yes": "Transfer"
         "no": "Cancel"
         same-player: "<red>You can't transfer to yourself."
-        done: "<green>PRIMARY transferred to <player>."
+        done: "<green><role> transferred to <player>."
 
 edit:
     slot:
@@ -249,7 +249,7 @@ action:
     settings-menu: "<white>Shop settings ..."
     owner-menu: "<light_purple>Ownership ..."
     coowner: "<light_purple>Co-owners"
-    transfer: "<gold>Transfer PRIMARY"
+    transfer: "<gold>Transfer <role>"
     notifications: "<white>Trade notifications [now: <current>]"
     notifications-on: "<green>Trade notifications enabled."
     notifications-off: "<yellow>Trade notifications disabled."

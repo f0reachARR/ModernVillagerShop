@@ -139,9 +139,12 @@ public final class CoOwnerFlow {
                                        String displayName, Runnable onReturn) {
         Component body = messages.get("coowner.transfer.body",
                 Placeholder.parsed("player", displayName),
-                Placeholder.parsed("shop_name", shop.name()));
+                Placeholder.parsed("shop_name", shop.name()),
+                Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY)),
+                Placeholder.component("new_role", enumLabels.label(CoOwnerRole.MANAGER)));
         dialogs.confirmOnce(primary,
-                messages.get("coowner.transfer.title"), body,
+                messages.get("coowner.transfer.title",
+                        Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))), body,
                 messages.get("coowner.transfer.yes"), messages.get("coowner.transfer.no"),
                 () -> performTransfer(primary, shop, target),
                 nullSafeReturn(onReturn),
@@ -207,7 +210,8 @@ public final class CoOwnerFlow {
             for (CoOwner co : storage.coOwners().findByShop(shop.id())) {
                 if (co.playerUuid().equals(picked.playerUuid())) {
                     if (co.role() == CoOwnerRole.PRIMARY) {
-                        primary.sendMessage(messages.get("coowner.primary-immutable"));
+                        primary.sendMessage(messages.get("coowner.primary-immutable",
+                            Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))));
                         reloadList(primary, shop, onReturn);
                         return;
                     }
@@ -243,7 +247,8 @@ public final class CoOwnerFlow {
 
     private void showMemberActions(Player primary, Shop shop, CoOwner co, Runnable onReturn) {
         if (co.role() == CoOwnerRole.PRIMARY) {
-            primary.sendMessage(messages.get("coowner.primary-immutable"));
+            primary.sendMessage(messages.get("coowner.primary-immutable",
+                    Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))));
             reloadList(primary, shop, onReturn);
             return;
         }
@@ -374,7 +379,8 @@ public final class CoOwnerFlow {
 
             oldPrimary.sendMessage(messages.get("coowner.transfer.done",
                     Placeholder.parsed("player",
-                            newPrimary.getName() == null ? newId.toString() : newPrimary.getName())));
+                            newPrimary.getName() == null ? newId.toString() : newPrimary.getName()),
+                    Placeholder.component("role", enumLabels.label(CoOwnerRole.PRIMARY))));
         } catch (SQLException ex) {
             LOG.severe("PRIMARY transfer failed: " + ex.getMessage());
             oldPrimary.sendMessage(messages.get("error.generic",

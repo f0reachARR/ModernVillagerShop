@@ -132,7 +132,7 @@ error:
 coowner:
     no-permission: "<red>共同オーナーを管理する権限がありません。"
     admin-shop: "<red>管理者ショップには共同オーナーを設定できません。"
-    primary-immutable: "<gray>PRIMARYは直接編集できません。移譲を使用してください。"
+    primary-immutable: "<gray><role>は直接編集できません。移譲を使用してください。"
     list:
         title: "<white>共同オーナー: <shop_name>"
         body: "<gray>編集対象を選択するか、追加してください。"
@@ -162,12 +162,12 @@ coowner:
         "no": "やめる"
         done: "<green>共同オーナーを削除しました。"
     transfer:
-        title: "<white>PRIMARY 移譲"
-        body: "<gray>このショップの PRIMARY を <player> へ移譲します。\nあなたは MANAGER に降格します。"
+        title: "<white><role>の移譲"
+        body: "<gray>このショップの<role>を <player> へ移譲します。\nあなたは<new_role>に降格します。"
         "yes": "移譲する"
         "no": "やめる"
         same-player: "<red>同じプレイヤーには移譲できません。"
-        done: "<green>PRIMARY を <player> に移譲しました。"
+        done: "<green><role>を <player> に移譲しました。"
 
 edit:
     slot:
@@ -249,7 +249,7 @@ action:
     settings-menu: "<white>店舗設定 ..."
     owner-menu: "<light_purple>オーナー管理 ..."
     coowner: "<light_purple>共同オーナー"
-    transfer: "<gold>PRIMARY 移譲"
+    transfer: "<gold><role>の移譲"
     notifications: "<white>取引通知 [現在: <current>]"
     notifications-on: "<green>取引通知を有効化しました。"
     notifications-off: "<yellow>取引通知を無効化しました。"
