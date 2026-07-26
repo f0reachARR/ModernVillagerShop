@@ -79,3 +79,10 @@ The repo bundles vendored Markdown references that future Claude instances shoul
 - [dialog.md](dialog.md) — PaperMC Dialog API + BedrockDialog wrapper notes.
 - [adventure.md](adventure.md) — Adventure/MiniMessage usage patterns.
 - [modern-commands.md](modern-commands.md) — Paper Brigadier command API.
+
+## Human-facing documentation
+
+- [README.md](README.md) is the English project page and doubles as the Modrinth description. Refresh it when commands, permissions, requirements or config defaults change.
+- [docs/guide/](docs/guide/) holds the Japanese guides (`admin.md`, `user-basic.md`, `user-advanced.md`) and [docs/guide/en/](docs/guide/en/) the English ones. **Both languages must stay in sync** — editing one side means editing the other, the same rule as `messages_en.yml` / `messages_ja.yml`.
+- Guides quote UI button labels and error strings. Source that wording from the matching locale file (`lang/messages_ja.yml` for the Japanese guides, `lang/messages_en.yml` for the English ones) instead of translating the other guide — the two locales are not literal translations of each other (e.g. the BOTH-slot picker is `購入する` / `納品する` in ja but `Buy from shop` / `Sell to shop` in en).
+- [spec.md](spec.md) stays Japanese and remains authoritative. Update the spec first for behavior changes, then the guides.

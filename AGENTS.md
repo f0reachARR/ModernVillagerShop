@@ -8,6 +8,11 @@
   - `config.yml` for plugin settings
   - `lang/messages_*.yml` for localized text — keep `messages_en.yml` and `messages_ja.yml` in sync, and never print a domain enum with `name()`: route it through `locale/EnumLabels`, which reads `enum.<kebab-class>.<kebab-value>`
 - Build output is generated under `build/` (do not commit generated artifacts).
+- Documentation:
+  - `README.md` is the English project page (also used as the Modrinth description) — refresh it when commands, permissions, requirements or config defaults change.
+  - `docs/guide/*.md` are the Japanese guides and `docs/guide/en/*.md` the English ones. **Both languages must stay in sync**: a change to a Japanese guide requires the matching change in `docs/guide/en/`, and vice versa.
+  - Guides quote UI button labels and error text. Take the wording from the matching locale file (`lang/messages_ja.yml` / `lang/messages_en.yml`) rather than translating the other guide, so each guide matches what that locale actually renders.
+  - `spec.md` stays Japanese and is the authoritative behavior spec — update it first when behavior changes, then the guides.
 
 ## Build, Test, and Development Commands
 
