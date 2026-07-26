@@ -98,6 +98,28 @@ public final class ShopEntityService implements ShopEntityBackend {
     }
 
     /**
+     * Removes a villager still standing for a shop that now renders as an NPC and
+     * clears the stale id, returning true when the shop record changed.
+     *
+     * <p>Only acts when the entity is actually reachable. If its chunk is not
+     * loaded the id has to stay put — clearing it would orphan the villager with
+     * nothing left pointing at it. {@code ShopVillagerListener} finishes the job
+     * when the chunk does load.
+     *
+     * <p>Exists because a crash between despawning a villager and persisting that
+     * leaves the two out of step, and spawn chunks are already loaded before
+     * plugins enable, so the chunk-load pass alone never sees them.
+     */
+    public boolean discardStrayVillager(Shop shop) {
+        if (!isNpcBacked(shop) || shop.villagerEntityId() == null) return false;
+        var stray = villagers.findEntity(shop);
+        if (stray == null) return false;
+        stray.remove();
+        shop.setVillagerEntityId(null);
+        return true;
+    }
+
+    /**
      * Rebuilds the representation from the current appearance, switching backend
      * if it changed. Returns the Bukkit entity id to persist on the shop — null
      * for backends without one — so the caller can write it back.

@@ -106,26 +106,47 @@ public final class ShopVillagerListener implements Listener {
             int sz = (int) Math.floor(shop.location().z()) >> 4;
             if (sx != cx || sz != cz) continue;
 
-            // NPC-backed shops are packet-based and have no entity id: they are
-            // spawned once at boot and are unaffected by chunk loading.
-            if (shops.entities().isNpcBacked(shop)) continue;
-
             UUID villagerId = shop.villagerEntityId();
+
+            // NPC-backed shops are packet-based: spawned once at boot, unaffected
+            // by chunk loading. They should own no villager at all, so a leftover
+            // id means a crash landed between despawning one and persisting that
+            // — clean it up now that the chunk is finally loaded.
+            if (shops.entities().isNpcBacked(shop)) {
+                if (villagerId != null) discardStrayVillager(event, shop, villagerId);
+                continue;
+            }
+
             if (villagerId == null) continue;
-            Entity entity = event.getWorld().getEntities().stream()
-                    .filter(e -> e.getUniqueId().equals(villagerId))
-                    .findFirst().orElse(null);
+            Entity entity = findInWorld(event, villagerId);
             if (entity == null) {
                 var at = shop.location().toBukkit();
                 if (at == null) continue;
                 UUID newId = shops.entities().spawn(shop, at);
                 shop.setVillagerEntityId(newId);
-                try {
-                    shops.update(shop);
-                } catch (java.sql.SQLException ex) {
-                    // Already logged in the service layer; we don't need to abort the chunk-load.
-                }
+                persist(shop);
             }
+        }
+    }
+
+    private void discardStrayVillager(ChunkLoadEvent event, Shop shop, UUID villagerId) {
+        Entity stray = findInWorld(event, villagerId);
+        if (stray != null) stray.remove();
+        shop.setVillagerEntityId(null);
+        persist(shop);
+    }
+
+    private static Entity findInWorld(ChunkLoadEvent event, UUID entityId) {
+        return event.getWorld().getEntities().stream()
+                .filter(e -> e.getUniqueId().equals(entityId))
+                .findFirst().orElse(null);
+    }
+
+    private void persist(Shop shop) {
+        try {
+            shops.update(shop);
+        } catch (java.sql.SQLException ex) {
+            // Already logged in the service layer; we don't need to abort the chunk-load.
         }
     }
 }

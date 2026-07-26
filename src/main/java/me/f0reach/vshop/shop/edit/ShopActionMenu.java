@@ -142,7 +142,9 @@ public final class ShopActionMenu {
                             Placeholder.parsed("current", shop.name())),
                     () -> openRename(viewer, shop)));
         }
-        if (hasAnyPerm(viewer, "modernvillagershop.edit.profession",
+        // Profession only exists on a villager; an NPC-backed shop has no such knob.
+        if (!plugin.shopEntities().isNpcBacked(shop)
+                && hasAnyPerm(viewer, "modernvillagershop.edit.profession",
                 "modernvillagershop.edit.others", "modernvillagershop.admin.edit")) {
             buttons.add(new DialogService.ButtonSpec(
                     messages.get("action.profession.button",

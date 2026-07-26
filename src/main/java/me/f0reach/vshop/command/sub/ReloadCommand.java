@@ -6,6 +6,7 @@ import com.mojang.brigadier.context.CommandContext;
 import io.papermc.paper.command.brigadier.CommandSourceStack;
 import io.papermc.paper.command.brigadier.Commands;
 import me.f0reach.vshop.command.CommandSupport;
+import me.f0reach.vshop.model.Shop;
 
 @SuppressWarnings("UnstableApiUsage")
 public final class ReloadCommand {
@@ -24,6 +25,15 @@ public final class ReloadCommand {
 
     private int execute(CommandContext<CommandSourceStack> ctx) {
         support.plugin().reloadConfigInternal();
+        // Villager attributes are re-derived on the next chunk load anyway, but a
+        // packet NPC only changes when we re-send it, so config values it baked in
+        // (turn-to-player, interaction cooldown, the name format) would otherwise
+        // stay stale until the next restart.
+        for (Shop shop : support.plugin().registry().all()) {
+            if (support.plugin().shopEntities().isNpcBacked(shop)) {
+                support.plugin().shopEntities().refresh(shop);
+            }
+        }
         ctx.getSource().getSender().sendMessage(support.messages().get("command.reload.done"));
         return Command.SINGLE_SUCCESS;
     }

@@ -175,6 +175,18 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
         this.interactionRouter = new ShopInteractionRouter(openService, actionMenu, soundService);
 
+        // Spawn chunks are already loaded by the time plugins enable, so the
+        // chunk-load pass never sees them: reconcile those shops here.
+        for (var shop : registry.all()) {
+            if (!shopEntities.discardStrayVillager(shop)) continue;
+            try {
+                shopService.update(shop);
+            } catch (SQLException ex) {
+                getLogger().warning("Failed to clear the stale villager id on shop "
+                        + shop.id() + ": " + ex.getMessage());
+            }
+        }
+
         if (npcIntegration != null) {
             npcIntegration.start(interactionRouter);
         } else {
