@@ -8,6 +8,7 @@ import io.papermc.paper.command.brigadier.Commands;
 import me.f0reach.vshop.command.CommandSupport;
 import me.f0reach.vshop.economy.EconomyService;
 import me.f0reach.vshop.model.Shop;
+import me.f0reach.vshop.ui.text.StatsView;
 import org.bukkit.command.CommandSender;
 
 import java.sql.SQLException;
@@ -39,14 +40,7 @@ public final class StatsCommand {
             var agg = support.plugin().api().statsFor(shop.id());
             int slotCount = support.plugin().storage().slots().findByShop(shop.id()).size();
             EconomyService econ = support.plugin().economyService();
-            var mm = support.messages().miniMessage();
-            sender.sendMessage(mm.deserialize("<gold>=== " + shop.name() + " 統計 ==="));
-            sender.sendMessage(mm.deserialize("<gray>出品枠: <white>" + slotCount));
-            sender.sendMessage(mm.deserialize("<gray>SELL件数: <white>" + agg.sellCount()
-                    + " <gray>合計: <white>" + econ.format(agg.totalSalesValue())));
-            sender.sendMessage(mm.deserialize("<gray>BUY件数: <white>" + agg.buyCount()
-                    + " <gray>合計: <white>" + econ.format(agg.totalBuyValue())));
-            sender.sendMessage(mm.deserialize("<gray>累計手数料: <white>" + econ.format(agg.totalFees())));
+            new StatsView(support.messages(), econ).send(sender, shop, agg, slotCount);
         } catch (SQLException ex) {
             support.sendGenericError(sender, ex);
             return 0;

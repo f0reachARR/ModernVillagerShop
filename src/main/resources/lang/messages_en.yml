@@ -291,7 +291,9 @@ history:
 stats:
     header: "<aqua>=== <shop_name> stats ==="
     slots: "<gray>Slots: <count>"
-    totals: "<gray>SELL: <sell_count> (<sell_total>) / BUY: <buy_count> (<buy_total>)"
+    # Emitted once per trade side; <side> comes from enum.trade-side.*.
+    side-line: "<gray><side>: <count> (<total>)"
+    fees: "<gray>Total fees: <fees>"
 
 player-picker:
     title: "<white>Pick a player"

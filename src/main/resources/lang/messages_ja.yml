@@ -291,7 +291,9 @@ history:
 stats:
     header: "<aqua>=== <shop_name> 統計 ==="
     slots: "<gray>出品枠数: <count>"
-    totals: "<gray>SELL: <sell_count> 件 (<sell_total>) / BUY: <buy_count> 件 (<buy_total>)"
+    # Emitted once per trade side; <side> comes from enum.trade-side.*.
+    side-line: "<gray><side>: <count>件 (<total>)"
+    fees: "<gray>累計手数料: <fees>"
 
 player-picker:
     title: "<white>プレイヤー選択"

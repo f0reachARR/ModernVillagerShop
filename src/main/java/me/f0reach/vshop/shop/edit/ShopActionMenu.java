@@ -14,6 +14,7 @@ import me.f0reach.vshop.shop.egg.SpawnEggMeta;
 import me.f0reach.vshop.ui.chest.ShopRestockUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
 import me.f0reach.vshop.ui.text.Displays;
+import me.f0reach.vshop.ui.text.StatsView;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
@@ -474,15 +475,7 @@ public final class ShopActionMenu {
         try {
             var agg = plugin.api().statsFor(shop.id());
             int slotCount = plugin.storage().slots().findByShop(shop.id()).size();
-            viewer.sendMessage(messages.get("stats.header",
-                    Placeholder.parsed("shop_name", shop.name())));
-            viewer.sendMessage(messages.get("stats.slots",
-                    Placeholder.parsed("count", String.valueOf(slotCount))));
-            viewer.sendMessage(messages.get("stats.totals",
-                    Placeholder.parsed("sell_count", String.valueOf(agg.sellCount())),
-                    Placeholder.parsed("buy_count", String.valueOf(agg.buyCount())),
-                    Placeholder.parsed("sell_total", plugin.economyService().format(agg.totalSalesValue())),
-                    Placeholder.parsed("buy_total", plugin.economyService().format(agg.totalBuyValue()))));
+            new StatsView(messages, plugin.economyService()).send(viewer, shop, agg, slotCount);
         } catch (SQLException ex) {
             viewer.sendMessage(messages.get("error.generic",
                     Placeholder.parsed("reason", ex.getMessage())));
