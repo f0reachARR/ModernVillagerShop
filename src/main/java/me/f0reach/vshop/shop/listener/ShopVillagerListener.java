@@ -1,13 +1,12 @@
 package me.f0reach.vshop.shop.listener;
 
-import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
-import me.f0reach.vshop.shop.ShopVillagerManager;
 import me.f0reach.vshop.shop.VillagerTeleportGuard;
 import me.f0reach.vshop.shop.edit.ShopActionMenu;
+import me.f0reach.vshop.shop.entity.VillagerBackend;
 import me.f0reach.vshop.sound.SoundEvents;
 import me.f0reach.vshop.sound.SoundService;
 import org.bukkit.NamespacedKey;
@@ -40,19 +39,17 @@ public final class ShopVillagerListener implements Listener {
     private final ShopOpenService openService;
     private final ShopActionMenu actionMenu;
     private final NamespacedKey villagerKey;
-    private final PluginConfig config;
     private final SoundService sounds;
     private final VillagerTeleportGuard teleportGuard;
 
-    public ShopVillagerListener(ShopRegistry registry, ShopService shops, ShopVillagerManager villagers,
-                                ShopOpenService openService, ShopActionMenu actionMenu, PluginConfig config,
+    public ShopVillagerListener(ShopRegistry registry, ShopService shops, VillagerBackend villagers,
+                                ShopOpenService openService, ShopActionMenu actionMenu,
                                 SoundService sounds, VillagerTeleportGuard teleportGuard) {
         this.registry = registry;
         this.shops = shops;
         this.openService = openService;
         this.actionMenu = actionMenu;
         this.villagerKey = villagers.villagerKey();
-        this.config = config;
         this.sounds = sounds;
         this.teleportGuard = teleportGuard;
     }
@@ -131,7 +128,7 @@ public final class ShopVillagerListener implements Listener {
             if (entity == null) {
                 var at = shop.location().toBukkit();
                 if (at == null) continue;
-                UUID newId = shops.villagers().spawn(shop, at, config);
+                UUID newId = shops.entities().spawn(shop, at);
                 shop.setVillagerEntityId(newId);
                 try {
                     shops.update(shop);

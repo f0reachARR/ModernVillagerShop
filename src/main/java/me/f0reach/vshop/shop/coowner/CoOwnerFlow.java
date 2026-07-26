@@ -7,8 +7,8 @@ import me.f0reach.vshop.model.CoOwnerRole;
 import me.f0reach.vshop.model.PlayerCacheEntry;
 import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.shop.ShopService;
-import me.f0reach.vshop.shop.ShopVillagerManager;
 import me.f0reach.vshop.shop.cache.PlayerCacheService;
+import me.f0reach.vshop.shop.entity.ShopEntityService;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.chest.PlayerPickerUi;
 import me.f0reach.vshop.ui.dialog.DialogService;
@@ -47,19 +47,19 @@ public final class CoOwnerFlow {
     private final MessageManager messages;
     private final StorageManager storage;
     private final ShopService shopService;
-    private final ShopVillagerManager villagerManager;
+    private final ShopEntityService shopEntities;
     private final PlayerPickerUi playerPicker;
     private final PlayerCacheService playerCache;
     private final EnumLabels enumLabels;
 
     public CoOwnerFlow(DialogService dialogs, MessageManager messages, StorageManager storage,
-                       ShopService shopService, ShopVillagerManager villagerManager,
+                       ShopService shopService, ShopEntityService shopEntities,
                        PlayerPickerUi playerPicker, PlayerCacheService playerCache) {
         this.dialogs = dialogs;
         this.messages = messages;
         this.storage = storage;
         this.shopService = shopService;
-        this.villagerManager = villagerManager;
+        this.shopEntities = shopEntities;
         this.playerPicker = playerPicker;
         this.playerCache = playerCache;
         this.enumLabels = new EnumLabels(messages);
@@ -375,7 +375,7 @@ public final class CoOwnerFlow {
             // Shop owner_uuid is the PRIMARY's cache → keep in sync.
             shop.setOwnerUuid(newId);
             shopService.update(shop);
-            villagerManager.refreshDisplayName(shop);
+            shopEntities.refreshDisplayName(shop);
 
             oldPrimary.sendMessage(messages.get("coowner.transfer.done",
                     Placeholder.parsed("player",

@@ -11,8 +11,9 @@ import me.f0reach.vshop.locale.MessageManager;
 import me.f0reach.vshop.shop.ShopOpenService;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
-import me.f0reach.vshop.shop.ShopVillagerManager;
 import me.f0reach.vshop.shop.VillagerTeleportGuard;
+import me.f0reach.vshop.shop.entity.ShopEntityService;
+import me.f0reach.vshop.shop.entity.VillagerBackend;
 import me.f0reach.vshop.shop.admin.AdminShopSlotIO;
 import me.f0reach.vshop.shop.cache.PlayerCacheService;
 import me.f0reach.vshop.shop.coowner.CoOwnerFlow;
@@ -55,7 +56,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopRegistry registry;
     private ShopService shopService;
     private SpawnEggFactory eggFactory;
-    private ShopVillagerManager villagerManager;
+    private VillagerBackend villagerBackend;
+    private ShopEntityService shopEntities;
     private DialogService dialogService;
     private IconConfig iconConfig;
     private ShopBrowseUi browseUi;
@@ -107,8 +109,9 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
         this.registry = new ShopRegistry();
         this.villagerTeleportGuard = new VillagerTeleportGuard();
-        this.villagerManager = new ShopVillagerManager(this, messages, storage.coOwners());
-        this.shopService = new ShopService(storage, registry, villagerManager, config);
+        this.villagerBackend = new VillagerBackend(this, messages, storage.coOwners(), config);
+        this.shopEntities = new ShopEntityService(villagerBackend);
+        this.shopService = new ShopService(storage, registry, shopEntities, config);
         this.eggFactory = new SpawnEggFactory(this, messages);
         this.dialogService = new DialogService(this);
         this.iconConfig = new IconConfig(messages, config);
@@ -128,7 +131,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
         this.slotEditFlow = new SlotEditFlow(dialogService, messages, economyService, editService, config);
         this.playerCacheService = new PlayerCacheService(this);
         this.playerPickerUi = new PlayerPickerUi(playerCacheService, messages, dialogService, iconConfig);
-        this.coOwnerFlow = new CoOwnerFlow(dialogService, messages, storage, shopService, villagerManager,
+        this.coOwnerFlow = new CoOwnerFlow(dialogService, messages, storage, shopService, shopEntities,
                 playerPickerUi, playerCacheService);
         this.restockUi = new ShopRestockUi(storage, messages, editService, iconConfig);
         this.actionMenu = new ShopActionMenu(this, dialogService, messages, editService, restockUi, coOwnerFlow);
@@ -145,8 +148,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
 
         var pm = getServer().getPluginManager();
         pm.registerEvents(new ShopEggListener(this, eggFactory, shopService, messages), this);
-        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerManager, openService,
-                actionMenu, config, soundService, villagerTeleportGuard), this);
+        pm.registerEvents(new ShopVillagerListener(registry, shopService, villagerBackend, openService,
+                actionMenu, soundService, villagerTeleportGuard), this);
         pm.registerEvents(new VillagerLookListener(registry, config, villagerTeleportGuard), this);
         pm.registerEvents(new ShopBrowseListener(this, registry, browseUi, storage, tradeFlow, messages), this);
         pm.registerEvents(new NotificationFlushListener(this, tradeNotifier), this);
@@ -215,7 +218,8 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public ShopRegistry registry() { return registry; }
     public ShopService shopService() { return shopService; }
     public SpawnEggFactory eggFactory() { return eggFactory; }
-    public ShopVillagerManager villagerManager() { return villagerManager; }
+    public VillagerBackend villagerBackend() { return villagerBackend; }
+    public ShopEntityService shopEntities() { return shopEntities; }
     public DialogService dialogService() { return dialogService; }
     public ShopBrowseUi browseUi() { return browseUi; }
     public ShopOpenService openService() { return openService; }

@@ -10,6 +10,7 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopLocation;
 import me.f0reach.vshop.model.ShopType;
 import me.f0reach.vshop.shop.egg.SpawnEggMeta;
+import me.f0reach.vshop.shop.entity.ShopEntityService;
 import me.f0reach.vshop.storage.StorageManager;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -31,14 +32,14 @@ public final class ShopService {
 
     private final StorageManager storage;
     private final ShopRegistry registry;
-    private final ShopVillagerManager villagers;
+    private final ShopEntityService entities;
     private final PluginConfig config;
 
-    public ShopService(StorageManager storage, ShopRegistry registry, ShopVillagerManager villagers,
+    public ShopService(StorageManager storage, ShopRegistry registry, ShopEntityService entities,
                        PluginConfig config) {
         this.storage = storage;
         this.registry = registry;
-        this.villagers = villagers;
+        this.entities = entities;
         this.config = config;
     }
 
@@ -101,7 +102,7 @@ public final class ShopService {
                 now
         );
 
-        UUID villagerId = villagers.spawn(shop, at, config);
+        UUID villagerId = entities.spawn(shop, at);
         shop.setVillagerEntityId(villagerId);
 
         storage.shops().insert(shop);
@@ -131,7 +132,7 @@ public final class ShopService {
                 case DISCARD -> { /* fall through — storage cascade will drop the rows */ }
             }
         }
-        villagers.remove(shop);
+        entities.remove(shop);
         storage.shops().delete(shop.id());
         registry.remove(shop.id());
         Bukkit.getPluginManager().callEvent(new ShopDeleteEvent(shop));
@@ -169,8 +170,8 @@ public final class ShopService {
         return registry;
     }
 
-    public ShopVillagerManager villagers() {
-        return villagers;
+    public ShopEntityService entities() {
+        return entities;
     }
 
     /** Outcome of {@link #delete(Shop)}. */

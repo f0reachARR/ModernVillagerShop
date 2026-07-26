@@ -1,4 +1,4 @@
-package me.f0reach.vshop.shop;
+package me.f0reach.vshop.shop.entity;
 
 import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.locale.MessageManager;
@@ -9,6 +9,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
+import org.bukkit.NamespacedKey;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Villager;
@@ -19,48 +20,63 @@ import java.sql.SQLException;
 import java.util.UUID;
 
 /**
- * Spawns / refreshes / removes the Villager entity that represents a shop and
- * keeps its appearance (custom name, AI-disabled, invulnerable) in sync with
- * the shop record.
+ * Backs a shop with a real, AI-disabled, invulnerable {@link Villager} and keeps
+ * its appearance (custom name, profession, flags) in sync with the shop record.
  */
-public final class ShopVillagerManager {
+public final class VillagerBackend implements ShopEntityBackend {
 
     public static final String VILLAGER_PDC_KEY = "shop_id";
 
     private final Plugin plugin;
     private final MessageManager messages;
     private final CoOwnerRepository coOwnerRepo;
-    private final org.bukkit.NamespacedKey villagerKey;
+    private final PluginConfig config;
+    private final NamespacedKey villagerKey;
 
-    public ShopVillagerManager(Plugin plugin, MessageManager messages, CoOwnerRepository coOwnerRepo) {
+    public VillagerBackend(Plugin plugin, MessageManager messages, CoOwnerRepository coOwnerRepo,
+                           PluginConfig config) {
         this.plugin = plugin;
         this.messages = messages;
         this.coOwnerRepo = coOwnerRepo;
-        this.villagerKey = new org.bukkit.NamespacedKey(plugin, VILLAGER_PDC_KEY);
+        this.config = config;
+        this.villagerKey = new NamespacedKey(plugin, VILLAGER_PDC_KEY);
     }
 
-    public org.bukkit.NamespacedKey villagerKey() {
+    /** PDC key stamped on every shop villager, for fast event-side identification. */
+    public NamespacedKey villagerKey() {
         return villagerKey;
     }
 
-    /**
-     * Spawns the villager for a shop and returns its UUID. The caller is
-     * responsible for persisting the UUID on the {@link Shop}.
-     */
-    public UUID spawn(Shop shop, Location at, PluginConfig config) {
-        Villager villager = at.getWorld().spawn(at, Villager.class, v -> applyAttributes(v, shop, config));
+    @Override
+    public UUID spawn(Shop shop, Location at) {
+        Villager villager = at.getWorld().spawn(at, Villager.class, v -> applyAttributes(v, shop));
         return villager.getUniqueId();
     }
 
-    /**
-     * Re-applies attributes to an already-spawned villager. Useful after a
-     * profession or name change, or after the shop's PRIMARY changes.
-     */
-    public void refresh(Villager villager, Shop shop, PluginConfig config) {
-        applyAttributes(villager, shop, config);
+    @Override
+    public void refresh(Shop shop) {
+        Villager v = findEntity(shop);
+        if (v == null) return;
+        applyAttributes(v, shop);
     }
 
-    private void applyAttributes(Villager v, Shop shop, PluginConfig config) {
+    @Override
+    public void refreshDisplayName(Shop shop) {
+        // Best-effort: if the villager isn't currently loaded, the next chunk-load
+        // will pick up the change via spawn().
+        Villager v = findEntity(shop);
+        if (v == null) return;
+        v.customName(buildName(shop));
+        v.setCustomNameVisible(true);
+    }
+
+    @Override
+    public void remove(Shop shop) {
+        Villager v = findEntity(shop);
+        if (v != null) v.remove();
+    }
+
+    private void applyAttributes(Villager v, Shop shop) {
         v.setAI(false);
         v.setInvulnerable(true);
         v.setRemoveWhenFarAway(false);
@@ -79,11 +95,11 @@ public final class ShopVillagerManager {
         // Mark this villager as belonging to a shop for fast event-side lookup.
         v.getPersistentDataContainer().set(villagerKey, PersistentDataType.STRING, shop.id().toString());
 
-        v.customName(buildName(shop, config));
+        v.customName(buildName(shop));
         v.setCustomNameVisible(true);
     }
 
-    public Component buildName(Shop shop, PluginConfig config) {
+    public Component buildName(Shop shop) {
         String primaryName = shop.isAdminShop() ? "" : resolvePrimaryName(shop);
         String format = shop.isAdminShop()
                 ? config.shop().villagerNameFormatAdmin()
@@ -114,8 +130,8 @@ public final class ShopVillagerManager {
     }
 
     /**
-     * Returns the shop villager located at the same UUID as the one persisted
-     * on the shop record, or null if not loaded.
+     * Returns the shop villager matching the entity id persisted on the shop
+     * record, or null if it is not currently loaded.
      */
     public Villager findEntity(Shop shop) {
         if (shop.villagerEntityId() == null) return null;
@@ -123,33 +139,5 @@ public final class ShopVillagerManager {
         var entity = Bukkit.getEntity(shop.villagerEntityId());
         if (entity instanceof Villager v) return v;
         return null;
-    }
-
-    public void remove(Shop shop) {
-        Villager v = findEntity(shop);
-        if (v != null) v.remove();
-    }
-
-    /**
-     * Re-renders the villager's custom name from the (now possibly updated)
-     * shop name / PRIMARY without touching other attributes. Best-effort: if
-     * the villager isn't currently loaded, the next chunk-load will pick up
-     * the change via spawn().
-     */
-    public void refreshDisplayName(Shop shop) {
-        Villager v = findEntity(shop);
-        if (v == null) return;
-        v.customName(buildName(shop, configSnapshot()));
-        v.setCustomNameVisible(true);
-    }
-
-    private PluginConfig configSnapshot() {
-        // We don't have a config reference in this manager; pull from the running plugin.
-        Plugin p = plugin;
-        if (p instanceof me.f0reach.vshop.ModernVillagerShopPlugin mvs) {
-            return mvs.pluginConfig();
-        }
-        // Fallback — should never be hit at runtime.
-        return new PluginConfig(plugin.getConfig());
     }
 }
