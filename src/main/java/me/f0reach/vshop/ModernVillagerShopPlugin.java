@@ -18,6 +18,7 @@ import me.f0reach.vshop.shop.entity.ShopDisplayName;
 import me.f0reach.vshop.shop.entity.ShopEntityBackend;
 import me.f0reach.vshop.shop.entity.ShopEntityIntegration;
 import me.f0reach.vshop.shop.entity.ShopEntityService;
+import me.f0reach.vshop.shop.entity.ShopTargeting;
 import me.f0reach.vshop.shop.entity.VillagerBackend;
 import me.f0reach.vshop.shop.admin.AdminShopSlotIO;
 import me.f0reach.vshop.shop.cache.PlayerCacheService;
@@ -65,6 +66,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     private ShopAppearanceRegistry shopAppearances;
     private VillagerBackend villagerBackend;
     private ShopEntityService shopEntities;
+    private ShopTargeting shopTargeting;
     private ShopInteractionRouter interactionRouter;
     private ShopEntityIntegration npcIntegration;
     private DialogService dialogService;
@@ -130,6 +132,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
             npcBackend = npcIntegration.backend();
         }
         this.shopEntities = new ShopEntityService(villagerBackend, shopAppearances, npcBackend);
+        this.shopTargeting = new ShopTargeting(registry, shopEntities);
         this.shopService = new ShopService(storage, registry, shopEntities, config);
         this.eggFactory = new SpawnEggFactory(this, messages);
         this.dialogService = new DialogService(this);
@@ -261,6 +264,7 @@ public final class ModernVillagerShopPlugin extends JavaPlugin {
     public VillagerBackend villagerBackend() { return villagerBackend; }
     public ShopEntityService shopEntities() { return shopEntities; }
     public ShopAppearanceRegistry shopAppearances() { return shopAppearances; }
+    public ShopTargeting shopTargeting() { return shopTargeting; }
     public ShopDisplayName shopDisplayName() { return shopDisplayName; }
     public DialogService dialogService() { return dialogService; }
     public ShopBrowseUi browseUi() { return browseUi; }
