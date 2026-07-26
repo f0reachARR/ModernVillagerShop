@@ -14,13 +14,15 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Catches "added a table to one dialect but not the other" drift. Both
- * dialects must end up exposing the same nine logical tables; verifying it
+ * dialects must end up exposing the same set of logical tables; verifying it
  * here means a future schema change has to update both sides.
  */
 public abstract class SchemaInitializerContract extends AbstractRepositoryContract {
 
     private static final Set<String> EXPECTED = Set.of(
             "shops",
+            "shop_appearance",
+            "shop_appearance_equipment",
             "shop_co_owners",
             "shop_slots",
             "shop_inventory",

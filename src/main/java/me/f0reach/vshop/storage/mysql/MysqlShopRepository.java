@@ -132,6 +132,8 @@ public final class MysqlShopRepository implements ShopRepository {
         try (Connection c = dataSource.getConnection()) {
             c.setAutoCommit(false);
             try {
+                deleteOn(c, "shop_appearance_equipment", "shop_id", shopId);
+                deleteOn(c, "shop_appearance", "shop_id", shopId);
                 deleteOn(c, "shop_co_owners", "shop_id", shopId);
                 deleteOn(c, "shop_slots", "shop_id", shopId);
                 deleteOn(c, "shop_inventory", "shop_id", shopId);

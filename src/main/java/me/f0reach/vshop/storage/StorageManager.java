@@ -6,6 +6,7 @@ import me.f0reach.vshop.storage.mysql.MysqlCoOwnerRepository;
 import me.f0reach.vshop.storage.mysql.MysqlPlayerCacheRepository;
 import me.f0reach.vshop.storage.mysql.MysqlPlayerPreferenceRepository;
 import me.f0reach.vshop.storage.mysql.MysqlSchemaInitializer;
+import me.f0reach.vshop.storage.mysql.MysqlShopAppearanceRepository;
 import me.f0reach.vshop.storage.mysql.MysqlShopInventoryRepository;
 import me.f0reach.vshop.storage.mysql.MysqlShopLimitRepository;
 import me.f0reach.vshop.storage.mysql.MysqlShopNotificationRepository;
@@ -16,6 +17,7 @@ import me.f0reach.vshop.storage.repo.CoOwnerRepository;
 import me.f0reach.vshop.storage.repo.PlayerCacheRepository;
 import me.f0reach.vshop.storage.repo.PlayerPreferenceRepository;
 import me.f0reach.vshop.storage.repo.SchemaInitializer;
+import me.f0reach.vshop.storage.repo.ShopAppearanceRepository;
 import me.f0reach.vshop.storage.repo.ShopInventoryRepository;
 import me.f0reach.vshop.storage.repo.ShopLimitRepository;
 import me.f0reach.vshop.storage.repo.ShopNotificationRepository;
@@ -26,6 +28,7 @@ import me.f0reach.vshop.storage.sqlite.SqliteCoOwnerRepository;
 import me.f0reach.vshop.storage.sqlite.SqlitePlayerCacheRepository;
 import me.f0reach.vshop.storage.sqlite.SqlitePlayerPreferenceRepository;
 import me.f0reach.vshop.storage.sqlite.SqliteSchemaInitializer;
+import me.f0reach.vshop.storage.sqlite.SqliteShopAppearanceRepository;
 import me.f0reach.vshop.storage.sqlite.SqliteShopInventoryRepository;
 import me.f0reach.vshop.storage.sqlite.SqliteShopLimitRepository;
 import me.f0reach.vshop.storage.sqlite.SqliteShopNotificationRepository;
@@ -49,6 +52,7 @@ public final class StorageManager implements AutoCloseable {
     private final ShopSlotRepository slots;
     private final CoOwnerRepository coOwners;
     private final ShopInventoryRepository inventory;
+    private final ShopAppearanceRepository appearance;
     private final ShopLimitRepository limits;
     private final ShopTransactionRepository transactions;
     private final ShopNotificationRepository notifications;
@@ -66,6 +70,7 @@ public final class StorageManager implements AutoCloseable {
                 this.slots = new SqliteShopSlotRepository(dataSource);
                 this.coOwners = new SqliteCoOwnerRepository(dataSource);
                 this.inventory = new SqliteShopInventoryRepository(dataSource);
+                this.appearance = new SqliteShopAppearanceRepository(dataSource);
                 this.limits = new SqliteShopLimitRepository(dataSource);
                 this.transactions = new SqliteShopTransactionRepository(dataSource);
                 this.notifications = new SqliteShopNotificationRepository(dataSource);
@@ -78,6 +83,7 @@ public final class StorageManager implements AutoCloseable {
                 this.slots = new MysqlShopSlotRepository(dataSource);
                 this.coOwners = new MysqlCoOwnerRepository(dataSource);
                 this.inventory = new MysqlShopInventoryRepository(dataSource);
+                this.appearance = new MysqlShopAppearanceRepository(dataSource);
                 this.limits = new MysqlShopLimitRepository(dataSource);
                 this.transactions = new MysqlShopTransactionRepository(dataSource);
                 this.notifications = new MysqlShopNotificationRepository(dataSource);
@@ -97,6 +103,7 @@ public final class StorageManager implements AutoCloseable {
     public ShopSlotRepository slots() { return slots; }
     public CoOwnerRepository coOwners() { return coOwners; }
     public ShopInventoryRepository inventory() { return inventory; }
+    public ShopAppearanceRepository appearance() { return appearance; }
     public ShopLimitRepository limits() { return limits; }
     public ShopTransactionRepository transactions() { return transactions; }
     public ShopNotificationRepository notifications() { return notifications; }

@@ -80,6 +80,26 @@ public final class MysqlSchemaInitializer implements SchemaInitializer {
                     "created_at BIGINT NOT NULL," +
                     "updated_at BIGINT NOT NULL" +
                     ")" + SUFFIX,
+            // Cosmetic overrides. A shop with no row here renders as a plain Villager.
+            "CREATE TABLE IF NOT EXISTS shop_appearance (" +
+                    "shop_id VARCHAR(36) PRIMARY KEY," +
+                    "backend VARCHAR(32) NOT NULL," +
+                    "entity_type VARCHAR(128)," +
+                    "skin VARCHAR(512)," +
+                    "skin_variant VARCHAR(16)," +
+                    "glowing TINYINT(1) NOT NULL DEFAULT 0," +
+                    "glow_color VARCHAR(32)," +
+                    "scale DOUBLE," +
+                    "turn_to_player TINYINT(1)," +
+                    "attributes TEXT," +
+                    "updated_at BIGINT NOT NULL" +
+                    ")" + SUFFIX,
+            "CREATE TABLE IF NOT EXISTS shop_appearance_equipment (" +
+                    "shop_id VARCHAR(36) NOT NULL," +
+                    "slot VARCHAR(32) NOT NULL," +
+                    "item_data LONGBLOB NOT NULL," +
+                    "PRIMARY KEY (shop_id, slot)" +
+                    ")" + SUFFIX,
             "CREATE TABLE IF NOT EXISTS shop_co_owners (" +
                     "shop_id VARCHAR(36) NOT NULL," +
                     "player_uuid VARCHAR(36) NOT NULL," +
