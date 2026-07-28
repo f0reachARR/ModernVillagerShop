@@ -6,6 +6,7 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.TradeSide;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.economy.EconomyService;
+import me.f0reach.vshop.ui.text.Displays;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.Bukkit;
@@ -49,7 +50,7 @@ public final class TradeNotifier {
                     Placeholder.parsed("shop_name", shop.name()),
                     Placeholder.parsed("amount", Integer.toString(amount)),
                     Placeholder.parsed("price", economy.format(value)),
-                    Placeholder.parsed("item", itemName(item))
+                    Placeholder.component("item", Displays.itemName(item))
             );
             p.sendMessage(msg);
         }
@@ -99,14 +100,4 @@ public final class TradeNotifier {
         });
     }
 
-    private String itemName(ItemStack item) {
-        if (item == null || !item.hasItemMeta()) return item == null ? "?" : item.getType().name();
-        var meta = item.getItemMeta();
-        if (meta != null && meta.hasDisplayName()) {
-            var dn = meta.displayName();
-            if (dn != null) return net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer
-                    .plainText().serialize(dn);
-        }
-        return item.getType().name();
-    }
 }
