@@ -14,6 +14,7 @@ import me.f0reach.vshop.sound.SoundEvents;
 import me.f0reach.vshop.sound.SoundService;
 import me.f0reach.vshop.storage.StorageManager;
 import me.f0reach.vshop.ui.dialog.DialogService;
+import me.f0reach.vshop.ui.text.Displays;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
@@ -347,11 +348,6 @@ public final class TradeFlow {
     }
 
     private Component displayName(ShopSlot slot) {
-        var meta = slot.itemTemplate().getItemMeta();
-        if (meta != null && meta.hasDisplayName()) {
-            var dn = meta.displayName();
-            if (dn != null) return dn;
-        }
-        return Component.text(slot.itemTemplate().getType().name());
+        return Displays.itemName(slot.itemTemplate());
     }
 }
