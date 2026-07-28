@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.1.0](https://github.com/f0reachARR/ModernVillagerShop/compare/v1.0.0...v1.1.0) (2026-07-28)
+
+
+### Features
+
+* **ui:** render item names as translatable components with item hover ([#6](https://github.com/f0reachARR/ModernVillagerShop/issues/6)) ([17da8c8](https://github.com/f0reachARR/ModernVillagerShop/commit/17da8c81a357ef704fd7ef0695ec457de225d4c5))
+
 ## 1.0.0 (2026-07-26)
 
 
