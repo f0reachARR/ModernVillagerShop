@@ -55,6 +55,10 @@ public final class MigrationService {
                 for (var inv : source.inventory().findByShop(shop.id())) {
                     dest.inventory().upsert(inv);
                 }
+                var appearance = source.appearance().find(shop.id());
+                if (appearance.isPresent()) {
+                    dest.appearance().upsert(appearance.get());
+                }
                 shopsCopied++;
             }
             LOG.info("Migration copied " + shopsCopied + " shops from " + from + " to " + to);

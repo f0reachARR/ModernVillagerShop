@@ -142,7 +142,9 @@ public final class ShopActionMenu {
                             Placeholder.parsed("current", shop.name())),
                     () -> openRename(viewer, shop)));
         }
-        if (hasAnyPerm(viewer, "modernvillagershop.edit.profession",
+        // Profession only exists on a villager; an NPC-backed shop has no such knob.
+        if (!plugin.shopEntities().isNpcBacked(shop)
+                && hasAnyPerm(viewer, "modernvillagershop.edit.profession",
                 "modernvillagershop.edit.others", "modernvillagershop.admin.edit")) {
             buttons.add(new DialogService.ButtonSpec(
                     messages.get("action.profession.button",
@@ -281,7 +283,7 @@ public final class ShopActionMenu {
                     shop.setName(next);
                     try {
                         plugin.shopService().update(shop);
-                        plugin.villagerManager().refreshDisplayName(shop);
+                        plugin.shopEntities().refreshDisplayName(shop);
                         viewer.sendMessage(messages.get("action.rename.done",
                                 Placeholder.parsed("name", next)));
                     } catch (SQLException ex) {
@@ -325,8 +327,7 @@ public final class ShopActionMenu {
                     shop.setProfession(chosen);
                     try {
                         plugin.shopService().update(shop);
-                        Villager v = plugin.villagerManager().findEntity(shop);
-                        if (v != null) plugin.villagerManager().refresh(v, shop, plugin.pluginConfig());
+                        plugin.shopEntities().refresh(shop);
                         viewer.sendMessage(messages.get("action.profession.done",
                                 Placeholder.parsed("profession", professionLabel(chosen))));
                     } catch (SQLException ex) {

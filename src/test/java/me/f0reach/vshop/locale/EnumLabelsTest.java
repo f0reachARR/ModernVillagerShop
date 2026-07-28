@@ -2,7 +2,9 @@ package me.f0reach.vshop.locale;
 
 import me.f0reach.vshop.model.CoOwnerRole;
 import me.f0reach.vshop.model.LimitScope;
+import me.f0reach.vshop.model.ShopEntityKind;
 import me.f0reach.vshop.model.ShopType;
+import me.f0reach.vshop.model.SkinVariant;
 import me.f0reach.vshop.model.TradeSide;
 import net.kyori.adventure.text.minimessage.MiniMessage;
 import net.kyori.adventure.text.serializer.plain.PlainTextComponentSerializer;
@@ -28,7 +30,9 @@ class EnumLabelsTest {
             TradeSide.SELL, TradeSide.BUY, TradeSide.BOTH,
             LimitScope.PER_PLAYER, LimitScope.GLOBAL,
             CoOwnerRole.PRIMARY, CoOwnerRole.MANAGER, CoOwnerRole.STAFF,
-            ShopType.PLAYER, ShopType.ADMIN);
+            ShopType.PLAYER, ShopType.ADMIN,
+            ShopEntityKind.VILLAGER, ShopEntityKind.FANCY_NPC,
+            SkinVariant.AUTO, SkinVariant.SLIM);
 
     private static EnumLabels labels(Map<String, String> table) {
         Function<String, String> resolver = k -> table.getOrDefault(k, k);
@@ -47,6 +51,8 @@ class EnumLabelsTest {
         assertEquals("enum.limit-scope.global", EnumLabels.keyFor(LimitScope.GLOBAL));
         assertEquals("enum.co-owner-role.primary", EnumLabels.keyFor(CoOwnerRole.PRIMARY));
         assertEquals("enum.shop-type.admin", EnumLabels.keyFor(ShopType.ADMIN));
+        assertEquals("enum.shop-entity-kind.fancy-npc", EnumLabels.keyFor(ShopEntityKind.FANCY_NPC));
+        assertEquals("enum.skin-variant.slim", EnumLabels.keyFor(SkinVariant.SLIM));
     }
 
     @Test

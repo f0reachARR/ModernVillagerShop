@@ -34,6 +34,7 @@ public final class PluginConfig {
     private volatile EconomyConfig economy;
     private volatile ShopConfig shop;
     private volatile PlayerCacheConfig playerCache;
+    private volatile FancyNpcsConfig fancyNpcs;
     private volatile Set<Material> blacklist;
     private volatile boolean placeholderApiEnabled;
     private volatile ConfigurationSection uiSection;
@@ -93,6 +94,14 @@ public final class PluginConfig {
                         cfg.getDouble("shop.villagerLook.radius", 6.0))
         );
 
+        this.fancyNpcs = new FancyNpcsConfig(
+                cfg.getBoolean("fancynpcs.enabled", true),
+                cfg.getBoolean("fancynpcs.turnToPlayer", true),
+                (float) cfg.getDouble("fancynpcs.interactionCooldown", 0.0),
+                (float) cfg.getDouble("fancynpcs.maxScale", 2.0),
+                List.copyOf(cfg.getStringList("fancynpcs.allowedTypes"))
+        );
+
         this.playerCache = new PlayerCacheConfig(
                 cfg.getInt("playerCache.maxEntries", 5000),
                 PlayerCacheSort.valueOf(cfg.getString("playerCache.defaultSort", "LAST_SEEN_DESC").toUpperCase(Locale.ROOT)),
@@ -146,6 +155,7 @@ public final class PluginConfig {
     public EconomyConfig economy() { return economy; }
     public ShopConfig shop() { return shop; }
     public PlayerCacheConfig playerCache() { return playerCache; }
+    public FancyNpcsConfig fancyNpcs() { return fancyNpcs; }
     public Set<Material> blacklist() { return blacklist; }
     public boolean placeholderApiEnabled() { return placeholderApiEnabled; }
     public ConfigurationSection uiSection() { return uiSection; }
@@ -183,6 +193,24 @@ public final class PluginConfig {
     ) {}
 
     public record VillagerLookConfig(boolean enabled, double radius) {}
+
+    /**
+     * FancyNpcs integration. {@code enabled} is the operator kill-switch — the
+     * plugin still has to be installed for NPC-backed shops to render at all.
+     * {@code turnToPlayer} is the default for shops that have not overridden it.
+     */
+    public record FancyNpcsConfig(boolean enabled, boolean turnToPlayer, float interactionCooldown,
+                                  float maxScale, List<String> allowedTypes) {
+
+        /** Empty list = every entity type is allowed. Matching is case-insensitive on the enum name. */
+        public boolean allowsType(org.bukkit.entity.EntityType type) {
+            if (allowedTypes.isEmpty()) return true;
+            for (String allowed : allowedTypes) {
+                if (allowed.equalsIgnoreCase(type.name())) return true;
+            }
+            return false;
+        }
+    }
 
     public record PlayerCacheConfig(int maxEntries, PlayerCacheSort defaultSort, Duration textureTtl) {}
 }

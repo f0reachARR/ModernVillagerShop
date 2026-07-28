@@ -6,6 +6,7 @@ command:
         list: "<yellow>/vshop list [page] <gray>- List shops"
         open: "<yellow>/vshop open <shopId> <gray>- Open a shop"
         edit: "<yellow>/vshop edit <shopId> <gray>- Open the editor UI"
+        appearance: "<yellow>/vshop appearance <shopId> <sub> <gray>- Change how the shop looks (npc/villager/type/skin/glow/scale/equip/attribute/show/reset)"
         coowner: "<yellow>/vshop coowner <shopId> <gray>- Manage co-owners"
         transfer: "<yellow>/vshop transfer <shopId> <player> <gray>- Transfer ownership"
         stats: "<yellow>/vshop stats <shopId> <gray>- Shop statistics"
@@ -17,6 +18,12 @@ command:
     no-permission: "<red>You don't have permission."
     player-only: "<red>This command can only be used by a player."
     shop-not-found: "<red>Shop not found: <shop_id>"
+    shop-suggest:
+        tooltip: "<white><shop_name></white><suspended><newline><gray><type> / <owner> / <distance>"
+        distance: "<blocks> blocks away"
+        distance-unknown: "distance unknown"
+        owner-none: "no owner"
+        suspended-mark: " <red>[suspended]"
     egg:
         issued: "<green>Gave a spawn egg to <player>."
         not-found: "<red>Player not found: <player>"
@@ -48,6 +55,34 @@ command:
         player-not-found: "<red>Player not found: <player>"
         line: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <dark_gray>[<shop> / <counterparty>]"
         line-with-fee: "<gray><time> <yellow><side></yellow> <white><item></white> <gray>x<amount> @ <white><price></white> <gray>(fee <fee>) <dark_gray>[<shop> / <counterparty>]"
+    appearance:
+        header: "<gold>=== Appearance: <shop_name> ==="
+        line-backend: "<gray>Rendered as: <white><backend>"
+        line-type: "<gray>Entity: <white><type>"
+        line-skin: "<gray>Skin: <white><skin></white> <dark_gray>(<variant>)"
+        line-glow: "<gray>Glowing: <white><state></white> <dark_gray>(<color>)"
+        line-scale: "<gray>Scale: <white><scale>"
+        line-turn: "<gray>Turns to players: <white><state>"
+        line-equipment: "<gray>Equipment <white><slot></white>: <white><item>"
+        line-equipment-empty: "<gray>Equipment: <dark_gray>none"
+        line-attribute: "<gray>Attribute <white><name></white>: <white><value>"
+        none: "<dark_gray>unset"
+        unavailable: "<red>FancyNpcs is unavailable, so this cannot be changed."
+        npc-done: "<green><shop_name> now renders as an NPC."
+        villager-done: "<green><shop_name> is back to a villager."
+        updated: "<green>Appearance updated."
+        reset-done: "<green>Appearance settings cleared."
+        invalid-type: "<red>Unknown entity type: <type>"
+        type-not-allowed: "<red>That entity type is not allowed: <type>"
+        invalid-color: "<red>Unknown color: <color>"
+        invalid-scale: "<red>Scale must be between <min> and <max>."
+        invalid-slot: "<red>Unknown equipment slot: <slot>"
+        skin-needs-player: "<red>Only PLAYER-type NPCs can have a skin."
+        skin-url-no-permission: "<red>You don't have permission to load a skin from a URL."
+        equip-empty-hand: "<red>Hold the item you want to equip, then run this again."
+        equip-done: "<green>Equipped <item> in <slot>."
+        equip-cleared: "<green>Cleared the <slot> slot."
+        attribute-cleared: "<green>Removed the <name> attribute."
     list:
         header: "<gold>=== Shops (<page>/<pages>, <total> total) ==="
         empty: "<gray>No shops yet."
@@ -351,6 +386,12 @@ duration:
 # These are labels only; the DB, YAML import/export and command arguments keep
 # using the raw constant names.
 enum:
+    shop-entity-kind:
+        villager: "Villager"
+        fancy-npc: "NPC"
+    skin-variant:
+        auto: "Auto"
+        slim: "Slim"
     trade-side:
         sell: "Sell"
         buy: "Buy"

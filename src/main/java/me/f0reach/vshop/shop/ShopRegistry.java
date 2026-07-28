@@ -26,13 +26,13 @@ public final class ShopRegistry {
 
     public void put(Shop shop) {
         byId.put(shop.id(), shop);
+        // Drop any previous villager mapping for this shop first. It has to happen
+        // even when the new id is null — that is exactly what a shop switching to
+        // an NPC backend looks like, and a leftover mapping would keep claiming a
+        // villager that is no longer this shop's.
+        villagerToShop.entrySet().removeIf(e -> e.getValue().equals(shop.id()));
         UUID v = shop.villagerEntityId();
-        if (v != null) {
-            // Remove any old villager mapping that may have been associated with
-            // this shop, then index the current one.
-            villagerToShop.entrySet().removeIf(e -> e.getValue().equals(shop.id()));
-            villagerToShop.put(v, shop.id());
-        }
+        if (v != null) villagerToShop.put(v, shop.id());
     }
 
     public void remove(UUID shopId) {

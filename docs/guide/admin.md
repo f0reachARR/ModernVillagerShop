@@ -13,6 +13,8 @@
 - **Vault**: 必須。Vault 対応の Economy プラグイン（EssentialsX Economy など）が別途必要です。
 - **BedrockDialog**: 必須。Modrinth 配布の Paper プラグイン。Bedrock 対応をしたい場合は Geyser + Floodgate も併せて導入します。
 - **PlaceholderAPI**: 任意。導入すればプレースホルダーが利用できます。
+- **FancyNpcs**: 任意。導入すると、ショップの見た目を村人以外（主にプレイヤー NPC）にできます。
+    - FancyNpcs 2.10.0 以降はサーバー側に **Java 25** を要求します。Java 21 で運用する場合は FancyNpcs が配布している `-java21` ビルドを使ってください。
 
 ### 1.2 インストール
 
@@ -94,7 +96,22 @@ shop:
     - `DROP`: 在庫を店の位置にドロップして削除
     - `REFUSE`: 在庫があるうちは削除を拒否（既定・安全側）
 
-### 2.5 プレイヤーキャッシュ
+### 2.5 FancyNpcs 連携
+
+```yaml
+fancynpcs:
+  enabled: true
+  turnToPlayer: true        # ショップ側で個別指定がないときの既定値
+  interactionCooldown: 0.0  # 同一プレイヤーの連続クリックを無視する秒数（0 = 無効）
+  maxScale: 2.0             # /vshop appearance scale で指定できる最大倍率
+  allowedTypes: []          # 空 = 全許可
+```
+
+- `enabled: false` にすると、FancyNpcs が入っていても連携を止められます。NPC 指定のショップは村人として表示され、起動時に警告が 1 行出るだけで、ショップ自体は通常どおり動きます。
+- `allowedTypes` / `maxScale` は `modernvillagershop.admin.appearance` を持つプレイヤーには適用されません。
+- 見た目の設定はこのプラグイン自身の DB（`shop_appearance` テーブル）に保存されます。FancyNpcs 側の `npcs.yml` には書き込まないため、`/vshop migrate` でストレージを移すときも一緒に移動します。NPC は起動のたびに DB から作り直されます。
+
+### 2.6 プレイヤーキャッシュ
 
 ```yaml
 playerCache:
@@ -105,7 +122,7 @@ playerCache:
 
 プレイヤー選択UI（共同オーナー追加、PRIMARY 移譲先、`--player` 指定など）で使うキャッシュです。ログイン時・ログアウト時・共同オーナー参照時にアップサートされます。
 
-### 2.6 取引禁止アイテム
+### 2.7 取引禁止アイテム
 
 ```yaml
 items:
@@ -119,7 +136,7 @@ items:
 - 既定でシュルカーボックス系とバンドルが入っています。内部を持てるアイテムは、想定外の複製・搾取経路になるため慎重に扱ってください。
 - プラグイン側の強制ブラックリストはありません。運用ポリシーに応じて追加削除してください。
 
-### 2.7 UI アイコン
+### 2.8 UI アイコン
 
 `ui.chest.icons.*` で、チェストUI 内のナビゲーション用アイコン（次/前ページ、閉じる、絞り込み、並び替え、戻る、空スロット、利用不可、不明プレイヤーヘッド）のマテリアル・表示名・ロア・カスタムモデルデータをすべて上書きできます。テクスチャパック運用と組み合わせて外観を整えられます。
 
@@ -130,7 +147,7 @@ items:
 `paper-plugin.yml` に、次のロール的グルーピングが定義されています。LuckPerms などの権限プラグインで付与すると便利です。
 
 - **`modernvillagershop.player`** (default: `true`): 一般プレイヤーが必要とする権限のパック。`use`, `egg`, `list`, `search`, `stats`, `history`, `open.nearby`, `edit.*`, `coowner.manage`, `coowner.transfer` を含む。
-- **`modernvillagershop.admin`** (default: `op`): 管理者権限パック。`admin.egg`, `admin.edit`, `admin.export`, `admin.import`, `edit.others`, `coowner.manage.others`, `coowner.transfer.others`, `history.others`, `open.any`, `migrate`, `reload` を含む。
+- **`modernvillagershop.admin`** (default: `op`): 管理者権限パック。`admin.egg`, `admin.edit`, `admin.export`, `admin.import`, `edit.others`, `coowner.manage.others`, `coowner.transfer.others`, `history.others`, `open.any`, `migrate`, `reload`, `admin.appearance` を含む。
 
 ### 3.2 個別権限
 
@@ -142,7 +159,9 @@ items:
 | `modernvillagershop.egg` | プレイヤー用スポーンエッグの使用 |
 | `modernvillagershop.admin.egg` | 管理者用スポーンエッグの使用 |
 | `modernvillagershop.admin.edit` | 管理者ショップの編集 |
-| `modernvillagershop.edit.*` | 自ショップの各種編集操作（move / rename / profession / suspend / delete / delete.refund） |
+| `modernvillagershop.edit.*` | 自ショップの各種編集操作（move / rename / profession / appearance / suspend / delete / delete.refund） |
+| `modernvillagershop.edit.appearance.url` | 任意の URL からスキンを読み込む（既定 op） |
+| `modernvillagershop.admin.appearance` | `fancynpcs.allowedTypes` / `maxScale` の制限を無視する |
 | `modernvillagershop.edit.others` | 他者ショップの編集（ロール無視） |
 | `modernvillagershop.coowner.manage.others` | 任意ショップの共同オーナー管理 |
 | `modernvillagershop.coowner.transfer.others` | 任意ショップの PRIMARY 強制移譲（離脱者対応など） |
@@ -211,6 +230,7 @@ items:
 | `/vshop stats <shopId>` | 統計表示 | `modernvillagershop.stats` |
 | `/vshop history [shopId] [page] [--flags]` | 取引履歴 | `history` / `history.others` |
 | `/vshop edit [shopId]` | 編集メニュー | `edit` / `edit.others` |
+| `/vshop appearance <shopId> <sub>` | 見た目の変更（FancyNpcs 必須） | `edit.appearance` / `edit.others` |
 | `/vshop coowner <shopId>` | 共同オーナー管理UI | `coowner.manage` / `.others` |
 | `/vshop transfer <shopId> <player>` | PRIMARY 移譲 | `coowner.transfer` / `.others` |
 | `/vshop egg <player> <lines\|inf\|admin>` | スポーンエッグ配布 | `egg` / `admin.egg` |
@@ -220,6 +240,32 @@ items:
 | `/vshop reload` | 設定・言語・メッセージのリロード | `reload` |
 
 `/vshop history` の `--from` / `--to` は `YYYY-MM-DD` または `YYYY-MM-DDTHH:mm[:ss]` を受け付け、サーバーのデフォルトタイムゾーンで解釈します。
+
+### 5.1 `/vshop appearance` の詳細
+
+見た目の変更は Dialog UI を用意せず、コマンドだけで操作します。設定項目が多く、たまにしか触らない操作なので、メニューを潜るより一覧で見えるほうが扱いやすいためです。
+
+| サブコマンド | 内容 |
+| --- | --- |
+| `show` | 現在の設定を表示（読み取り専用なのでコンソールからも実行可） |
+| `npc [skin]` | プレイヤー NPC に切り替える。`skin` 省略時はオーナー名を使う |
+| `villager` | 通常の村人に戻す |
+| `type <entityType>` | NPC のエンティティタイプを変える |
+| `skin <name\|uuid\|url\|@none> [slim]` | スキンを設定・解除する（PLAYER タイプのみ） |
+| `glow <true\|false> [color]` | 発光と発光色 |
+| `scale <倍率>` | 大きさ |
+| `equip <slot> [none]` | 手に持っているアイテムを装備させる / 外す |
+| `attribute <name> <value\|@none>` | FancyNpcs の属性を設定・削除する（例: `pose sitting`） |
+| `reset` | 設定をすべて破棄して村人に戻す |
+
+装備スロットは FancyNpcs のもので、`MAINHAND` / `OFFHAND` / `HEAD` / `CHEST` / `LEGS` / `FEET` / `BODY` / `SADDLE` です。
+
+運用上の注意:
+
+- **URL スキンは別権限**です。`modernvillagershop.edit.appearance.url`（既定 op）を持つ人だけが `https://...` を指定できます。任意の外部画像をサーバー経由で取得することになるため、一般プレイヤーには開けないでおくのが無難です。
+- NPC 表示中のショップでは、編集メニューから**職業変更のボタンが消えます**。職業は村人固有の設定だからです。設定値自体は残るので、`villager` に戻せば元の職業で復元されます。
+- NPC はサーバー上のエンティティとして存在しません。他プラグインのエンティティ一覧やモブカウント、`/kill` などの対象にはなりません。
+- `/vshop reload` を実行すると、`fancynpcs` セクションの変更を反映するため NPC を再送信します。
 
 ## 6. 監査と取引ログ
 

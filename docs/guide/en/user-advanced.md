@@ -97,7 +97,7 @@ Clicking `Edit items` in the edit menu opens the **editor chest UI**, distinguis
 
 Items delivered into your BUY slots pile up in this stock, so you can resell them through SELL slots.
 
-## 5. Changing name, profession, state and location
+## 5. Changing name, appearance, state and location
 
 These live in the `Shop settings` submenu of the edit menu.
 
@@ -105,6 +105,21 @@ These live in the `Shop settings` submenu of the edit menu.
 - **Change profession**: changes the villager's appearance (profession block).
 - **Suspend / Resume**: while suspended, both buying and delivering are rejected. Useful when you'll be away for a while.
 - **Move**: with the `modernvillagershop.edit.move` permission, you can relocate the shop.
+
+If your server has FancyNpcs installed, the shop can look like an **NPC** instead of a villager. That one is driven by commands rather than the menu.
+
+```
+/vshop appearance <shopId> npc            # a player NPC wearing your own skin
+/vshop appearance <shopId> npc Notch      # pick a specific skin
+/vshop appearance <shopId> glow true gold # make it glow gold
+/vshop appearance <shopId> equip MAINHAND # hand it the item you are holding
+/vshop appearance <shopId> show           # check the current settings
+/vshop appearance <shopId> villager       # back to a villager
+```
+
+`<shopId>` is the first 8 characters of the shop ID, and Tab completes it. Completion only lists shops within 64 blocks of you, and highlighting a suggestion shows its name, type, owner and distance. A distant shop still works if you type its ID out. There is also `type` (entity kind), `scale`, `skin`, `attribute` and `reset`.
+
+While the shop renders as an NPC the profession button disappears, because professions only exist on villagers. Switching back with `villager` restores the profession you had.
 
 ## 6. Co-owners (player shops only)
 

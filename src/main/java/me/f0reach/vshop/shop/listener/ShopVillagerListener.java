@@ -1,15 +1,11 @@
 package me.f0reach.vshop.shop.listener;
 
-import me.f0reach.vshop.config.PluginConfig;
 import me.f0reach.vshop.model.Shop;
-import me.f0reach.vshop.shop.ShopOpenService;
+import me.f0reach.vshop.shop.ShopInteractionRouter;
 import me.f0reach.vshop.shop.ShopRegistry;
 import me.f0reach.vshop.shop.ShopService;
-import me.f0reach.vshop.shop.ShopVillagerManager;
 import me.f0reach.vshop.shop.VillagerTeleportGuard;
-import me.f0reach.vshop.shop.edit.ShopActionMenu;
-import me.f0reach.vshop.sound.SoundEvents;
-import me.f0reach.vshop.sound.SoundService;
+import me.f0reach.vshop.shop.entity.VillagerBackend;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
@@ -37,23 +33,16 @@ public final class ShopVillagerListener implements Listener {
 
     private final ShopRegistry registry;
     private final ShopService shops;
-    private final ShopOpenService openService;
-    private final ShopActionMenu actionMenu;
     private final NamespacedKey villagerKey;
-    private final PluginConfig config;
-    private final SoundService sounds;
+    private final ShopInteractionRouter router;
     private final VillagerTeleportGuard teleportGuard;
 
-    public ShopVillagerListener(ShopRegistry registry, ShopService shops, ShopVillagerManager villagers,
-                                ShopOpenService openService, ShopActionMenu actionMenu, PluginConfig config,
-                                SoundService sounds, VillagerTeleportGuard teleportGuard) {
+    public ShopVillagerListener(ShopRegistry registry, ShopService shops, VillagerBackend villagers,
+                                ShopInteractionRouter router, VillagerTeleportGuard teleportGuard) {
         this.registry = registry;
         this.shops = shops;
-        this.openService = openService;
-        this.actionMenu = actionMenu;
         this.villagerKey = villagers.villagerKey();
-        this.config = config;
-        this.sounds = sounds;
+        this.router = router;
         this.teleportGuard = teleportGuard;
     }
 
@@ -101,13 +90,7 @@ public final class ShopVillagerListener implements Listener {
         Shop shop = registry.byVillager(entity.getUniqueId()).orElse(null);
         if (shop == null) return;
         if (!(event.getPlayer() instanceof Player viewer)) return;
-        // Owners / privileged co-owners get the action menu directly; others see the customer view.
-        sounds.play(viewer, SoundEvents.UI_OPEN);
-        if (actionMenu.canShow(viewer, shop)) {
-            actionMenu.open(viewer, shop);
-            return;
-        }
-        openService.open(viewer, shop);
+        router.onRightClick(viewer, shop);
     }
 
     @EventHandler
@@ -124,21 +107,46 @@ public final class ShopVillagerListener implements Listener {
             if (sx != cx || sz != cz) continue;
 
             UUID villagerId = shop.villagerEntityId();
+
+            // NPC-backed shops are packet-based: spawned once at boot, unaffected
+            // by chunk loading. They should own no villager at all, so a leftover
+            // id means a crash landed between despawning one and persisting that
+            // — clean it up now that the chunk is finally loaded.
+            if (shops.entities().isNpcBacked(shop)) {
+                if (villagerId != null) discardStrayVillager(event, shop, villagerId);
+                continue;
+            }
+
             if (villagerId == null) continue;
-            Entity entity = event.getWorld().getEntities().stream()
-                    .filter(e -> e.getUniqueId().equals(villagerId))
-                    .findFirst().orElse(null);
+            Entity entity = findInWorld(event, villagerId);
             if (entity == null) {
                 var at = shop.location().toBukkit();
                 if (at == null) continue;
-                UUID newId = shops.villagers().spawn(shop, at, config);
+                UUID newId = shops.entities().spawn(shop, at);
                 shop.setVillagerEntityId(newId);
-                try {
-                    shops.update(shop);
-                } catch (java.sql.SQLException ex) {
-                    // Already logged in the service layer; we don't need to abort the chunk-load.
-                }
+                persist(shop);
             }
+        }
+    }
+
+    private void discardStrayVillager(ChunkLoadEvent event, Shop shop, UUID villagerId) {
+        Entity stray = findInWorld(event, villagerId);
+        if (stray != null) stray.remove();
+        shop.setVillagerEntityId(null);
+        persist(shop);
+    }
+
+    private static Entity findInWorld(ChunkLoadEvent event, UUID entityId) {
+        return event.getWorld().getEntities().stream()
+                .filter(e -> e.getUniqueId().equals(entityId))
+                .findFirst().orElse(null);
+    }
+
+    private void persist(Shop shop) {
+        try {
+            shops.update(shop);
+        } catch (java.sql.SQLException ex) {
+            // Already logged in the service layer; we don't need to abort the chunk-load.
         }
     }
 }

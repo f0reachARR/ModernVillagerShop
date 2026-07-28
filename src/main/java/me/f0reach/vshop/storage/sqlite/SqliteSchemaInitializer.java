@@ -62,6 +62,26 @@ public final class SqliteSchemaInitializer implements SchemaInitializer {
                     "created_at INTEGER NOT NULL," +
                     "updated_at INTEGER NOT NULL" +
                     ")",
+            // Cosmetic overrides. A shop with no row here renders as a plain Villager.
+            "CREATE TABLE IF NOT EXISTS shop_appearance (" +
+                    "shop_id TEXT PRIMARY KEY," +
+                    "backend TEXT NOT NULL," +
+                    "entity_type TEXT," +
+                    "skin TEXT," +
+                    "skin_variant TEXT," +
+                    "glowing INTEGER NOT NULL DEFAULT 0," +
+                    "glow_color TEXT," +
+                    "scale DOUBLE," +
+                    "turn_to_player INTEGER," +
+                    "attributes TEXT," +
+                    "updated_at INTEGER NOT NULL" +
+                    ")",
+            "CREATE TABLE IF NOT EXISTS shop_appearance_equipment (" +
+                    "shop_id TEXT NOT NULL," +
+                    "slot TEXT NOT NULL," +
+                    "item_data BLOB NOT NULL," +
+                    "PRIMARY KEY (shop_id, slot)" +
+                    ")",
             "CREATE TABLE IF NOT EXISTS shop_co_owners (" +
                     "shop_id TEXT NOT NULL," +
                     "player_uuid TEXT NOT NULL," +

@@ -49,6 +49,20 @@ shop:
     # 何ブロック以内のプレイヤーを追うか
     radius: 6.0
 
+# FancyNpcs 連携。ショップの見た目を Villager 以外（主に PLAYER NPC）にする。
+# FancyNpcs プラグインが導入されていない場合は、この設定に関わらず Villager で動作する。
+fancynpcs:
+  enabled: true
+  # ショップ側で個別指定がないときに、NPC がプレイヤーの方を向くか
+  turnToPlayer: true
+  # 同一プレイヤーの連続クリックを無視する秒数（0 = 無効）
+  interactionCooldown: 0.0
+  # /vshop appearance scale で指定できる最大倍率
+  maxScale: 2.0
+  # NPC に指定できるエンティティタイプのホワイトリスト。空 = 全許可。
+  # modernvillagershop.admin.appearance 保持者はこの制限を受けない。
+  allowedTypes: []
+
 playerCache:
   maxEntries: 5000
   defaultSort: LAST_SEEN_DESC # LAST_SEEN_DESC | NAME_ASC
