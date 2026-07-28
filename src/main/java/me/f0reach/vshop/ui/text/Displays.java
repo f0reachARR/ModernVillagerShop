@@ -4,6 +4,7 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.event.HoverEvent;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.ItemMeta;
 
 import java.util.UUID;
 
@@ -18,16 +19,65 @@ public final class Displays {
 
     /**
      * A translatable item name (so vanilla / resource-pack overrides apply per
-     * client locale) with a Minecraft-style item hover. Falls back to the
-     * material key when {@link ItemStack#displayName()} would throw.
+     * client locale) with a Minecraft-style item hover. Rendered the vanilla
+     * chat way — bracketed and carrying the stack's rarity style. Falls back to
+     * {@link #itemName(ItemStack)} when {@link ItemStack#displayName()} would
+     * throw.
      */
     public static Component item(ItemStack stack) {
         if (stack == null) return Component.text("?");
         try {
-            return stack.displayName().hoverEvent(stack.asHoverEvent());
+            return withItemHover(stack.displayName(), stack);
         } catch (Throwable ignored) {
-            return Component.text(stack.getType().name())
-                    .hoverEvent(stack.asHoverEvent());
+            return itemName(stack);
+        }
+    }
+
+    /**
+     * The bare item name for embedding into a localized message: the stack's
+     * custom display name when it has one, otherwise a
+     * {@link Component#translatable} of the item's translation key so every
+     * client renders it in its own language. The stack itself is attached as an
+     * item hover, so the full tooltip stays reachable.
+     *
+     * <p>Unlike {@link #item(ItemStack)} this carries no brackets and no rarity
+     * color, which keeps the surrounding message in control of the styling —
+     * insert it with {@code Placeholder.component("item", ...)}.</p>
+     */
+    public static Component itemName(ItemStack stack) {
+        if (stack == null) return Component.text("?");
+        return withItemHover(baseName(stack), stack);
+    }
+
+    /**
+     * Custom display name if the stack carries one, else a translatable of the
+     * item's translation key with the material name as the client-side
+     * fallback. Both lookups need the server implementation, so both are
+     * guarded — the last resort is the plain material name.
+     */
+    private static Component baseName(ItemStack stack) {
+        try {
+            ItemMeta meta = stack.getItemMeta();
+            if (meta != null && meta.hasDisplayName()) {
+                Component displayName = meta.displayName();
+                if (displayName != null) return displayName;
+            }
+        } catch (Throwable ignored) {
+            // fall through to the translatable name
+        }
+        try {
+            return Component.translatable(stack.translationKey(), stack.getType().name());
+        } catch (Throwable ignored) {
+            return Component.text(stack.getType().name());
+        }
+    }
+
+    /** Item hover is implementation-backed; drop it rather than fail the message. */
+    private static Component withItemHover(Component name, ItemStack stack) {
+        try {
+            return name.hoverEvent(stack.asHoverEvent());
+        } catch (Throwable ignored) {
+            return name;
         }
     }
 

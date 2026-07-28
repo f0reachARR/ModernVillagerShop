@@ -10,6 +10,7 @@ import me.f0reach.vshop.model.Shop;
 import me.f0reach.vshop.model.ShopSlot;
 import me.f0reach.vshop.model.TradeSide;
 import me.f0reach.vshop.ui.dialog.DialogService;
+import me.f0reach.vshop.ui.text.Displays;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.minimessage.tag.resolver.Placeholder;
 import org.bukkit.entity.Player;
@@ -75,7 +76,7 @@ public final class SlotEditFlow {
         Component title = messages.get(existing == null
                 ? "edit.slot.hub.create-title" : "edit.slot.hub.edit-title");
         Component body = messages.get("edit.slot.hub.body",
-                Placeholder.parsed("item", template.getType().name()),
+                Placeholder.component("item", Displays.itemName(template)),
                 Placeholder.component("side", sideLabel(working.side)));
 
         List<DialogService.ButtonSpec> buttons = new ArrayList<>();
@@ -133,7 +134,7 @@ public final class SlotEditFlow {
         int unitMax = Math.max(1, template.getMaxStackSize());
         Component title = messages.get("edit.slot.sell-title");
         Component body = messages.get("edit.slot.body",
-                Placeholder.parsed("item", template.getType().name()),
+                Placeholder.component("item", Displays.itemName(template)),
                 Placeholder.parsed("unit_max", Integer.toString(unitMax)));
         Component submit = messages.get("edit.slot.submit");
 
@@ -206,7 +207,7 @@ public final class SlotEditFlow {
         int unitMax = Math.max(1, template.getMaxStackSize());
         Component title = messages.get("edit.slot.buy-title");
         Component body = messages.get("edit.slot.body",
-                Placeholder.parsed("item", template.getType().name()),
+                Placeholder.component("item", Displays.itemName(template)),
                 Placeholder.parsed("unit_max", Integer.toString(unitMax)));
         Component submit = messages.get("edit.slot.submit");
 
@@ -271,7 +272,7 @@ public final class SlotEditFlow {
         dialogs.confirmOnce(editor,
                 messages.get("edit.delete.title"),
                 messages.get("edit.delete.body",
-                        Placeholder.parsed("item", slot.itemTemplate().getType().name())),
+                        Placeholder.component("item", Displays.itemName(slot.itemTemplate()))),
                 messages.get("edit.delete.yes"),
                 messages.get("edit.delete.no"),
                 () -> {
